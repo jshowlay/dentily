@@ -18,17 +18,18 @@ export default function SearchPage() {
       <section className="container-page flex min-h-[calc(100vh-64px)] items-center justify-center py-10">
         <div className="w-full">
           <h1 className="mb-3 text-center text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
-            Get your dentist lead pack
+            Get your dental lead pack
           </h1>
           <p className="mb-8 text-center text-lg text-slate-600">
-            Choose your area — we find practices and surface patient growth opportunities with prioritized outreach.
+            Choose your location — we find high-opportunity practices and give you prioritized outreach so you can book
+            more patients.
           </p>
           <div className="flex justify-center">
             <SearchForm
               defaultNiche="dentists"
               cardTitle="Find dental practices"
-              cardDescription="We search by niche and city, then score leads and write outreach you can use today."
-              submitLabel="Find dental leads"
+              cardDescription="Pick a city. We build your list of 50 high-opportunity dental practices ready for growth, with outreach included."
+              submitLabel="Get My Lead Pack"
             />
           </div>
         </div>

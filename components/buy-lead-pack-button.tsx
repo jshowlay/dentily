@@ -9,7 +9,7 @@ type Props = {
   className?: string;
 };
 
-export function BuyLeadPackButton({ searchId, label = "Unlock & Download Leads ($49)", className }: Props) {
+export function BuyLeadPackButton({ searchId, label = "Get My Lead Pack", className }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

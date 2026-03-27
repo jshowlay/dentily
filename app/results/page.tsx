@@ -117,8 +117,8 @@ export default async function ResultsPage({
               <Card>
                 <CardContent className="flex flex-col gap-4 pt-6 sm:flex-row sm:items-start sm:justify-between">
                   <p className="text-sm text-slate-700">
-                    This lead pack includes verified local business records, AI lead scoring, and
-                    suggested outreach copy.
+                    This pack includes prioritized dental practices, patient-growth context, and ready-to-use outreach
+                    messages.
                   </p>
                   {canExport ? (
                     parsed.isPaid ? (
@@ -131,11 +131,11 @@ export default async function ResultsPage({
                       </a>
                     ) : (
                       <div className="flex w-full max-w-sm flex-col gap-3 sm:shrink-0">
-                        <p className="text-sm font-medium text-slate-900">Unlock full lead list</p>
+                        <p className="text-sm font-medium text-slate-900">Unlock your full lead pack</p>
                         <p className="text-sm text-slate-600">
-                          Pay once ($49) to download this search as CSV anytime.
+                          Pay once ($49) for instant download — prioritized practices and outreach included.
                         </p>
-                        <BuyLeadPackButton searchId={parsed.id} className="w-full sm:w-auto" />
+                        <BuyLeadPackButton searchId={parsed.id} label="Get My Lead Pack" className="w-full sm:w-auto" />
                         <Link
                           href={`/pricing?searchId=${parsed.id}`}
                           className="text-sm text-slate-600 underline underline-offset-4 hover:text-slate-900"

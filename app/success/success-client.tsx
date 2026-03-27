@@ -22,14 +22,14 @@ export function SuccessClient({ outcome }: { outcome: SuccessOutcome }) {
         {outcome.kind === "ok" ? (
           <>
             <p className="text-sm font-medium text-slate-900">Your Dentily lead pack is ready</p>
-            <p className="text-sm text-slate-700">Download the CSV anytime from results.</p>
+            <p className="text-sm text-slate-700">Download your prioritized practices and outreach anytime from results.</p>
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
               <Link
                 href={`/api/search/${outcome.searchId}/export`}
                 className={cn(buttonVariants({ size: "default" }), "text-center")}
                 download
               >
-                Download your leads (CSV)
+                Download lead pack (CSV)
               </Link>
               <Link
                 href={`/results?searchId=${outcome.searchId}`}

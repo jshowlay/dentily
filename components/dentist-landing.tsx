@@ -32,8 +32,11 @@ function LandingHeader() {
       <div className="container-page flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <BrandMark />
         <div className="flex flex-wrap items-center gap-3">
-          <Link href="/search" className="text-sm text-white/90 underline-offset-4 hover:underline">
-            Run a search
+          <Link
+            href="/#how-it-works"
+            className="text-sm text-white/90 underline-offset-4 hover:underline"
+          >
+            See How It Works
           </Link>
           <Link
             href="/search"
@@ -58,17 +61,17 @@ function CtaPrimary({ className }: { className?: string }) {
   );
 }
 
-function CtaSecondaryOutline({ className }: { className?: string }) {
+function CtaHowItWorks({ className }: { className?: string }) {
   return (
     <Link
-      href="/search"
+      href="/#how-it-works"
       className={cn(
         buttonVariants({ variant: "outline", size: "lg" }),
         "w-full min-h-[48px] border-slate-300 sm:w-auto",
         className
       )}
     >
-      Buy Lead Pack
+      See How It Works
     </Link>
   );
 }
@@ -82,63 +85,68 @@ export function DentistLanding() {
       <section className="container-page py-12 md:py-20">
         <div className="mx-auto max-w-3xl text-center">
           <h1 className="text-3xl font-bold leading-tight tracking-tight text-slate-900 md:text-4xl lg:text-5xl">
-            Get More Dental Patients — Without Guesswork
+            Get More Dental Patients in Your Area — Starting Today
           </h1>
           <p className="mt-5 text-lg leading-relaxed text-slate-600 md:text-xl">
             Dentily identifies dental practices most likely to grow and shows you exactly how to reach them.
           </p>
           <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <CtaPrimary />
+            <CtaHowItWorks />
           </div>
           <p className="mt-4 text-base font-medium text-slate-700">
-            50 prioritized practices + outreach for more appointments — ready today
+            50 high-opportunity dental leads + outreach messages — ready instantly
           </p>
         </div>
       </section>
 
-      {/* Problem */}
+      {/* Who this is for */}
       <section className="border-t border-slate-200 bg-slate-50 py-12 md:py-16">
-        <div className="container-page mx-auto max-w-3xl">
-          <h2 className="text-2xl font-bold text-slate-900 md:text-3xl">
-            Most Dentists Struggle to Get Consistent New Patients
-          </h2>
-          <ul className="mt-6 space-y-3 text-lg text-slate-700">
-            <li className="flex gap-3">
-              <span className="font-bold text-slate-400">—</span>
-              <span>Relying on word of mouth</span>
-            </li>
-            <li className="flex gap-3">
-              <span className="font-bold text-slate-400">—</span>
-              <span>Inconsistent appointment flow</span>
-            </li>
-            <li className="flex gap-3">
-              <span className="font-bold text-slate-400">—</span>
-              <span>Wasted time on ineffective marketing</span>
-            </li>
-            <li className="flex gap-3">
-              <span className="font-bold text-slate-400">—</span>
-              <span>No clear system to generate new patients</span>
-            </li>
-          </ul>
+        <div className="container-page mx-auto max-w-4xl">
+          <h2 className="text-center text-2xl font-bold text-slate-900 md:text-3xl">Who This Is For</h2>
+          <div className="mt-8 grid gap-4 sm:grid-cols-3">
+            <Card className="border-slate-200 bg-white">
+              <CardContent className="pt-6 text-center text-sm text-slate-700 md:text-base">
+                Dental practices looking for more new patients
+              </CardContent>
+            </Card>
+            <Card className="border-slate-200 bg-white">
+              <CardContent className="pt-6 text-center text-sm text-slate-700 md:text-base">
+                Agencies serving dental clients
+              </CardContent>
+            </Card>
+            <Card className="border-slate-200 bg-white">
+              <CardContent className="pt-6 text-center text-sm text-slate-700 md:text-base">
+                Consultants helping dentists grow local demand
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </section>
 
-      {/* Solution */}
+      {/* Why Dentily works */}
       <section className="container-page py-12 md:py-16">
         <div className="mx-auto max-w-3xl">
-          <h2 className="text-2xl font-bold text-slate-900 md:text-3xl">Dentily Finds Your Best Opportunities — Instantly</h2>
-          <ul className="mt-6 space-y-4 text-lg text-slate-700">
+          <h2 className="text-2xl font-bold text-slate-900 md:text-3xl">Why Dentily Works</h2>
+          <p className="mt-4 text-lg leading-relaxed text-slate-700">
+            Dentily doesn&apos;t just give you random leads.
+          </p>
+          <p className="mt-3 text-lg leading-relaxed text-slate-700">
+            We analyze real dental practices and identify the ones most likely missing out on new patient opportunities
+            — so you can focus on the highest-impact targets first.
+          </p>
+          <ul className="mt-8 space-y-4 text-lg text-slate-800">
             <li className="flex gap-3">
               <span className="text-green-600">✓</span>
-              <span>We identify dental practices that are most likely to need more patients.</span>
+              <span>Real local dental practice data</span>
             </li>
             <li className="flex gap-3">
               <span className="text-green-600">✓</span>
-              <span>We analyze reviews, online presence, and growth signals.</span>
+              <span>Prioritized by growth opportunity</span>
             </li>
             <li className="flex gap-3">
               <span className="text-green-600">✓</span>
-              <span>We generate ready-to-use outreach messages you can send today.</span>
+              <span>Outreach guidance included</span>
             </li>
           </ul>
         </div>
@@ -151,42 +159,47 @@ export function DentistLanding() {
           <ul className="mt-6 space-y-3 text-lg text-slate-800">
             <li className="flex gap-3">
               <span className="font-bold text-slate-900">•</span>
-              <span>50 qualified local dental leads</span>
+              <span>50 high-opportunity dental practices</span>
             </li>
             <li className="flex gap-3">
               <span className="font-bold text-slate-900">•</span>
-              <span>Contact details (phone, website)</span>
+              <span>Prioritized by growth potential</span>
             </li>
             <li className="flex gap-3">
               <span className="font-bold text-slate-900">•</span>
-              <span>AI lead scoring so you know who to call first</span>
+              <span>Contact details (phone + website)</span>
             </li>
             <li className="flex gap-3">
               <span className="font-bold text-slate-900">•</span>
-              <span>Personalized outreach messages for each practice</span>
+              <span>AI-generated outreach messages</span>
             </li>
             <li className="flex gap-3">
               <span className="font-bold text-slate-900">•</span>
-              <span>Downloadable CSV file — yours after checkout</span>
+              <span>Ready-to-download lead pack</span>
             </li>
           </ul>
+          <p className="mt-6 text-base text-slate-600">Everything is organized so you can act immediately.</p>
         </div>
       </section>
 
       {/* Sample output */}
       <section className="container-page py-12 md:py-16">
         <div className="mx-auto max-w-4xl">
-          <h2 className="text-center text-2xl font-bold text-slate-900 md:text-3xl">Sample results</h2>
-          <p className="mt-2 text-center text-slate-600">Here&apos;s what a Dentily result looks like</p>
+          <h2 className="text-center text-2xl font-bold text-slate-900 md:text-3xl">
+            See What a Dentily Lead Pack Looks Like
+          </h2>
+          <p className="mt-3 text-center text-slate-600">
+            A quick example of how Dentily prioritizes practices and shows you how to act.
+          </p>
           <Card className="mt-8 overflow-hidden">
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Name</TableHead>
+                    <TableHead>Practice name</TableHead>
                     <TableHead className="w-20">Score</TableHead>
                     <TableHead className="min-w-[180px]">Reason</TableHead>
-                    <TableHead className="min-w-[200px]">Outreach snippet</TableHead>
+                    <TableHead className="min-w-[200px]">Outreach</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -208,9 +221,9 @@ export function DentistLanding() {
       </section>
 
       {/* How it works */}
-      <section className="border-t border-slate-200 bg-slate-50 py-12 md:py-16">
+      <section id="how-it-works" className="scroll-mt-20 border-t border-slate-200 bg-slate-50 py-12 md:py-16">
         <div className="container-page mx-auto max-w-3xl text-center">
-          <h2 className="text-2xl font-bold text-slate-900 md:text-3xl">How it works</h2>
+          <h2 className="text-2xl font-bold text-slate-900 md:text-3xl">How It Works</h2>
           <ol className="mt-10 space-y-8 text-left text-lg text-slate-800 md:mx-auto md:max-w-lg">
             <li className="flex gap-4">
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-black text-lg font-bold text-white">
@@ -227,7 +240,9 @@ export function DentistLanding() {
               </span>
               <div>
                 <p className="font-semibold text-slate-900">Get your lead pack</p>
-                <p className="mt-1 text-slate-600">Review scored leads and outreach copy, then unlock the full CSV.</p>
+                <p className="mt-1 text-slate-600">
+                  Review prioritized practices and outreach, then unlock your full download after checkout.
+                </p>
               </div>
             </li>
             <li className="flex gap-4">
@@ -235,8 +250,8 @@ export function DentistLanding() {
                 3
               </span>
               <div>
-                <p className="font-semibold text-slate-900">Start reaching out</p>
-                <p className="mt-1 text-slate-600">Book more patient appointments with clear, simple outreach.</p>
+                <p className="font-semibold text-slate-900">Start reaching out and booking more patients</p>
+                <p className="mt-1 text-slate-600">Use clear messages to turn outreach into appointments.</p>
               </div>
             </li>
           </ol>
@@ -253,20 +268,38 @@ export function DentistLanding() {
               <p className="text-sm text-slate-600">One-time · USD</p>
             </CardHeader>
             <CardContent className="space-y-6">
+              <p className="text-center text-sm text-slate-700">
+                50 high-opportunity dental practices with prioritized insights and ready-to-use outreach messages.
+              </p>
               <ul className="space-y-2 text-left text-slate-700">
                 <li className="flex gap-2">
-                  <span className="text-green-600">✓</span> 50 leads
+                  <span className="text-green-600">✓</span> 50 qualified dental leads
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-green-600">✓</span> Patient-growth insights
                 </li>
                 <li className="flex gap-2">
                   <span className="text-green-600">✓</span> Outreach messages included
                 </li>
                 <li className="flex gap-2">
-                  <span className="text-green-600">✓</span> Instant download after payment
+                  <span className="text-green-600">✓</span> Instant download
                 </li>
               </ul>
-              <CtaSecondaryOutline className="w-full" />
+              <p className="text-center text-sm font-medium text-slate-800">
+                Limited to one lead pack per area to avoid overlap.
+              </p>
+              <Link
+                href="/search"
+                className={cn(
+                  buttonVariants({ size: "lg" }),
+                  "flex min-h-[48px] w-full items-center justify-center"
+                )}
+              >
+                Get My Lead Pack
+              </Link>
+              <p className="text-center text-xs text-slate-500">Simple, affordable, and ready to use today.</p>
               <p className="text-center text-xs text-slate-500">
-                Run a search first — then unlock your CSV from the results page.
+                Run a search first — then unlock your download from the results page.
               </p>
             </CardContent>
           </Card>
@@ -276,31 +309,21 @@ export function DentistLanding() {
       {/* Trust */}
       <section className="border-t border-slate-200 bg-slate-50 py-12 md:py-16">
         <div className="container-page mx-auto max-w-3xl text-center">
-          <h2 className="text-xl font-semibold text-slate-900 md:text-2xl">Why teams use Dentily</h2>
-          <div className="mt-8 grid gap-6 text-left sm:grid-cols-3 sm:text-center">
-            <p className="text-slate-700">Built for local service businesses</p>
-            <p className="text-slate-700">Focused on real patient growth</p>
-            <p className="text-slate-700">No fluff — just actionable leads</p>
-          </div>
-          <div className="mt-10 rounded-lg border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-500">
-            <p className="font-medium text-slate-700">What customers say</p>
-            <p className="mt-2 italic">&ldquo;Placeholder for testimonials — add real quotes as you collect them.&rdquo;</p>
+          <div className="grid gap-6 text-left sm:grid-cols-3 sm:text-center">
+            <p className="text-slate-800">Built for local service businesses</p>
+            <p className="text-slate-800">Focused on real patient growth</p>
+            <p className="text-slate-800">No fluff — just actionable leads</p>
           </div>
         </div>
-      </section>
-
-      {/* Urgency */}
-      <section className="container-page py-8">
-        <p className="text-center text-sm font-medium text-amber-900">
-          Limited to one lead pack per area to avoid overlap.
-        </p>
       </section>
 
       {/* Final CTA */}
       <section className="border-t border-slate-200 bg-black py-14 text-white md:py-20">
         <div className="container-page mx-auto max-w-2xl text-center">
           <h2 className="text-2xl font-bold md:text-3xl">Start Getting More Patients Today</h2>
-          <p className="mt-3 text-lg text-white/80">Pick a city. Get your pack. Start the conversation.</p>
+          <p className="mt-3 text-lg text-white/80">
+            Get a ready-to-use dental lead pack with prioritized practices and outreach included.
+          </p>
           <div className="mt-8 flex justify-center">
             <Link
               href="/search"
@@ -312,6 +335,7 @@ export function DentistLanding() {
               Get My Lead Pack
             </Link>
           </div>
+          <p className="mt-4 text-sm text-white/70">Limited to one lead pack per area</p>
         </div>
       </section>
 
@@ -319,7 +343,7 @@ export function DentistLanding() {
         <div className="container-page">
           <p>© 2026 Dentily · Dental patient growth</p>
           <Link href="/search" className="mt-2 inline-block text-blue-600 hover:underline">
-            Run a search
+            Get your lead pack
           </Link>
         </div>
       </footer>

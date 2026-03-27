@@ -35,7 +35,7 @@ export async function POST(request: Request) {
             product_data: {
               name: "Dentily Dental Lead Pack",
               description:
-                "50 high-opportunity dental leads with prioritized insights and ready-to-use outreach messages.",
+                "50 high-opportunity dental practices with prioritized insights and ready-to-use outreach messages.",
             },
             unit_amount: 4900,
           },
