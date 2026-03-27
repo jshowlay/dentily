@@ -6,6 +6,8 @@ import { scoreLead } from "@/lib/score-lead";
 import { Lead } from "@/lib/types";
 import { getNicheConfig } from "@/lib/niches";
 
+const TARGET_LEAD_COUNT = 50;
+
 const searchSchema = z.object({
   niche: z.string().trim().min(2),
   location: z.string().trim().min(2),
@@ -84,6 +86,7 @@ function filterAndDedupeLeads(leads: Lead[], niche: string, nicheId: string): Le
     seenPlaceIds.add(placeId);
     if (phone) seenNamePhone.add(namePhoneKey);
     out.push(lead);
+    if (out.length >= TARGET_LEAD_COUNT) break;
   }
   return out;
 }
@@ -116,11 +119,10 @@ export async function POST(request: Request) {
       }
 
       const query = `${niche} in ${location}`;
-      const found = await searchBusinesses(query);
-      console.log(`[api/search] rawGoogleCount=${found.length}`);
+      const found = await searchBusinesses(query, TARGET_LEAD_COUNT);
+      console.log(`[api/search] totalRawResults=${found.length}`);
 
-      const uniqueByPlaceId = new Map(found.map((l) => [l.placeId, l]));
-      const normalizedLeads: Lead[] = Array.from(uniqueByPlaceId.values()).map((l) => ({
+      const normalizedLeads: Lead[] = found.map((l) => ({
         placeId: l.placeId,
         name: l.name,
         niche: nicheConfig.name,
@@ -135,9 +137,12 @@ export async function POST(request: Request) {
         metadata: l.metadata ?? {},
         status: "new",
       }));
-      console.log(`[api/search] normalizedCount=${normalizedLeads.length}`);
+      console.log(`[api/search] totalNormalizedResults=${normalizedLeads.length}`);
 
-      if (normalizedLeads.length === 0) {
+      const filteredLeads = filterAndDedupeLeads(normalizedLeads, niche, nicheConfig.id);
+      console.log(`[api/search] totalDedupedResults=${filteredLeads.length}`);
+
+      if (filteredLeads.length === 0) {
         await setSearchStatus(searchId, "completed", { resultCount: 0 });
         return NextResponse.json({
           searchId,
@@ -149,8 +154,8 @@ export async function POST(request: Request) {
         });
       }
 
-      // Enrich missing details.
-      const needsDetails = normalizedLeads.filter((l) => !l.website || !l.phone);
+      // Enrich missing details after dedupe/filter to reduce API calls.
+      const needsDetails = filteredLeads.filter((l) => !l.website || !l.phone);
       if (needsDetails.length > 0) {
         console.log(`[api/search] enrichingMissingDetails count=${needsDetails.length}`);
         const detailsById = await Promise.allSettled(
@@ -165,7 +170,7 @@ export async function POST(request: Request) {
             .map((d) => [d.value.placeId, d.value.details])
         );
 
-        for (const lead of normalizedLeads) {
+        for (const lead of filteredLeads) {
           const details = map.get(lead.placeId);
           if (!details) continue;
           const searchRaw = lead.metadata?.raw ?? null;
@@ -184,20 +189,6 @@ export async function POST(request: Request) {
           if (!lead.address) lead.address = details.address;
           if (!lead.mapsUrl) lead.mapsUrl = details.mapsUrl;
         }
-      }
-
-      const filteredLeads = filterAndDedupeLeads(normalizedLeads, niche, nicheConfig.id);
-      console.log(`[api/search] filteredCount=${filteredLeads.length}`);
-      if (filteredLeads.length === 0) {
-        await setSearchStatus(searchId, "completed", { resultCount: 0 });
-        return NextResponse.json({
-          searchId,
-          niche,
-          location,
-          status: "completed",
-          resultCount: 0,
-          leads: [],
-        });
       }
 
       // Score leads with AI.
