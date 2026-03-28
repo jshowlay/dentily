@@ -1,9 +1,11 @@
 import OpenAI from "openai";
 import { z } from "zod";
+import { personalizeDentistOutreachWithSignals } from "@/lib/dentist-outreach";
 import {
   classifyOpportunityType,
   classifyPriorityFromScore,
   computeBaseScore,
+  type DentistScoringBatchContext,
 } from "@/lib/dentist-scoring";
 import { Lead, NicheConfig } from "@/lib/types";
 
@@ -19,8 +21,23 @@ const dentistAiOutputSchema = z.object({
   outreach: z.string().min(1).max(280),
 });
 
-const DENTIST_FALLBACK_OUTREACH =
-  "Hi — I came across your practice and noticed there may be room to increase new patient bookings. We help dentists turn their local presence into more appointments — open to a quick idea?";
+/** Template C — general patient-growth angle (also default when signals thin). */
+function dentistFallbackOutreachGeneral(): string {
+  return "Hi — I came across your practice and thought there may be room to increase new patient bookings. We help dentists turn their local presence into more appointments — open to a quick idea?";
+}
+
+/** Pick A/B/C by signal so fallbacks stay varied and specific. */
+function pickDentistFallbackOutreach(lead: Lead): string {
+  const r = lead.rating;
+  const rc = lead.reviewCount;
+  if (r !== null && r !== undefined && r < 4.2) {
+    return `Hi — I noticed your practice has a ${r} rating and there may be room to improve how that turns into booked appointments. We help dentists increase new patient flow — open to a quick idea?`;
+  }
+  if (rc !== null && rc !== undefined && rc > 0) {
+    return `Hi — I noticed your practice has around ${rc} reviews. We help dentists turn local visibility into more booked appointments — open to a quick idea?`;
+  }
+  return dentistFallbackOutreachGeneral();
+}
 
 const genericFallback = {
   score: 50,
@@ -107,22 +124,38 @@ Base Score: ${baseScore}
 }
 
 const GENERIC_REASON_BAN =
-  /\b(good lead|great opportunity|potential opportunity|strong opportunity|growth opportunity)\b/i;
+  /\b(good lead|great opportunity|potential opportunity|strong opportunity|growth opportunity|solid foundation|measurable opportunity|under-optimized)\b/i;
 
 /** Fallback when AI is missing or too generic — tied to actual signals. */
 function dentistFallbackReasonFromSignals(lead: Lead): string {
-  if (!lead.website) {
-    return "Practice appears to have weak online visibility with no website present.";
-  }
-  const rc = lead.reviewCount;
-  if (rc !== null && rc !== undefined && rc < 20) {
-    return "Low review volume suggests clear opportunity to increase patient visibility.";
+  if (!lead.website?.trim()) {
+    return "No public website — new patients may be choosing easier-to-find practices nearby.";
   }
   const rating = lead.rating;
-  if (rating !== null && rating !== undefined && rating < 4.2) {
-    return "Review profile suggests room to improve patient perception and bookings.";
+  const rc = lead.reviewCount;
+  if (rating !== null && rating !== undefined && rating < 4.0) {
+    return `${rating.toFixed(1)} rating suggests room to improve patient perception.`;
   }
-  return "Local dental practice shows measurable opportunity for patient growth.";
+  if (rc !== null && rc !== undefined && rc < 20) {
+    return "Low review count suggests untapped visibility potential.";
+  }
+  if (rc !== null && rc !== undefined && rc < 75) {
+    return "Moderate review volume suggests room for stronger local demand.";
+  }
+  if (
+    rating !== null &&
+    rating !== undefined &&
+    rating >= 4.8 &&
+    rc !== null &&
+    rc !== undefined &&
+    rc >= 250
+  ) {
+    return "High review volume and strong rating make this a lower-priority target.";
+  }
+  if (rating !== null && rating !== undefined && rating < 4.2) {
+    return `${rating.toFixed(1)} rating suggests room to improve patient perception and bookings.`;
+  }
+  return "Practice appears established but may still have room to improve patient flow.";
 }
 
 function sanitizeDentistReason(lead: Lead, reason: string): string {
@@ -138,10 +171,10 @@ const OUTREACH_KEYWORD_RE = /\b(?:patient|patients|booking|bookings|appointment|
 function sanitizeDentistOutreach(lead: Lead, outreach: string): string {
   let candidate = (outreach ?? "").trim();
   if (!candidate) {
-    candidate = DENTIST_FALLBACK_OUTREACH;
+    candidate = pickDentistFallbackOutreach(lead);
   }
   if (!OUTREACH_KEYWORD_RE.test(candidate)) {
-    candidate = DENTIST_FALLBACK_OUTREACH;
+    candidate = pickDentistFallbackOutreach(lead);
   }
   return candidate.length > 280 ? `${candidate.slice(0, 277)}...` : candidate;
 }
@@ -152,8 +185,11 @@ export type ScoreLeadResult = Pick<Lead, "score" | "reason" | "outreach" | "oppo
   dentistScoringMeta?: { baseScore: number; aiAdjustment: number };
 };
 
-async function scoreDentistLead(lead: Lead): Promise<ScoreLeadResult> {
-  const baseScore = computeBaseScore(lead);
+async function scoreDentistLead(
+  lead: Lead,
+  batch?: DentistScoringBatchContext
+): Promise<ScoreLeadResult> {
+  const baseScore = computeBaseScore(lead, batch);
   const opportunityType = classifyOpportunityType(lead);
   const apiKey = process.env.OPENAI_API_KEY;
   const prompt = buildDentistStrategistPrompt(lead, opportunityType, baseScore);
@@ -164,7 +200,10 @@ async function scoreDentistLead(lead: Lead): Promise<ScoreLeadResult> {
     return {
       score: finalScore,
       reason: dentistFallbackReasonFromSignals(lead),
-      outreach: sanitizeDentistOutreach(lead, DENTIST_FALLBACK_OUTREACH),
+      outreach: sanitizeDentistOutreach(
+        lead,
+        personalizeDentistOutreachWithSignals(lead, pickDentistFallbackOutreach(lead))
+      ),
       opportunityType,
       priority: classifyPriorityFromScore(finalScore),
       usedAiFallback: true,
@@ -187,7 +226,10 @@ async function scoreDentistLead(lead: Lead): Promise<ScoreLeadResult> {
     const finalScore = clampScore(baseScore + adj);
 
     const reason = sanitizeDentistReason(lead, parsed.reason);
-    const outreach = sanitizeDentistOutreach(lead, parsed.outreach);
+    const outreach = sanitizeDentistOutreach(
+      lead,
+      personalizeDentistOutreachWithSignals(lead, parsed.outreach)
+    );
 
     console.log(
       `[score-lead] dentist place="${lead.name}" base=${baseScore} adj=${adj} final=${finalScore} opp=${opportunityType}`
@@ -208,7 +250,10 @@ async function scoreDentistLead(lead: Lead): Promise<ScoreLeadResult> {
     return {
       score: finalScore,
       reason: dentistFallbackReasonFromSignals(lead),
-      outreach: sanitizeDentistOutreach(lead, DENTIST_FALLBACK_OUTREACH),
+      outreach: sanitizeDentistOutreach(
+        lead,
+        personalizeDentistOutreachWithSignals(lead, pickDentistFallbackOutreach(lead))
+      ),
       opportunityType,
       priority: classifyPriorityFromScore(finalScore),
       usedAiFallback: true,
@@ -264,9 +309,13 @@ async function scoreGenericLead(lead: Lead, nicheConfig: NicheConfig): Promise<S
   }
 }
 
-export async function scoreLead(lead: Lead, nicheConfig: NicheConfig): Promise<ScoreLeadResult> {
+export async function scoreLead(
+  lead: Lead,
+  nicheConfig: NicheConfig,
+  dentistBatch?: DentistScoringBatchContext
+): Promise<ScoreLeadResult> {
   if (nicheConfig.id === "dentists") {
-    return scoreDentistLead(lead);
+    return scoreDentistLead(lead, dentistBatch);
   }
   return scoreGenericLead(lead, nicheConfig);
 }

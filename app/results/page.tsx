@@ -56,6 +56,8 @@ export default async function ResultsPage({
         ? Math.round(scoredLeads.reduce((sum, lead) => sum + Number(lead.score), 0) / scoredLeads.length)
         : null;
     const canExport = parsed ? canExportLeadPack(parsed.status, parsed.leads.length) : false;
+    const highPriorityCount =
+      parsed?.leads.filter((l) => (l.priority ?? "").toLowerCase() === "high").length ?? 0;
 
     return (
       <main className="min-h-screen bg-white">
@@ -100,11 +102,15 @@ export default async function ResultsPage({
                     <span className="font-semibold text-slate-900">Status:</span> {parsed.status}
                   </p>
                   <p>
-                    <span className="font-semibold text-slate-900">Total Leads:</span>{" "}
+                    <span className="font-semibold text-slate-900">Total leads:</span>{" "}
                     {parsed.resultCount ?? parsed.leads.length}
                   </p>
                   <p>
-                    <span className="font-semibold text-slate-900">Average Score:</span>{" "}
+                    <span className="font-semibold text-slate-900">High-priority leads:</span>{" "}
+                    {highPriorityCount}
+                  </p>
+                  <p>
+                    <span className="font-semibold text-slate-900">Average score:</span>{" "}
                     {averageScore ?? "-"}
                   </p>
                   <p>

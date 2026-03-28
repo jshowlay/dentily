@@ -75,7 +75,15 @@ export function LeadsTable({ leads }: { leads: Lead[] }) {
                   : undefined
             }
           >
-            <TableCell className="font-medium">{lead.name}</TableCell>
+            <TableCell
+              className={
+                (lead.priority ?? "").toLowerCase() === "high"
+                  ? "font-bold text-slate-900"
+                  : "font-medium"
+              }
+            >
+              {lead.name}
+            </TableCell>
             <TableCell>
               {lead.niche ? (
                 <span className="rounded bg-blue-50 px-2 py-1 text-xs text-blue-700">{lead.niche}</span>

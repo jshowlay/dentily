@@ -3,6 +3,8 @@ import { z } from "zod";
 import { getPlaceDetails, searchBusinesses } from "@/lib/google-places";
 import { createSearch, getSearchWithLeads, insertLeads, setSearchStatus } from "@/lib/db";
 import { dedupeLeads } from "@/lib/dedupe-leads";
+import type { DentistScoringBatchContext } from "@/lib/dentist-scoring";
+import { logSearchPrioritySummary, sortByPriorityThenScore } from "@/lib/lead-pack-export";
 import { scoreLead } from "@/lib/score-lead";
 import { logDentistScoringBatch } from "@/lib/scoring-log";
 import { Lead } from "@/lib/types";
@@ -185,6 +187,11 @@ export async function POST(request: Request) {
 
       const dedupedForScoring = dedupeLeads(filteredLeads).slice(0, TARGET_LEAD_COUNT);
 
+      const dentistBatch: DentistScoringBatchContext | undefined =
+        nicheConfig.id === "dentists"
+          ? { allNamesLower: dedupedForScoring.map((l) => l.name.toLowerCase()) }
+          : undefined;
+
       // Score leads with AI.
       let failedAIScores = 0;
       const dentistScoringLog: Array<{
@@ -196,7 +203,7 @@ export async function POST(request: Request) {
 
       const scoredLeads = await Promise.all(
         dedupedForScoring.map(async (lead) => {
-          const scored = await scoreLead(lead, nicheConfig);
+          const scored = await scoreLead(lead, nicheConfig, dentistBatch);
           if (scored.usedAiFallback) failedAIScores += 1;
           if (nicheConfig.id === "dentists" && scored.dentistScoringMeta) {
             dentistScoringLog.push({
@@ -219,6 +226,10 @@ export async function POST(request: Request) {
         })
       );
       console.log(`[api/search] scoredCount=${scoredLeads.length} failedAIScores=${failedAIScores}`);
+      {
+        const sortedForTop = sortByPriorityThenScore(scoredLeads);
+        logSearchPrioritySummary(scoredLeads, Math.min(10, sortedForTop.length));
+      }
       if (nicheConfig.id === "dentists") {
         logDentistScoringBatch(dentistScoringLog);
       }
