@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { BrandMark } from "@/components/brand-mark";
 import { buttonVariants } from "@/lib/button-variants";
+import { SITE } from "@/lib/site-config";
 import { cn } from "@/lib/utils";
 
 export default function NotFound() {
@@ -18,7 +19,7 @@ export default function NotFound() {
               "border-white bg-transparent text-white hover:bg-white/10"
             )}
           >
-            Get My Lead Pack
+            {SITE.primaryCta}
           </Link>
         </div>
       </header>
@@ -41,7 +42,7 @@ export default function NotFound() {
               "w-full border-slate-300 sm:w-auto"
             )}
           >
-            Run a search
+            {SITE.primaryCta}
           </Link>
         </div>
       </main>

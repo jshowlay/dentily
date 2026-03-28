@@ -9,6 +9,7 @@ import { sanitizeLeadsForClient } from "@/lib/client-leads";
 import { getSearchWithLeads, isDatabaseConfigured } from "@/lib/db";
 import { canExportLeadPack } from "@/lib/search-status";
 import { getNicheConfig } from "@/lib/niches";
+import { SITE } from "@/lib/site-config";
 
 export const dynamic = "force-dynamic";
 
@@ -120,6 +121,23 @@ export default async function ResultsPage({
                 </CardContent>
               </Card>
 
+              <Card className="border-slate-200 bg-slate-50/80">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">How priority &amp; scores work</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-xs leading-relaxed text-slate-600">
+                  <p>
+                    <span className="font-semibold text-slate-800">Bands:</span> High is typically score 60+, Medium
+                    45–59, Low under 45. When fewer than five leads land in High on score alone, we label the
+                    next-best scorers as High so your pack always has a clear starting point.
+                  </p>
+                  <p>
+                    Open <span className="font-medium text-slate-800">Why this score?</span> on any row for factors drawn
+                    from the listing (ratings, reviews, website, phone, signal type).
+                  </p>
+                </CardContent>
+              </Card>
+
               <Card>
                 <CardContent className="flex flex-col gap-4 pt-6 sm:flex-row sm:items-start sm:justify-between">
                   <p className="text-sm text-slate-700">
@@ -139,9 +157,10 @@ export default async function ResultsPage({
                       <div className="flex w-full max-w-sm flex-col gap-3 sm:shrink-0">
                         <p className="text-sm font-medium text-slate-900">Unlock your full lead pack</p>
                         <p className="text-sm text-slate-600">
-                          Pay once ($49) for instant download — prioritized practices and outreach included.
+                          Pay once ({SITE.leadPackPriceLabel}) for instant download — prioritized practices and outreach
+                          included.
                         </p>
-                        <BuyLeadPackButton searchId={parsed.id} label="Get My Lead Pack" className="w-full sm:w-auto" />
+                        <BuyLeadPackButton searchId={parsed.id} className="w-full sm:w-auto" />
                         <Link
                           href={`/pricing?searchId=${parsed.id}`}
                           className="text-sm text-slate-600 underline underline-offset-4 hover:text-slate-900"
@@ -167,7 +186,9 @@ export default async function ResultsPage({
                     </p>
                   ) : null}
                   {parsed.leads.length > 0 ? (
-                    <LeadsTable leads={sanitizeLeadsForClient(parsed.leads)} />
+                    <div className="-mx-2 overflow-x-auto px-2 md:mx-0 md:overflow-visible md:px-0">
+                      <LeadsTable leads={sanitizeLeadsForClient(parsed.leads)} />
+                    </div>
                   ) : (
                     <p className="text-slate-700">No leads found for this search.</p>
                   )}

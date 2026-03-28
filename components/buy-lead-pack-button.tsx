@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { SITE } from "@/lib/site-config";
 
 type Props = {
   searchId: number;
@@ -9,7 +10,7 @@ type Props = {
   className?: string;
 };
 
-export function BuyLeadPackButton({ searchId, label = "Get My Lead Pack", className }: Props) {
+export function BuyLeadPackButton({ searchId, label = SITE.unlockCta, className }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

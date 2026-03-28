@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { BrandMark } from "@/components/brand-mark";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PricingFaq } from "@/components/pricing-faq";
 import { BuyLeadPackButton } from "@/components/buy-lead-pack-button";
+import { buttonVariants } from "@/lib/button-variants";
+import { SITE } from "@/lib/site-config";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 export default async function PricingPage({
   searchParams,
@@ -15,58 +19,91 @@ export default async function PricingPage({
 
   return (
     <main className="min-h-screen bg-white">
-      <header className="w-full bg-black py-4 text-white">
-        <div className="container-page flex items-center justify-between">
-          <BrandMark />
-          <div className="flex gap-3">
-            <Link href="/" className="text-sm underline">
+      <header className="w-full border-b border-white/10 bg-black py-4 text-white">
+        <div className="container-page flex flex-wrap items-center justify-between gap-3">
+          <Link href="/" className="text-white no-underline">
+            <BrandMark />
+          </Link>
+          <div className="flex flex-wrap items-center gap-4 text-sm">
+            <Link href="/#how-it-works" className="text-white/90 underline-offset-4 hover:underline">
+              How it works
+            </Link>
+            <Link href="/" className="text-white/90 underline-offset-4 hover:underline">
               Home
+            </Link>
+            <Link
+              href="/search"
+              className={cn(
+                buttonVariants({ variant: "outline", size: "default" }),
+                "border-white bg-white text-black hover:bg-slate-100"
+              )}
+            >
+              {SITE.primaryCta}
             </Link>
           </div>
         </div>
       </header>
 
-      <section className="container-page py-10">
+      <section className="container-page py-12 md:py-16">
         <div className="mx-auto max-w-lg">
-          <Card>
+          <p className="text-center text-xs font-semibold uppercase tracking-wide text-slate-500">Pricing</p>
+          <h1 className="mt-2 text-center text-3xl font-bold text-slate-900">{SITE.leadPackName}</h1>
+          <p className="mx-auto mt-2 max-w-md text-center text-sm text-slate-600">
+            One-time purchase. Full CSV after checkout. Built for dental teams prioritizing specialty growth.
+          </p>
+
+          <Card className="mt-10 border-2 border-slate-900 shadow-lg">
             <CardHeader>
-              <CardTitle>Dentily Dental Lead Pack</CardTitle>
+              <CardTitle className="text-2xl">{SITE.leadPackPriceLabel}</CardTitle>
+              <CardDescription>One-time payment · USD · no subscription</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div>
-                <p className="text-4xl font-bold">$49</p>
-                <p className="text-sm text-slate-600">One-time payment · USD</p>
-              </div>
               <p className="text-sm text-slate-700">
-                50 high-opportunity dental practices with prioritized insights and ready-to-use outreach messages.
+                {SITE.leadPackCount} scored local dental practices with priorities, short rationale, and outreach
+                drafts oriented toward high-value patient demand.
               </p>
-              <ul className="list-inside list-disc space-y-2 text-sm text-slate-700">
-                <li>50 qualified dental leads</li>
-                <li>Patient-growth insights</li>
-                <li>Outreach messages included</li>
-                <li>Instant download</li>
+              <ul className="space-y-2 text-sm text-slate-700">
+                <li className="flex gap-2">
+                  <span className="text-green-600">✓</span> High / medium / low priority tiers
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-green-600">✓</span> Contact fields when available on the listing
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-green-600">✓</span> Instant CSV download after payment
+                </li>
               </ul>
-              <p className="text-center text-xs text-slate-500">
-                Limited to one lead pack per area to avoid overlap.
+              <p className="text-center text-xs font-medium text-slate-600">
+                Limited to one lead pack per area to reduce overlap.
               </p>
 
               {validSearchId ? (
                 <>
-                  <BuyLeadPackButton searchId={validSearchId} label="Get My Lead Pack" className="w-full" />
-                  <p className="text-center text-xs text-slate-500">Simple, affordable, and ready to use today.</p>
+                  <BuyLeadPackButton searchId={validSearchId} label={SITE.unlockCta} className="w-full" />
+                  <p className="text-center text-xs text-slate-500">
+                    You will return here if checkout is canceled; success opens the download flow.
+                  </p>
                 </>
               ) : (
                 <div className="space-y-3">
                   <p className="text-sm text-slate-600">
-                    Run a search first, then return here from your results page, or use the unlock button there.
+                    Run a search first, then unlock from the results page — or open this page again with your search link.
                   </p>
-                  <Link href="/search" className="inline-flex h-10 w-full items-center justify-center rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-900 transition-colors hover:bg-slate-100">
-                    Get My Lead Pack
+                  <Link
+                    href="/search"
+                    className={cn(
+                      buttonVariants({ size: "lg" }),
+                      "flex h-11 w-full items-center justify-center"
+                    )}
+                  >
+                    {SITE.primaryCta}
                   </Link>
                 </div>
               )}
             </CardContent>
           </Card>
+
+          <PricingFaq />
         </div>
       </section>
     </main>

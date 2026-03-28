@@ -13,7 +13,7 @@ export function BrandMark({
       <p className="text-lg font-semibold leading-tight">
         Dentily{variant === "admin" ? " Admin" : ""}
       </p>
-      <p className="text-[11px] font-medium leading-tight text-white/65">Find Your Next Patients</p>
+      <p className="text-[11px] font-medium leading-tight text-white/65">High-intent patient growth</p>
     </div>
   );
 }

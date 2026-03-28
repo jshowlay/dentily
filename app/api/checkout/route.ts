@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSearchRowForPayment } from "@/lib/db";
+import { SITE } from "@/lib/site-config";
 import { getAppBaseUrl, getStripe } from "@/lib/stripe";
 
 export const dynamic = "force-dynamic";
@@ -24,7 +25,7 @@ export async function POST(request: Request) {
     }
 
     const stripe = getStripe();
-    const base = getAppBaseUrl();
+    const base = getAppBaseUrl(request);
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
@@ -33,7 +34,7 @@ export async function POST(request: Request) {
           price_data: {
             currency: "usd",
             product_data: {
-              name: "Dentily Dental Lead Pack",
+              name: SITE.leadPackName,
               description:
                 "50 high-opportunity dental practices with prioritized insights and ready-to-use outreach messages.",
             },

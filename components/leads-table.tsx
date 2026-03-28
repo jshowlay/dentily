@@ -1,3 +1,4 @@
+import { describeScoreFactors } from "@/lib/lead-score-factors";
 import { Lead } from "@/lib/types";
 import { CopyButton } from "@/components/copy-button";
 import {
@@ -58,6 +59,7 @@ export function LeadsTable({ leads }: { leads: Lead[] }) {
           <TableHead>Rating</TableHead>
           <TableHead>Reviews</TableHead>
           <TableHead>Score</TableHead>
+          <TableHead className="min-w-[140px]">Why this score?</TableHead>
           <TableHead>Reason</TableHead>
           <TableHead>Outreach</TableHead>
           <TableHead>Google Maps</TableHead>
@@ -124,6 +126,18 @@ export function LeadsTable({ leads }: { leads: Lead[] }) {
               <span className="inline-flex min-w-[2.25rem] items-center justify-center rounded-md border border-slate-200 bg-white px-2 py-1 text-sm font-bold tabular-nums text-slate-900 shadow-sm">
                 {lead.score ?? "—"}
               </span>
+            </TableCell>
+            <TableCell className="align-top text-xs text-slate-600">
+              <details className="group">
+                <summary className="cursor-pointer list-none font-medium text-blue-700 underline-offset-2 hover:underline [&::-webkit-details-marker]:hidden">
+                  View factors
+                </summary>
+                <ul className="mt-2 max-w-[260px] space-y-1.5 border-l-2 border-slate-200 pl-2.5 text-left leading-snug text-slate-600">
+                  {describeScoreFactors(lead).map((line, i) => (
+                    <li key={`${lead.placeId}-${i}`}>{line}</li>
+                  ))}
+                </ul>
+              </details>
             </TableCell>
             <TableCell className="max-w-[300px] text-sm leading-snug text-slate-800">{lead.reason ?? "—"}</TableCell>
             <TableCell className="space-y-2">

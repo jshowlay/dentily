@@ -141,8 +141,40 @@ export function classifyOpportunityType(lead: Lead): string {
   return "general_growth";
 }
 
+/**
+ * Final score bands (after rule base + AI ±8). Slightly wider High tier so packs feel actionable;
+ * top-of-pack promotion (see ensureMinimumHighPriority) handles sparse highs.
+ */
 export function classifyPriorityFromScore(score: number): "high" | "medium" | "low" {
-  if (score >= 65) return "high";
-  if (score >= 50) return "medium";
+  if (score >= 60) return "high";
+  if (score >= 45) return "medium";
   return "low";
+}
+
+/**
+ * If fewer than minHigh leads are High, promote the next-best scorers to High (same numeric score;
+ * label reflects "start here" ordering). Keeps exports and UI from showing zero highs.
+ */
+export function ensureMinimumHighPriority<T extends { score?: number; priority?: string | null }>(
+  leads: T[],
+  opts?: { minHigh?: number }
+): T[] {
+  const minHigh = opts?.minHigh ?? 5;
+  if (leads.length === 0) return leads;
+  const out = leads.map((l) => ({ ...l }));
+  let highCount = out.filter((l) => (l.priority ?? "").toLowerCase() === "high").length;
+  if (highCount >= minHigh) return out;
+
+  const byScore = out
+    .map((l, idx) => ({ idx, s: typeof l.score === "number" ? l.score : -1 }))
+    .sort((a, b) => b.s - a.s);
+
+  for (const { idx } of byScore) {
+    if (highCount >= minHigh) break;
+    if ((out[idx].priority ?? "").toLowerCase() !== "high") {
+      out[idx] = { ...out[idx], priority: "high" };
+      highCount += 1;
+    }
+  }
+  return out;
 }
