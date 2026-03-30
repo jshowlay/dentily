@@ -8,10 +8,8 @@ import { logSearchPrioritySummary, sortByPriorityThenScore } from "@/lib/lead-pa
 import { scoreLead } from "@/lib/score-lead";
 import { logDentistScoringBatch } from "@/lib/scoring-log";
 import { Lead } from "@/lib/types";
-import { batchEnrichLeads } from "@/lib/email-enrichment";
-import { enrichmentOverridesForSearchApi } from "@/lib/email-enrichment-config";
 import { getNicheConfig } from "@/lib/niches";
-import { EMPTY_LEAD_ENRICHMENT } from "@/lib/types";
+import { EMPTY_LEAD_ENRICHMENT, PENDING_ENRICHMENT } from "@/lib/types";
 
 const TARGET_LEAD_COUNT = 50;
 
@@ -277,14 +275,15 @@ export async function POST(request: Request) {
         logDentistScoringBatch(dentistScoringLog);
       }
 
-      console.log(`[api/search] emailEnrichment start count=${scoredLeads.length}`);
-      const enrichedLeads = await batchEnrichLeads(
-        scoredLeads,
-        enrichmentOverridesForSearchApi()
+      const leadsForInsert = scoredLeads.map((l) => ({
+        ...l,
+        ...PENDING_ENRICHMENT,
+      }));
+      console.log(
+        `[api/search] insert fast path count=${leadsForInsert.length} (email enrich runs via POST /api/search/${searchId}/enrich)`
       );
-      console.log(`[api/search] emailEnrichment done count=${enrichedLeads.length}`);
 
-      const inserted = await insertLeads(searchId, enrichedLeads);
+      const inserted = await insertLeads(searchId, leadsForInsert);
       console.log(`[api/search] dbInsertedLeads count=${inserted}`);
       await setSearchStatus(searchId, "completed", { resultCount: inserted });
       const savedSearch = await getSearchWithLeads(searchId);

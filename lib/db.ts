@@ -1,5 +1,8 @@
 import { Pool, PoolClient } from "pg";
-import { outreachReadinessFromEmailStatus } from "@/lib/outreach-readiness";
+import {
+  isLeadContactable,
+  outreachReadinessFromContactSignals,
+} from "@/lib/outreach-readiness";
 import type { EmailStatus, ExportLeadRow, Lead, SearchWithLeads } from "@/lib/types";
 
 function parseEmailStatus(value: unknown): EmailStatus | null {
@@ -11,6 +14,7 @@ function parseEmailStatus(value: unknown): EmailStatus | null {
     "not_found",
     "invalid",
     "skipped",
+    "pending",
   ];
   return allowed.includes(s as EmailStatus) ? (s as EmailStatus) : null;
 }
@@ -337,6 +341,79 @@ export async function insertLeads(searchId: number, leads: Lead[]): Promise<numb
   return 0;
 }
 
+/** Apply website enrichment results to existing rows (second pass). */
+export async function updateLeadsEnrichmentForSearch(searchId: number, leads: Lead[]): Promise<void> {
+  if (leads.length === 0) return;
+  const client = await getPool().connect();
+  try {
+    await client.query("BEGIN");
+    for (const lead of leads) {
+      await client.query(
+        `UPDATE leads SET
+          primary_email = $1,
+          email = $1,
+          contact_form_url = $2,
+          email_status = $3,
+          email_source = $4,
+          enrichment_notes = $5
+        WHERE search_id = $6 AND place_id = $7`,
+        [
+          lead.primaryEmail,
+          lead.contactFormUrl,
+          lead.emailStatus,
+          lead.emailSource,
+          lead.enrichmentNotes,
+          searchId,
+          lead.placeId,
+        ]
+      );
+    }
+    await client.query("COMMIT");
+  } catch (error) {
+    try {
+      await client.query("ROLLBACK");
+    } catch {
+      /* ignore */
+    }
+    throw error;
+  } finally {
+    safeReleaseClient(client);
+  }
+}
+
+/** When enrichment is disabled, clear pending so exports are not stuck in "pending". */
+export async function markPendingLeadsEnrichmentSkipped(
+  searchId: number,
+  placeIds: string[],
+  notes: string
+): Promise<number> {
+  if (placeIds.length === 0) return 0;
+  const client = await getPool().connect();
+  try {
+    let n = 0;
+    await client.query("BEGIN");
+    for (const pid of placeIds) {
+      const res = await client.query(
+        `UPDATE leads SET email_status = 'skipped', enrichment_notes = $1, email_source = NULL
+         WHERE search_id = $2 AND place_id = $3 AND email_status = 'pending'`,
+        [notes, searchId, pid]
+      );
+      n += res.rowCount ?? 0;
+    }
+    await client.query("COMMIT");
+    return n;
+  } catch (error) {
+    try {
+      await client.query("ROLLBACK");
+    } catch {
+      /* ignore */
+    }
+    throw error;
+  } finally {
+    safeReleaseClient(client);
+  }
+}
+
 export async function getSearchWithLeads(searchId: number): Promise<SearchWithLeads | null> {
   for (let attempt = 1; attempt <= 2; attempt += 1) {
     let client: PoolClient | null = null;
@@ -450,7 +527,13 @@ export async function getSearchForExport(searchId: number): Promise<{
 
     const rows: ExportLeadRow[] = leadsRes.rows.map((r: any) => {
       const primary = (r.primary_email ?? r.email) ?? null;
-      const es = parseEmailStatus(r.email_status) ?? "skipped";
+      const es = parseEmailStatus(r.email_status);
+      const signalLead = {
+        primaryEmail: primary,
+        contactFormUrl: r.contact_form_url ?? null,
+        phone: r.phone ?? null,
+        emailStatus: es,
+      };
       return {
         name: r.name ?? null,
         address: r.address ?? null,
@@ -461,7 +544,8 @@ export async function getSearchForExport(searchId: number): Promise<{
         email_status: r.email_status ?? null,
         email_source: r.email_source ?? null,
         enrichment_notes: r.enrichment_notes ?? null,
-        outreach_readiness: outreachReadinessFromEmailStatus(es),
+        contactable: isLeadContactable(signalLead),
+        outreach_readiness: outreachReadinessFromContactSignals(signalLead),
         rating: r.rating !== null && r.rating !== undefined ? Number(r.rating) : null,
         review_count: r.review_count ?? null,
         score: r.score ?? null,

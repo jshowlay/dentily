@@ -1,8 +1,8 @@
 /**
  * Email / website enrichment tuning. Env overrides optional.
  *
- * Enrichment runs after scoring in `app/api/search/route.ts` (see `batchEnrichLeads`).
- * Fallback: when no valid email is found, we store a contact-form page URL when detectable.
+ * Enrichment is optional and non-blocking: `/api/search` saves leads with `email_status=pending`,
+ * then `POST /api/search/[id]/enrich` runs a shallow crawl in the background.
  */
 
 export type EmailEnrichmentRuntimeConfig = {
@@ -31,6 +31,14 @@ function parseIntEnv(key: string, fallback: number): number {
   return Number.isFinite(n) && n > 0 ? n : fallback;
 }
 
+/** Non-negative integers (0 = homepage-only crawl). */
+function parseIntEnvNonNeg(key: string, fallback: number): number {
+  const v = process.env[key]?.trim();
+  if (!v) return fallback;
+  const n = Number.parseInt(v, 10);
+  return Number.isFinite(n) && n >= 0 ? Math.min(8, n) : fallback;
+}
+
 export function isEmailEnrichmentDisabled(): boolean {
   const v = process.env.DENTILY_DISABLE_EMAIL_ENRICHMENT?.trim().toLowerCase();
   return v === "1" || v === "true" || v === "yes";
@@ -39,29 +47,36 @@ export function isEmailEnrichmentDisabled(): boolean {
 export function loadEmailEnrichmentConfig(): EmailEnrichmentRuntimeConfig {
   return {
     requestTimeoutMs: parseIntEnv("DENTILY_ENRICH_TIMEOUT_MS", DEFAULTS.requestTimeoutMs),
-    maxInternalPages: Math.min(8, Math.max(1, parseIntEnv("DENTILY_ENRICH_MAX_PAGES", DEFAULTS.maxInternalPages))),
-    concurrency: Math.min(4, Math.max(1, parseIntEnv("DENTILY_ENRICH_CONCURRENCY", DEFAULTS.concurrency))),
-    retryCount: Math.min(5, Math.max(0, parseIntEnv("DENTILY_ENRICH_RETRIES", DEFAULTS.retryCount))),
-    politeDelayMs: parseIntEnv("DENTILY_ENRICH_DELAY_MS", DEFAULTS.politeDelayMs),
+    maxInternalPages: parseIntEnvNonNeg("DENTILY_ENRICH_MAX_PAGES", DEFAULTS.maxInternalPages),
+    concurrency: Math.min(8, Math.max(1, parseIntEnv("DENTILY_ENRICH_CONCURRENCY", DEFAULTS.concurrency))),
+    retryCount: Math.min(5, Math.max(0, parseIntEnvNonNeg("DENTILY_ENRICH_RETRIES", DEFAULTS.retryCount))),
+    politeDelayMs: parseIntEnvNonNeg("DENTILY_ENRICH_DELAY_MS", DEFAULTS.politeDelayMs),
     userAgent: process.env.DENTILY_ENRICH_USER_AGENT?.trim() || DEFAULTS.userAgent,
   };
 }
 
 /**
- * `/api/search` runs in one browser request; deep per-site crawling for ~50 leads often exceeds
- * proxy/browser patience and surfaces as "Failed to fetch". These overrides keep enrichment useful
- * (homepage + one follow-up path) while finishing reliably. Opt into full crawl with
- * `DENTILY_FULL_SEARCH_ENRICHMENT=1` (may still need a long `maxDuration` on Vercel).
+ * Background enrich pass: homepage by default; set DENTILY_ENRICH_EXTRA_PAGES=1 to allow one
+ * likely contact page. Hard caps on timeout/retries; no deep crawl.
+ * DENTILY_FULL_ENRICHMENT=1 restores deeper crawl (max pages from env, up to 8).
  */
-export function enrichmentOverridesForSearchApi(): Partial<EmailEnrichmentRuntimeConfig> {
+export function backgroundEnrichmentOverrides(): Partial<EmailEnrichmentRuntimeConfig> {
   if (isEmailEnrichmentDisabled()) return {};
-  const full = process.env.DENTILY_FULL_SEARCH_ENRICHMENT?.trim().toLowerCase();
-  if (full === "1" || full === "true" || full === "yes") return {};
+  const full = process.env.DENTILY_FULL_ENRICHMENT?.trim().toLowerCase();
+  if (full === "1" || full === "true" || full === "yes") {
+    return {
+      retryCount: Math.min(2, parseIntEnvNonNeg("DENTILY_ENRICH_RETRIES", 2)),
+      requestTimeoutMs: Math.min(12_000, parseIntEnv("DENTILY_ENRICH_TIMEOUT_MS", 12_000)),
+      politeDelayMs: 150,
+      concurrency: 5,
+    };
+  }
+  const extraPages = parseIntEnvNonNeg("DENTILY_ENRICH_EXTRA_PAGES", 0);
   return {
-    maxInternalPages: 1,
+    maxInternalPages: Math.min(1, extraPages),
     retryCount: 1,
-    requestTimeoutMs: Math.min(parseIntEnv("DENTILY_ENRICH_TIMEOUT_MS", 10_000), 10_000),
-    politeDelayMs: 100,
-    concurrency: 6,
+    requestTimeoutMs: Math.min(8_000, parseIntEnv("DENTILY_ENRICH_TIMEOUT_MS", 8_000)),
+    politeDelayMs: 80,
+    concurrency: 8,
   };
 }

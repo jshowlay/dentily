@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { outreachReadinessFromEmailStatus } from "@/lib/outreach-readiness";
+import { outreachReadinessFromContactSignals } from "@/lib/outreach-readiness";
 import type { EmailStatus } from "@/lib/types";
 
 type AdminLead = {
@@ -57,8 +57,8 @@ function priorityBadge(priority: string | null | undefined) {
   return <span className="text-slate-400">—</span>;
 }
 
-function readinessLabel(status: EmailStatus | null) {
-  const r = outreachReadinessFromEmailStatus(status ?? undefined);
+function readinessLabel(lead: AdminLead) {
+  const r = outreachReadinessFromContactSignals(lead);
   if (r === "high") return <span className="text-emerald-700">High</span>;
   if (r === "medium") return <span className="text-amber-800">Medium</span>;
   return <span className="text-slate-500">Low</span>;
@@ -141,7 +141,7 @@ export function AdminLeadsTable({ leads }: { leads: AdminLead[] }) {
               <TableCell className="max-w-[200px] truncate text-xs" title={l.primaryEmail ?? ""}>
                 {l.primaryEmail ?? "-"}
               </TableCell>
-              <TableCell className="text-xs">{readinessLabel(l.emailStatus)}</TableCell>
+              <TableCell className="text-xs">{readinessLabel(l)}</TableCell>
               <TableCell className="text-xs text-slate-600">{l.emailStatus?.replace(/_/g, " ") ?? "—"}</TableCell>
             </TableRow>
           ))}

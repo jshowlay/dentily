@@ -1,5 +1,20 @@
 import { buildCsv } from "@/lib/csv";
-import type { ExportLeadRow } from "@/lib/types";
+import { outreachReadinessFromContactSignals } from "@/lib/outreach-readiness";
+import type { EmailStatus, ExportLeadRow } from "@/lib/types";
+
+function coerceEmailStatus(raw: string | null | undefined): EmailStatus | null {
+  if (!raw?.trim()) return null;
+  const v = raw.trim().toLowerCase().replace(/\s+/g, "_");
+  const allowed: EmailStatus[] = [
+    "found",
+    "contact_form_only",
+    "not_found",
+    "invalid",
+    "skipped",
+    "pending",
+  ];
+  return allowed.includes(v as EmailStatus) ? (v as EmailStatus) : null;
+}
 
 /** Sort: priority high → medium → low, then score descending. */
 export function priorityRank(priority: string | null | undefined): number {
@@ -157,22 +172,12 @@ export type TopLeadEligibilityInput = {
   email_status: string | null | undefined;
 };
 
-/**
- * Top Lead = reachable AND not the "lost digital path" combo (no form + email not found).
- * Phone alone does not qualify when enrichment failed to find email or form URL.
- */
+/** Top Lead = contactable via email, form, or phone (Maps-backed paths count). */
 export function isEligibleForTopLead(row: TopLeadEligibilityInput): boolean {
   const hasEmail = Boolean(csvCell(row.primary_email));
   const hasForm = Boolean(csvCell(row.contact_form_url));
   const hasPhone = Boolean(csvCell(row.phone));
-  const reachable = hasEmail || hasForm || hasPhone;
-  if (!reachable) return false;
-
-  const st = csvCell(row.email_status).toLowerCase().replace(/\s+/g, "_");
-  const noForm = !hasForm;
-  if (st === "not_found" && noForm) return false;
-
-  return true;
+  return hasEmail || hasForm || hasPhone;
 }
 
 /** Indices of the first `maxTop` eligible rows in sort order (for promoting next-best reachable leads). */
@@ -240,10 +245,18 @@ export function buildLeadPackRowsFromExport(sorted: ExportRowWithWhy[]): LeadPac
         contact_form_url: r.contact_form_url,
         phone: r.phone,
       }),
+      contactable: r.contactable ? "Yes" : "No",
       email_status: formatStatusLabel(r.email_status),
       email_source: formatStatusLabel(r.email_source),
       enrichment_notes: cleanedNotes,
-      outreach_readiness: formatOutreachReadinessLabel(r.outreach_readiness),
+      outreach_readiness: formatOutreachReadinessLabel(
+        outreachReadinessFromContactSignals({
+          primaryEmail: r.primary_email,
+          contactFormUrl: r.contact_form_url,
+          phone: r.phone,
+          emailStatus: coerceEmailStatus(r.email_status),
+        })
+      ),
       estimated_opportunity: computeEstimatedOpportunity({
         website: r.website,
         rating: r.rating,
@@ -272,6 +285,7 @@ export type LeadPackCsvRow = {
   other_emails: string;
   contact_form_url: string;
   best_contact_method: string;
+  contactable: string;
   email_status: string;
   email_source: string;
   enrichment_notes: string;
@@ -298,6 +312,7 @@ const CSV_COLUMN_ORDER: Array<{ key: keyof LeadPackCsvRow; label: string }> = [
   { key: "other_emails", label: "Other Emails" },
   { key: "contact_form_url", label: "Contact Form URL" },
   { key: "best_contact_method", label: "Best Contact Method" },
+  { key: "contactable", label: "Contactable" },
   { key: "email_status", label: "Email Status" },
   { key: "email_source", label: "Email Source" },
   { key: "enrichment_notes", label: "Enrichment Notes" },

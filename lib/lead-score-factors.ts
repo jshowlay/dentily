@@ -49,16 +49,20 @@ export function describeScoreFactors(lead: Lead): string[] {
   const es = lead.emailStatus;
   if (lead.primaryEmail?.trim()) {
     lines.push(
-      `Enriched email on file${lead.emailSource ? ` (${lead.emailSource.replace(/_/g, " ")})` : ""}`
+      `Mailbox on file — best path: email${lead.emailSource ? ` (${lead.emailSource.replace(/_/g, " ")})` : ""}`
     );
-  } else if (es === "contact_form_only" && lead.contactFormUrl?.trim()) {
-    lines.push("Contact form URL detected — no public mailbox found on crawled pages");
+  } else if (lead.contactFormUrl?.trim() || es === "contact_form_only") {
+    lines.push("Best path: website contact form (when no public email yet)");
+  } else if (lead.phone?.trim()) {
+    lines.push("Best path: phone from Maps — pack is actionable without email");
+  } else if (es === "pending") {
+    lines.push("Optional website email check may still run — use phone or Maps meanwhile");
   } else if (es === "skipped") {
-    lines.push("Email enrichment skipped (no website to crawl)");
+    lines.push("No email scrape on this row — use phone, Maps, or manual research");
   } else if (es === "invalid") {
-    lines.push("Email enrichment: invalid candidate discarded");
-  } else if (es === "not_found" || es === null) {
-    lines.push("No verified business email extracted from the public site");
+    lines.push("Quick site check discarded a bad address — prefer phone or form");
+  } else if (es === "not_found") {
+    lines.push("No email on quick homepage pass — normal; use phone or form if listed");
   }
 
   if (lead.mapsUrl) {

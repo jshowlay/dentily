@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { sanitizeLeadsForClient } from "@/lib/client-leads";
 import { getSearchWithLeads, isDatabaseConfigured } from "@/lib/db";
 import { canExportLeadPack } from "@/lib/search-status";
+import { DeferredEnrichment } from "@/components/deferred-enrichment";
 import { HowToUsePack } from "@/components/how-to-use-pack";
 import { getNicheConfig } from "@/lib/niches";
 import { SITE } from "@/lib/site-config";
@@ -89,6 +90,9 @@ export default async function ResultsPage({
             </Card>
           ) : parsed ? (
             <div className="space-y-4">
+              {parsed.status !== "failed" && parsed.leads.length > 0 ? (
+                <DeferredEnrichment searchId={parsed.id} />
+              ) : null}
               <Card>
                 <CardHeader>
                   <CardTitle>Opportunity pack summary</CardTitle>
@@ -142,8 +146,11 @@ export default async function ResultsPage({
               <Card>
                 <CardContent className="flex flex-col gap-4 pt-6 sm:flex-row sm:items-start sm:justify-between">
                   <p className="text-sm text-slate-700">
-                    Scored local practices for B2B outreach — not consumer patient data. Review priorities and outreach
-                    drafts, then unlock the CSV when you are ready.
+                    Scored local practices for B2B outreach — not consumer patient data. Each row is actionable by{" "}
+                    <span className="font-medium text-slate-800">phone</span>,{" "}
+                    <span className="font-medium text-slate-800">contact form</span>, or{" "}
+                    <span className="font-medium text-slate-800">email</span> when found. An optional shallow website
+                    check may add an email after this page loads; it never blocks your results.
                   </p>
                   {canExport ? (
                     parsed.isPaid ? (

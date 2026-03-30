@@ -1,12 +1,9 @@
 /**
- * Website email + contact-form enrichment for practice leads.
+ * Website email + contact-form enrichment for practice leads (optional second pass).
  *
- * Runs in the search pipeline (`app/api/search/route.ts`) after AI scoring via `batchEnrichLeads`.
- * Fetches the homepage (timeout + retries), parses mailto/body/footer emails with cheerio helpers,
- * then follows up to N internal paths like /contact. If no valid mailbox is found, we store a
- * contact-form URL when a form or scheduling link is detected (`email_status: contact_form_only`).
- *
- * Config / env: `lib/email-enrichment-config.ts` (timeouts, concurrency, delays, user-agent, disable flag).
+ * Does not block `/api/search`: leads are saved with `email_status: pending`, then
+ * `POST /api/search/[id]/enrich` runs `batchEnrichLeads` with shallow limits from
+ * `lib/email-enrichment-config.ts` (`backgroundEnrichmentOverrides`).
  */
 
 import {

@@ -1,4 +1,11 @@
-export type EmailStatus = "found" | "contact_form_only" | "not_found" | "invalid" | "skipped";
+export type EmailStatus =
+  | "found"
+  | "contact_form_only"
+  | "not_found"
+  | "invalid"
+  | "skipped"
+  /** Website crawl not run yet — fast path; optional background enrich may update. */
+  | "pending";
 
 export type EmailSource =
   | "website"
@@ -57,6 +64,18 @@ export const EMPTY_LEAD_ENRICHMENT: Pick<
   enrichmentNotes: null,
 };
 
+/** Insert after scoring: no blocking crawl; `/api/search/[id]/enrich` may fill later. */
+export const PENDING_ENRICHMENT: Pick<
+  Lead,
+  "primaryEmail" | "contactFormUrl" | "emailStatus" | "emailSource" | "enrichmentNotes"
+> = {
+  primaryEmail: null,
+  contactFormUrl: null,
+  emailStatus: "pending",
+  emailSource: null,
+  enrichmentNotes: null,
+};
+
 export type SearchPayload = {
   niche: string;
   location: string;
@@ -97,6 +116,8 @@ export type ExportLeadRow = {
   email_status: string | null;
   email_source: string | null;
   enrichment_notes: string | null;
+  /** At least one of email, form URL, or phone. */
+  contactable: boolean;
   outreach_readiness: string | null;
   rating: number | null;
   review_count: number | null;

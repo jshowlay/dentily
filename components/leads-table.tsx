@@ -1,5 +1,9 @@
 import { describeScoreFactors } from "@/lib/lead-score-factors";
-import { outreachReadinessFromEmailStatus } from "@/lib/outreach-readiness";
+import { computeBestContactMethod } from "@/lib/lead-pack-export";
+import {
+  isLeadContactable,
+  outreachReadinessFromContactSignals,
+} from "@/lib/outreach-readiness";
 import { Lead } from "@/lib/types";
 import { CopyButton } from "@/components/copy-button";
 import {
@@ -45,7 +49,7 @@ function opportunityLabel(type: string | null | undefined) {
 }
 
 function outreachReadinessBadge(lead: Lead) {
-  const r = outreachReadinessFromEmailStatus(lead.emailStatus);
+  const r = outreachReadinessFromContactSignals(lead);
   if (r === "high") {
     return (
       <span className="rounded-md border border-emerald-500 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-900">
@@ -62,6 +66,17 @@ function outreachReadinessBadge(lead: Lead) {
   }
   return (
     <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs text-slate-600">Low</span>
+  );
+}
+
+function contactableBadge(lead: Lead) {
+  const ok = isLeadContactable(lead);
+  return ok ? (
+    <span className="rounded-md border border-emerald-200 bg-emerald-50/80 px-2 py-0.5 text-xs font-medium text-emerald-900">
+      Yes
+    </span>
+  ) : (
+    <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs text-slate-600">No</span>
   );
 }
 
@@ -146,6 +161,14 @@ export function LeadsTable({ leads }: { leads: Lead[] }) {
               )}
             </TableCell>
             <TableCell>{lead.phone ?? "N/A"}</TableCell>
+            <TableCell>{contactableBadge(lead)}</TableCell>
+            <TableCell className="whitespace-nowrap text-xs text-slate-700">
+              {computeBestContactMethod({
+                primary_email: lead.primaryEmail,
+                contact_form_url: lead.contactFormUrl,
+                phone: lead.phone,
+              })}
+            </TableCell>
             <TableCell>{outreachReadinessBadge(lead)}</TableCell>
             <TableCell className="max-w-[200px] text-xs">
               {lead.primaryEmail ? (
