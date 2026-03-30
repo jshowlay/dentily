@@ -31,7 +31,7 @@ function LandingHeader() {
           <BrandMark />
         </Link>
         <nav className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-white/90">
-          <Link href="/#about-dentily" className="underline-offset-4 hover:underline">
+          <Link href="#about" className="underline-offset-4 hover:underline">
             About
           </Link>
           <Link href="/#what-you-get" className="underline-offset-4 hover:underline">
@@ -110,6 +110,23 @@ export function DentistLanding() {
             {POSITIONING.heroSupportLine}
           </p>
           <p className="mt-4 text-xs text-slate-500">{POSITIONING.heroMicrocopy}</p>
+        </div>
+      </section>
+
+      {/* About Dentily */}
+      <section id="about" className="scroll-mt-20 border-t border-slate-200 bg-white py-12 md:py-14">
+        <div className="container-page mx-auto max-w-2xl text-center">
+          <h2 className="text-2xl font-bold text-slate-900 md:text-3xl">About Dentily</h2>
+          <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-slate-600">
+            Dentily is a lead intelligence platform built for agencies, freelancers, and consultants.
+          </p>
+          <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-slate-600">
+            We help you identify high-opportunity dental practices and start outreach faster with clear insights and
+            actionable lead data.
+          </p>
+          <p className="mt-3 text-xs text-slate-500">
+            Dentily is not a dental clinic or patient service - it is a client acquisition tool.
+          </p>
         </div>
       </section>
 
