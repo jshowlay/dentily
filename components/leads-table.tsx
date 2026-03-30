@@ -1,4 +1,5 @@
 import { describeScoreFactors } from "@/lib/lead-score-factors";
+import { outreachReadinessFromEmailStatus } from "@/lib/outreach-readiness";
 import { Lead } from "@/lib/types";
 import { CopyButton } from "@/components/copy-button";
 import {
@@ -43,6 +44,27 @@ function opportunityLabel(type: string | null | undefined) {
   );
 }
 
+function outreachReadinessBadge(lead: Lead) {
+  const r = outreachReadinessFromEmailStatus(lead.emailStatus);
+  if (r === "high") {
+    return (
+      <span className="rounded-md border border-emerald-500 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-900">
+        High
+      </span>
+    );
+  }
+  if (r === "medium") {
+    return (
+      <span className="rounded-md border border-amber-400 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-900">
+        Medium
+      </span>
+    );
+  }
+  return (
+    <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs text-slate-600">Low</span>
+  );
+}
+
 export function LeadsTable({ leads }: { leads: Lead[] }) {
   return (
     <Table>
@@ -56,6 +78,10 @@ export function LeadsTable({ leads }: { leads: Lead[] }) {
           <TableHead>Address</TableHead>
           <TableHead>Website</TableHead>
           <TableHead>Phone</TableHead>
+          <TableHead>Outreach ready</TableHead>
+          <TableHead>Email</TableHead>
+          <TableHead>Contact form</TableHead>
+          <TableHead>Email status</TableHead>
           <TableHead>Rating</TableHead>
           <TableHead>Reviews</TableHead>
           <TableHead>Score</TableHead>
@@ -120,6 +146,33 @@ export function LeadsTable({ leads }: { leads: Lead[] }) {
               )}
             </TableCell>
             <TableCell>{lead.phone ?? "N/A"}</TableCell>
+            <TableCell>{outreachReadinessBadge(lead)}</TableCell>
+            <TableCell className="max-w-[200px] text-xs">
+              {lead.primaryEmail ? (
+                <a className="text-blue-600 hover:underline" href={`mailto:${lead.primaryEmail}`}>
+                  {lead.primaryEmail}
+                </a>
+              ) : (
+                "—"
+              )}
+            </TableCell>
+            <TableCell className="max-w-[180px] text-xs">
+              {lead.contactFormUrl ? (
+                <a
+                  className="break-all text-blue-600 hover:underline"
+                  href={lead.contactFormUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Link
+                </a>
+              ) : (
+                "—"
+              )}
+            </TableCell>
+            <TableCell className="whitespace-nowrap text-xs text-slate-600">
+              {lead.emailStatus?.replace(/_/g, " ") ?? "—"}
+            </TableCell>
             <TableCell>{lead.rating ?? "N/A"}</TableCell>
             <TableCell>{lead.reviewCount ?? "N/A"}</TableCell>
             <TableCell>

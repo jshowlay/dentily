@@ -1,4 +1,4 @@
-import { Lead } from "@/lib/types";
+import { EMPTY_LEAD_ENRICHMENT, Lead } from "@/lib/types";
 import { getPlaceDetails, searchBusinesses } from "@/lib/google-places";
 
 /**
@@ -23,9 +23,10 @@ export async function fetchGoogleMapsLeads(niche: string, location: string): Pro
     const detailsMap = new Map(detailsById.map((d) => [d.placeId, d.details]));
     return leads.map((l) => {
       const details = detailsMap.get(l.placeId);
-      if (!details) return l as Lead;
+      if (!details) return { ...l, ...EMPTY_LEAD_ENRICHMENT } as Lead;
       return {
-        ...(l as Lead),
+        ...l,
+        ...EMPTY_LEAD_ENRICHMENT,
         website: l.website ?? details.website,
         phone: l.phone ?? details.phone,
         rating: l.rating ?? details.rating,
@@ -37,9 +38,9 @@ export async function fetchGoogleMapsLeads(niche: string, location: string): Pro
           ...(l.metadata ?? {}),
           details: details.metadata?.raw ? details.metadata : details.metadata,
         },
-      };
+      } as Lead;
     });
   }
 
-  return leads as Lead[];
+  return leads.map((l) => ({ ...l, ...EMPTY_LEAD_ENRICHMENT })) as Lead[];
 }

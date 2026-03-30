@@ -8,7 +8,10 @@ import { logSearchPrioritySummary, sortByPriorityThenScore } from "@/lib/lead-pa
 import { scoreLead } from "@/lib/score-lead";
 import { logDentistScoringBatch } from "@/lib/scoring-log";
 import { Lead } from "@/lib/types";
+import { batchEnrichLeads } from "@/lib/email-enrichment";
+import { enrichmentOverridesForSearchApi } from "@/lib/email-enrichment-config";
 import { getNicheConfig } from "@/lib/niches";
+import { EMPTY_LEAD_ENRICHMENT } from "@/lib/types";
 
 const TARGET_LEAD_COUNT = 50;
 
@@ -85,11 +88,46 @@ export async function POST(request: Request) {
       );
     }
 
-    const body = await request.json();
-    const { niche, location } = searchSchema.parse(body);
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        { error: { message: "Request body must be valid JSON." } },
+        { status: 400 }
+      );
+    }
+
+    const parsed = searchSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: { message: "Invalid request payload.", details: parsed.error.issues } },
+        { status: 400 }
+      );
+    }
+    const { niche, location } = parsed.data;
     const nicheConfig = getNicheConfig(niche);
 
-    const searchId = await createSearch(niche, location);
+    let searchId: number;
+    try {
+      searchId = await createSearch(niche, location);
+    } catch (dbError) {
+      console.error("[api/search] createSearch failed:", dbError);
+      const hint =
+        dbError instanceof Error ? dbError.message : String(dbError);
+      return NextResponse.json(
+        {
+          error: {
+            message:
+              process.env.NODE_ENV === "development"
+                ? `Database error (create search): ${hint}`
+                : "Could not save your search. Check DATABASE_URL and that the database is running and reachable.",
+          },
+        },
+        { status: 500 }
+      );
+    }
+
     console.log(
       `[api/search] niche="${niche}" nicheId=${nicheConfig.id} location="${location}" searchId=${searchId}`
     );
@@ -113,7 +151,7 @@ export async function POST(request: Request) {
         niche: nicheConfig.name,
         address: l.address,
         website: l.website,
-        email: null,
+        ...EMPTY_LEAD_ENRICHMENT,
         phone: l.phone,
         rating: l.rating,
         reviewCount: l.reviewCount,
@@ -239,7 +277,14 @@ export async function POST(request: Request) {
         logDentistScoringBatch(dentistScoringLog);
       }
 
-      const inserted = await insertLeads(searchId, scoredLeads);
+      console.log(`[api/search] emailEnrichment start count=${scoredLeads.length}`);
+      const enrichedLeads = await batchEnrichLeads(
+        scoredLeads,
+        enrichmentOverridesForSearchApi()
+      );
+      console.log(`[api/search] emailEnrichment done count=${enrichedLeads.length}`);
+
+      const inserted = await insertLeads(searchId, enrichedLeads);
       console.log(`[api/search] dbInsertedLeads count=${inserted}`);
       await setSearchStatus(searchId, "completed", { resultCount: inserted });
       const savedSearch = await getSearchWithLeads(searchId);
@@ -271,7 +316,7 @@ export async function POST(request: Request) {
       );
     }
   } catch (error) {
-    console.error(error);
+    console.error("[api/search] unexpected error:", error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: { message: "Invalid request payload.", details: error.issues } },
@@ -279,8 +324,16 @@ export async function POST(request: Request) {
       );
     }
 
+    const hint = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
-      { error: { message: "Server error while processing request." } },
+      {
+        error: {
+          message:
+            process.env.NODE_ENV === "development"
+              ? `Server error: ${hint}`
+              : "Server error while processing request.",
+        },
+      },
       { status: 500 }
     );
   }

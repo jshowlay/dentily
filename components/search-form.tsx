@@ -41,10 +41,11 @@ export function SearchForm({
     setLoading(true);
 
     try {
-      const res = await fetch("/api/search", {
+      const res = await fetch(`${window.location.origin}/api/search`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ niche, location }),
+        credentials: "same-origin",
       });
 
       if (!res.ok) {
@@ -61,7 +62,12 @@ export function SearchForm({
       const next = `/results?searchId=${encodeURIComponent(String(data.searchId))}`;
       window.location.assign(next);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+      let message = err instanceof Error ? err.message : "Something went wrong.";
+      if (/failed to fetch|networkerror|load failed|network request failed/i.test(message)) {
+        message =
+          "We could not complete the request (often a timeout while building your pack, or the dev server stopped). Wait for the terminal to finish, hard-refresh, then try again. For faster local runs set DENTILY_DISABLE_EMAIL_ENRICHMENT=1.";
+      }
+      setError(message);
       setLoading(false);
     }
   }

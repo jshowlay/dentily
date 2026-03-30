@@ -1,5 +1,34 @@
 import { Pool, PoolClient } from "pg";
-import { ExportLeadRow, Lead, SearchWithLeads } from "@/lib/types";
+import { outreachReadinessFromEmailStatus } from "@/lib/outreach-readiness";
+import type { EmailStatus, ExportLeadRow, Lead, SearchWithLeads } from "@/lib/types";
+
+function parseEmailStatus(value: unknown): EmailStatus | null {
+  const s = typeof value === "string" ? value : null;
+  if (!s) return null;
+  const allowed: EmailStatus[] = [
+    "found",
+    "contact_form_only",
+    "not_found",
+    "invalid",
+    "skipped",
+  ];
+  return allowed.includes(s as EmailStatus) ? (s as EmailStatus) : null;
+}
+
+function parseEmailSource(value: unknown): Lead["emailSource"] {
+  const s = typeof value === "string" ? value : null;
+  if (!s) return null;
+  const allowed: NonNullable<Lead["emailSource"]>[] = [
+    "website",
+    "mailto",
+    "contact_page",
+    "footer",
+    "about_page",
+    "manual",
+    "unknown",
+  ];
+  return allowed.includes(s as NonNullable<Lead["emailSource"]>) ? (s as Lead["emailSource"]) : null;
+}
 
 let pool: Pool | null = null;
 
@@ -124,6 +153,11 @@ export async function ensureSchema() {
     await client.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'new';`);
     await client.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS opportunity_type TEXT;`);
     await client.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS priority TEXT;`);
+    await client.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS primary_email TEXT;`);
+    await client.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS contact_form_url TEXT;`);
+    await client.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS email_status TEXT;`);
+    await client.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS email_source TEXT;`);
+    await client.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS enrichment_notes TEXT;`);
 
     await client.query(`ALTER TABLE searches ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending';`);
     await client.query(`ALTER TABLE searches ADD COLUMN IF NOT EXISTS result_count INTEGER DEFAULT 0;`);
@@ -233,8 +267,8 @@ export async function insertLeads(searchId: number, leads: Lead[]): Promise<numb
       for (const lead of leads) {
         await client.query(
           `INSERT INTO leads
-            (search_id, place_id, niche, name, website, email, phone, rating, review_count, score, reason, outreach, address, maps_url, primary_type, metadata, status, opportunity_type, priority)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
+            (search_id, place_id, niche, name, website, email, primary_email, contact_form_url, email_status, email_source, enrichment_notes, phone, rating, review_count, score, reason, outreach, address, maps_url, primary_type, metadata, status, opportunity_type, priority)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24)
            ON CONFLICT (search_id, place_id) DO NOTHING`,
           [
             searchId,
@@ -242,7 +276,12 @@ export async function insertLeads(searchId: number, leads: Lead[]): Promise<numb
             lead.niche ?? null,
             lead.name,
             lead.website,
-            lead.email,
+            lead.primaryEmail,
+            lead.primaryEmail,
+            lead.contactFormUrl,
+            lead.emailStatus,
+            lead.emailSource,
+            lead.enrichmentNotes,
             lead.phone,
             lead.rating,
             lead.reviewCount,
@@ -313,7 +352,7 @@ export async function getSearchWithLeads(searchId: number): Promise<SearchWithLe
       if (!search) return null;
 
       const leadsRes = await client.query(
-        "SELECT place_id, niche, name, address, website, email, phone, rating, review_count, score, reason, outreach, maps_url, primary_type, metadata, status, opportunity_type, priority, created_at FROM leads WHERE search_id = $1 ORDER BY score DESC NULLS LAST",
+        "SELECT place_id, niche, name, address, website, email, primary_email, contact_form_url, email_status, email_source, enrichment_notes, phone, rating, review_count, score, reason, outreach, maps_url, primary_type, metadata, status, opportunity_type, priority, created_at FROM leads WHERE search_id = $1 ORDER BY score DESC NULLS LAST",
         [searchId]
       );
 
@@ -323,7 +362,11 @@ export async function getSearchWithLeads(searchId: number): Promise<SearchWithLe
         name: r.name,
         address: r.address ?? null,
         website: r.website ?? null,
-        email: r.email ?? null,
+        primaryEmail: (r.primary_email ?? r.email) ?? null,
+        contactFormUrl: r.contact_form_url ?? null,
+        emailStatus: parseEmailStatus(r.email_status),
+        emailSource: parseEmailSource(r.email_source),
+        enrichmentNotes: r.enrichment_notes ?? null,
         phone: r.phone ?? null,
         rating: r.rating !== null ? Number(r.rating) : null,
         reviewCount: r.review_count ?? null,
@@ -398,30 +441,39 @@ export async function getSearchForExport(searchId: number): Promise<{
 
     const leadsRes = await client.query(
       `SELECT
-         name, address, website, phone, email, rating, review_count, score, reason, outreach, priority, opportunity_type, primary_type, maps_url, created_at
+         name, address, website, phone, email, primary_email, contact_form_url, email_status, email_source, enrichment_notes, rating, review_count, score, reason, outreach, priority, opportunity_type, primary_type, maps_url, created_at
        FROM leads
        WHERE search_id = $1
        ORDER BY score DESC NULLS LAST, created_at DESC`,
       [searchId]
     );
 
-    const rows: ExportLeadRow[] = leadsRes.rows.map((r: any) => ({
-      name: r.name ?? null,
-      address: r.address ?? null,
-      website: r.website ?? null,
-      phone: r.phone ?? null,
-      email: r.email ?? null,
-      rating: r.rating !== null && r.rating !== undefined ? Number(r.rating) : null,
-      review_count: r.review_count ?? null,
-      score: r.score ?? null,
-      reason: r.reason ?? null,
-      outreach: r.outreach ?? null,
-      priority: r.priority ?? null,
-      opportunity_type: r.opportunity_type ?? null,
-      primary_type: r.primary_type ?? null,
-      maps_url: r.maps_url ?? null,
-      created_at: r.created_at ? new Date(r.created_at).toISOString() : null,
-    }));
+    const rows: ExportLeadRow[] = leadsRes.rows.map((r: any) => {
+      const primary = (r.primary_email ?? r.email) ?? null;
+      const es = parseEmailStatus(r.email_status) ?? "skipped";
+      return {
+        name: r.name ?? null,
+        address: r.address ?? null,
+        website: r.website ?? null,
+        phone: r.phone ?? null,
+        primary_email: primary,
+        contact_form_url: r.contact_form_url ?? null,
+        email_status: r.email_status ?? null,
+        email_source: r.email_source ?? null,
+        enrichment_notes: r.enrichment_notes ?? null,
+        outreach_readiness: outreachReadinessFromEmailStatus(es),
+        rating: r.rating !== null && r.rating !== undefined ? Number(r.rating) : null,
+        review_count: r.review_count ?? null,
+        score: r.score ?? null,
+        reason: r.reason ?? null,
+        outreach: r.outreach ?? null,
+        priority: r.priority ?? null,
+        opportunity_type: r.opportunity_type ?? null,
+        primary_type: r.primary_type ?? null,
+        maps_url: r.maps_url ?? null,
+        created_at: r.created_at ? new Date(r.created_at).toISOString() : null,
+      };
+    });
 
     return { search, rows };
   } finally {
@@ -479,6 +531,10 @@ export async function getRecentLeads(limit = 50) {
          primary_type,
          phone,
          website,
+         primary_email,
+         contact_form_url,
+         email_status,
+         email_source,
          score,
          reason,
          outreach,
@@ -499,6 +555,10 @@ export async function getRecentLeads(limit = 50) {
       primaryType: (r.primary_type as string | null) ?? null,
       phone: (r.phone as string | null) ?? null,
       website: (r.website as string | null) ?? null,
+      primaryEmail: (r.primary_email as string | null) ?? null,
+      contactFormUrl: (r.contact_form_url as string | null) ?? null,
+      emailStatus: parseEmailStatus(r.email_status),
+      emailSource: parseEmailSource(r.email_source),
       score: r.score as number | null,
       reason: r.reason as string | null,
       outreach: r.outreach as string | null,

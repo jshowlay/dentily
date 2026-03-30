@@ -46,6 +46,21 @@ export function describeScoreFactors(lead: Lead): string[] {
     lines.push("Phone missing — lower contact completeness");
   }
 
+  const es = lead.emailStatus;
+  if (lead.primaryEmail?.trim()) {
+    lines.push(
+      `Enriched email on file${lead.emailSource ? ` (${lead.emailSource.replace(/_/g, " ")})` : ""}`
+    );
+  } else if (es === "contact_form_only" && lead.contactFormUrl?.trim()) {
+    lines.push("Contact form URL detected — no public mailbox found on crawled pages");
+  } else if (es === "skipped") {
+    lines.push("Email enrichment skipped (no website to crawl)");
+  } else if (es === "invalid") {
+    lines.push("Email enrichment: invalid candidate discarded");
+  } else if (es === "not_found" || es === null) {
+    lines.push("No verified business email extracted from the public site");
+  }
+
   if (lead.mapsUrl) {
     lines.push("Source: Google Maps business listing");
   }
