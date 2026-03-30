@@ -50,15 +50,16 @@ export default async function PricingPage({
           <p className="text-center text-xs font-semibold uppercase tracking-wide text-slate-500">Pricing</p>
           <h1 className="mt-2 text-center text-3xl font-bold text-slate-900">{SITE.leadPackName}</h1>
           <p className="mx-auto mt-2 max-w-md text-center text-sm text-slate-600">
-            One-time purchase. Scored practice records for outbound — review on screen before you pay.
+            One-time purchase for agencies, freelancers, and consultants who sell to dental practices — review on
+            screen before you pay.
           </p>
 
           <Card className="mt-8 border border-slate-200 bg-slate-50 p-5">
-            <p className="text-sm font-semibold text-slate-900">Why this can pay for itself</p>
+            <p className="text-sm font-semibold text-slate-900">ROI in plain terms</p>
             <p className="mt-2 text-sm leading-relaxed text-slate-600">
-              A single qualified practice conversation can justify the cost of a territory pack. Use Dentily to shorten
-              list-building time and focus reps on prioritized targets — without a long-term agency retainer. Results
-              depend on your offer and follow-up; we don&apos;t guarantee outcomes.
+              One closed client can make your lead pack pay for itself fast. Dentily shortens list-building so you spend
+              time on conversations, not research. Results depend on your offer and follow-up; we don&apos;t guarantee
+              outcomes.
             </p>
           </Card>
 
@@ -69,8 +70,8 @@ export default async function PricingPage({
             </CardHeader>
             <CardContent className="space-y-6">
               <p className="text-sm text-slate-700">
-                <span className="font-semibold text-slate-900">{SITE.leadPackCount} scored dental practices</span> with
-                priority tiers, short rationale per row, and outreach drafts — formatted for CSV export after checkout.
+                <span className="font-semibold text-slate-900">{SITE.leadPackCount} scored practices</span> with priority
+                tiers, &quot;why this lead&quot; rationale, and outreach drafts — CSV export after checkout.
               </p>
               <ul className="space-y-2 text-sm text-slate-700">
                 <li className="flex gap-2">

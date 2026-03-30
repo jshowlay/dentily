@@ -8,19 +8,19 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { cn } from "@/lib/utils";
 
 const WHAT_YOU_GET = [
-  "High-opportunity dental practices in your target city",
-  "AI-scored opportunity insights",
+  "Scored dental practices in your chosen city",
   "Best available contact method (email, form, or phone)",
-  "Estimated revenue opportunity",
-  "Personalized outreach messages",
-  "A ready-to-use sales asset you can act on immediately",
+  "Estimated growth opportunity per practice",
+  "Clear “why this lead” reasoning",
+  "Ready-to-use outreach messaging",
+  "Instant CSV download after checkout",
 ] as const;
 
 const BUILT_FOR = [
-  { title: "Freelancers", body: "Selling marketing, SEO, or creative to local practices." },
-  { title: "Local SEO agencies", body: "Prospecting dental clients with a clear angle per practice." },
-  { title: "Paid ads specialists", body: "Finding offices that need demand and better funnels." },
-  { title: "Consultants", body: "Closing dental practices with insight-led conversations." },
+  { title: "Agencies", body: "Prospecting dental clients with a clear angle per practice — without a research team." },
+  { title: "Freelancers", body: "Selling marketing, SEO, or creative — spend time closing, not list-building." },
+  { title: "Consultants", body: "Insight-led conversations backed by scores, rationale, and drafts." },
+  { title: "Marketers", body: "Paid, organic, or local — prioritize who to contact first in each territory." },
 ] as const;
 
 function LandingHeader() {
@@ -34,13 +34,13 @@ function LandingHeader() {
           <Link href="/#what-you-get" className="underline-offset-4 hover:underline">
             What you get
           </Link>
-          <Link href="/#example-lead" className="underline-offset-4 hover:underline">
-            Example lead
+          <Link href="/#sample-output" className="underline-offset-4 hover:underline">
+            Sample output
           </Link>
           <Link href="/#how-it-works" className="underline-offset-4 hover:underline">
             How it works
           </Link>
-          <Link href="/#built-for" className="underline-offset-4 hover:underline">
+          <Link href="/#who-its-for" className="underline-offset-4 hover:underline">
             Who it&apos;s for
           </Link>
           <Link href="/pricing" className="underline-offset-4 hover:underline">
@@ -93,7 +93,7 @@ export function DentistLanding() {
       <section className="container-page py-14 md:py-24">
         <div className="mx-auto max-w-3xl text-center">
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-            For agencies, freelancers &amp; consultants
+            For agencies, freelancers, consultants &amp; marketers
           </p>
           <h1 className="mt-3 text-3xl font-bold leading-[1.12] tracking-tight text-slate-900 md:text-5xl md:leading-[1.1]">
             {POSITIONING.heroHeadline}
@@ -113,9 +113,9 @@ export function DentistLanding() {
       {/* What you get */}
       <section id="what-you-get" className="scroll-mt-20 border-t border-slate-200 bg-slate-50 py-16 md:py-20">
         <div className="container-page">
-          <h2 className="text-center text-2xl font-bold text-slate-900 md:text-3xl">What You Get</h2>
+          <h2 className="text-center text-2xl font-bold text-slate-900 md:text-3xl">What you get</h2>
           <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-slate-600">
-            Everything in your lead pack is built so you can open the file and start outreach the same day.
+            A territory pack built for outbound: prioritize who to contact, why they matter, and what to say first.
           </p>
           <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {WHAT_YOU_GET.map((line) => (
@@ -130,127 +130,82 @@ export function DentistLanding() {
             ))}
           </div>
 
-          <p className="mt-10 text-center text-xs font-medium uppercase tracking-wide text-slate-500">
-            Pack preview (illustrative columns)
-          </p>
-          <Card className="mx-auto mt-4 max-w-4xl overflow-hidden border-slate-200 shadow-md">
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-white hover:bg-white">
-                      <TableHead>Practice Name</TableHead>
-                      <TableHead className="min-w-[140px]">Opportunity</TableHead>
-                      <TableHead>Best Contact</TableHead>
-                      <TableHead className="min-w-[160px]">Estimated Opportunity</TableHead>
-                      <TableHead className="min-w-[220px]">Outreach Message</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    <TableRow>
-                      <TableCell className="font-medium">Riverside Family Dental</TableCell>
-                      <TableCell className="text-slate-700">Reputation / reviews gap</TableCell>
-                      <TableCell>Email</TableCell>
-                      <TableCell className="text-slate-700">$5k–$15k/mo upside</TableCell>
-                      <TableCell className="max-w-[280px] text-sm text-slate-600">
-                        Hi — I noticed a few missed growth opportunities at your practice…
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell className="font-medium">Lakeside Ortho</TableCell>
-                      <TableCell className="text-slate-700">Visibility / local SEO</TableCell>
-                      <TableCell>Phone</TableCell>
-                      <TableCell className="text-slate-700">$3k–$10k/mo upside</TableCell>
-                      <TableCell className="max-w-[280px] text-sm text-slate-600">
-                        Quick note — your listing shows strong potential but uneven demand signals…
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
+          <div id="sample-output" className="scroll-mt-20 pt-14 md:pt-16">
+            <h3 className="text-center text-lg font-semibold text-slate-900 md:text-xl">Sample row output</h3>
+            <p className="mx-auto mt-2 max-w-xl text-center text-sm text-slate-600">
+              One practice record — same columns you&apos;ll see in your pack.
+            </p>
+            <Card className="mx-auto mt-6 max-w-4xl overflow-hidden border-slate-200 shadow-md">
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-white hover:bg-white">
+                        <TableHead>Practice</TableHead>
+                        <TableHead className="min-w-[140px]">Opportunity</TableHead>
+                        <TableHead>Best contact</TableHead>
+                        <TableHead className="min-w-[160px]">Est. opportunity</TableHead>
+                        <TableHead className="min-w-[220px]">Outreach angle</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      <TableRow>
+                        <TableCell className="font-medium">Riverside Family Dental</TableCell>
+                        <TableCell className="text-slate-700">Reputation / reviews gap</TableCell>
+                        <TableCell>Email</TableCell>
+                        <TableCell className="text-slate-700">$5k–$15k/mo</TableCell>
+                        <TableCell className="max-w-[280px] text-sm text-slate-600">
+                          Hi — I noticed Riverside Family Dental next to stronger review profiles nearby. We help
+                          practices turn local visibility into booked consults — open to a quick call this week?
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </section>
 
-      {/* Example lead */}
-      <section id="example-lead" className="scroll-mt-20 container-page py-16 md:py-20">
-        <h2 className="text-center text-2xl font-bold md:text-3xl">Example Lead</h2>
-        <p className="mx-auto mt-3 max-w-xl text-center text-sm text-slate-600">
-          One row from a pack — structured so you know who to contact, why they matter, and what to say.
-        </p>
-        <Card className="mx-auto mt-10 max-w-2xl border-2 border-slate-900 shadow-lg">
-          <CardHeader className="border-b border-slate-100 bg-slate-50">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Sample record</p>
-            <CardTitle className="text-xl text-slate-900">Riverside Family Dental</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-5 pt-6 text-sm">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Opportunity</p>
-              <p className="mt-1 text-slate-800">
-                Low review rating with clear reputation upside — patients are comparing you online before they book.
-              </p>
-            </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Estimated Opportunity</p>
-              <p className="mt-1 font-medium text-slate-900">
-                High upside from reputation improvement ($5k–$15k/mo)
-              </p>
-            </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Best Contact Method</p>
-              <p className="mt-1 font-medium text-slate-900">Email</p>
-            </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Outreach Message</p>
-              <blockquote className="mt-2 rounded-md border border-slate-200 bg-white p-4 text-slate-700 leading-relaxed">
-                Hi [Name], I noticed a few missed growth opportunities at your practice, especially around online
-                reputation and local visibility. Practices in your area are losing consults to competitors with stronger
-                review profiles — we help teams close that gap fast. Open to a 10-minute call this week?
-              </blockquote>
-            </div>
-          </CardContent>
-        </Card>
-      </section>
-
       {/* How it works */}
-      <section id="how-it-works" className="scroll-mt-20 border-t border-slate-200 bg-slate-50 py-16 md:py-20">
+      <section id="how-it-works" className="scroll-mt-20 border-t border-slate-200 bg-white py-16 md:py-20">
         <div className="container-page">
-          <h2 className="text-center text-2xl font-bold md:text-3xl">How It Works</h2>
+          <h2 className="text-center text-2xl font-bold md:text-3xl">How it works</h2>
           <p className="mx-auto mt-3 max-w-xl text-center text-sm text-slate-600">
-            Three steps from city pick to conversations that can pay.
+            From territory pick to conversations that can pay.
           </p>
           <div className="mt-12 grid gap-6 md:grid-cols-3">
-            <Card className="border-slate-200 bg-white shadow-sm">
+            <Card className="border-slate-200 bg-slate-50 shadow-sm">
               <CardHeader className="pb-2">
                 <span className="text-xs font-bold text-slate-400">STEP 1</span>
-                <CardTitle className="text-lg leading-snug">Pick a city</CardTitle>
+                <CardTitle className="text-lg leading-snug">Choose a city</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm leading-relaxed text-slate-600">
-                  We identify dental practices with clear growth gaps.
+                  We surface dental practices with clear growth signals you can act on.
                 </p>
               </CardContent>
             </Card>
-            <Card className="border-slate-200 bg-white shadow-sm">
+            <Card className="border-slate-200 bg-slate-50 shadow-sm">
               <CardHeader className="pb-2">
                 <span className="text-xs font-bold text-slate-400">STEP 2</span>
-                <CardTitle className="text-lg leading-snug">Get your lead pack</CardTitle>
+                <CardTitle className="text-lg leading-snug">Review your pack</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm leading-relaxed text-slate-600">
-                  Receive scored opportunities, contact paths, and outreach messages.
+                  See scores, rationale, contact paths, and outreach drafts on screen before you pay.
                 </p>
               </CardContent>
             </Card>
-            <Card className="border-slate-200 bg-white shadow-sm">
+            <Card className="border-slate-200 bg-slate-50 shadow-sm">
               <CardHeader className="pb-2">
                 <span className="text-xs font-bold text-slate-400">STEP 3</span>
-                <CardTitle className="text-lg leading-snug">Start closing clients</CardTitle>
+                <CardTitle className="text-lg leading-snug">Outreach &amp; close</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm leading-relaxed text-slate-600">
-                  Reach out with a clear angle and turn insights into revenue.
+                  Download the CSV after checkout and start the same day — phone, email, or form.
                 </p>
               </CardContent>
             </Card>
@@ -258,61 +213,48 @@ export function DentistLanding() {
         </div>
       </section>
 
-      {/* Built for */}
-      <section id="built-for" className="scroll-mt-20 container-page py-16 md:py-20">
-        <h2 className="text-center text-2xl font-bold md:text-3xl">Built For</h2>
-        <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-slate-600">
-          If you help local businesses grow, Dentily helps you find dental clients worth contacting.
-        </p>
-        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {BUILT_FOR.map((item) => (
-            <Card key={item.title} className="border-slate-200 shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-base">{item.title}</CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm text-slate-600">{item.body}</CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      {/* Trust / clarity */}
-      <section id="what-dentily-is" className="scroll-mt-20 border-t border-slate-200 bg-slate-50 py-14 md:py-16">
-        <div className="container-page mx-auto max-w-2xl text-center">
-          <h2 className="text-2xl font-bold text-slate-900 md:text-3xl">What Dentily Is</h2>
-          <p className="mt-4 text-base leading-relaxed text-slate-700">
-            Dentily is an AI-powered lead intelligence platform for agencies, freelancers, and consultants who want to
-            win more dental clients.
+      {/* Who it's for */}
+      <section id="who-its-for" className="scroll-mt-20 border-t border-slate-200 bg-slate-50 py-16 md:py-20">
+        <div className="container-page">
+          <h2 className="text-center text-2xl font-bold md:text-3xl">Who it&apos;s for</h2>
+          <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-slate-600">
+            Dentily helps you find dental practices worth contacting — if you sell services to practices, this is your
+            shortlist.
           </p>
-          <p className="mt-4 text-sm leading-relaxed text-slate-600">
-            It is not a dental clinic or patient-facing dental service. It is a client acquisition tool built to help
-            you spot revenue opportunities and act on them fast.
-          </p>
+          <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {BUILT_FOR.map((item) => (
+              <Card key={item.title} className="border-slate-200 bg-white shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-base">{item.title}</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm text-slate-600">{item.body}</CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* Pricing + FAQ */}
-      <section id="pricing-section" className="scroll-mt-20 border-t border-slate-200 py-16 md:py-20">
+      <section id="pricing-section" className="scroll-mt-20 border-t border-slate-200 bg-white py-16 md:py-20">
         <div className="container-page mx-auto max-w-lg">
-          <h2 className="text-center text-2xl font-bold md:text-3xl">Simple pricing</h2>
-          <p className="mt-2 text-center text-sm text-slate-600">One pack. One price. Pay when the list looks right.</p>
-          <p className="mx-auto mt-4 max-w-md text-center text-sm font-medium leading-relaxed text-slate-800">
-            Close one client from your lead pack and the ROI can pay for itself many times over.
+          <h2 className="text-center text-2xl font-bold md:text-3xl">Pricing</h2>
+          <p className="mt-2 text-center text-sm text-slate-600">
+            One-time purchase. Actionable lead pack for people who sell to dental practices.
           </p>
-          <p className="mx-auto mt-3 max-w-md text-center text-xs text-slate-500">
-            Fresh city packs are limited and designed for fast action — we focus on quality over flooding the same
-            market.
+          <p className="mx-auto mt-4 max-w-md text-center text-sm font-medium leading-relaxed text-slate-800">
+            One closed client can make your lead pack pay for itself fast.
           </p>
           <Card className="mt-10 border-2 border-slate-900 shadow-lg">
             <CardHeader className="text-center">
               <CardTitle className="text-xl">{SITE.leadPackName}</CardTitle>
               <p className="text-4xl font-bold">{SITE.leadPackPriceLabel}</p>
-              <p className="text-sm text-slate-600">One-time · USD</p>
+              <p className="text-sm text-slate-600">One-time · USD · no subscription</p>
             </CardHeader>
             <CardContent className="space-y-5">
               <p className="text-center text-sm text-slate-700">
-                {SITE.leadPackCount} scored practices with priorities, rationale, best contact paths, estimated
-                opportunity, and outreach drafts for your market.
+                <span className="font-semibold text-slate-900">{SITE.leadPackCount} scored practices</span> with
+                priorities, rationale per row, best contact paths, estimated opportunity, and outreach drafts for your
+                market.
               </p>
               <ul className="space-y-2 text-sm text-slate-700">
                 <li className="flex gap-2">
@@ -325,9 +267,6 @@ export function DentistLanding() {
                   <span className="text-green-600">✓</span> CSV download after checkout
                 </li>
               </ul>
-              <p className="text-center text-xs font-medium text-slate-600">
-                Limited city packs available — one pack per search helps keep opportunity data fresh for each market.
-              </p>
               <Link
                 href="/search"
                 className={cn(
@@ -352,9 +291,9 @@ export function DentistLanding() {
       {/* Final CTA */}
       <section className="bg-black py-16 text-white md:py-24">
         <div className="container-page mx-auto max-w-2xl text-center">
-          <h2 className="text-2xl font-bold md:text-3xl">Start closing dental clients</h2>
+          <h2 className="text-2xl font-bold md:text-3xl">Start finding dental clients</h2>
           <p className="mt-4 text-lg text-white/85">
-            Pick a city, review your scored pack on screen, then unlock when you are ready to reach out.
+            Pick a territory, review your scored pack on screen, then checkout when you&apos;re ready to download.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link

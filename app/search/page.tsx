@@ -48,7 +48,7 @@ export default function SearchPage() {
             defaultNiche="dentists"
             hideNicheField
             cardTitle="Location"
-            cardDescription="We search public dental practice listings in that area, then score and prioritize them for your team."
+            cardDescription="We search public dental practice listings in that area, then score and prioritize them for your outreach."
             submitLabel={SITE.primaryCta}
             exampleMarkets={EXAMPLE_MARKETS}
           />

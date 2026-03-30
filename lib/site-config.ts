@@ -1,10 +1,10 @@
 /** Marketing CTAs and display constants — single source of truth for funnel copy. */
 
 export const SITE = {
-  /** Primary funnel CTA — landing, nav, pricing card, final CTA */
-  primaryCta: "Get My First Lead Pack",
+  /** Primary funnel CTA — landing, nav, pricing card, final CTA, search submit */
+  primaryCta: "Build My Lead Pack",
   /** Secondary — scroll to product detail on landing */
-  secondaryCta: "See What's Inside",
+  secondaryCta: "See what’s included",
   /** After search, when user still needs to pay */
   unlockCta: "Unlock opportunity pack ($49)",
   leadPackName: "Dentily Practice Opportunity Pack",
@@ -13,21 +13,21 @@ export const SITE = {
   searchSubmitLoading: "Building your pack…",
   /** Shown under the submit button while the search API runs */
   searchSubmitWaitHint:
-    "We pull live listings, enrich missing details, and score every practice — usually 30–90 seconds. Keep this tab open.",
+    "We pull live listings, score every practice, and draft outreach — usually 30–90 seconds. Keep this tab open.",
 } as const;
 
 /** Landing hero + search page headlines */
 export const POSITIONING = {
-  heroHeadline: "Close Your Next Dental Client in 7 Days",
+  heroHeadline: "Close Your Next Dental Client Faster",
   heroSubheadline:
-    "Dentily finds dental practices losing patients, shows you why, and gives you exactly what to say to win them as clients.",
+    "Dentily helps agencies, freelancers, and consultants find dental practices with clear growth gaps, prioritize the best opportunities, and start outreach with confidence.",
   heroSupportLine:
-    "Each lead includes the best available contact method, opportunity insight, and a ready-to-use outreach message.",
+    "Each lead pack includes scored practices, best available contact paths, opportunity insight, and ready-to-use outreach messaging.",
   heroMicrocopy:
-    "No subscription required for the standard pack. Review results before you buy. Built for agencies, freelancers, and consultants who sell growth.",
-  searchHeadline: "Pick your city",
+    "One-time pack. Review on screen before you pay. Built for people who sell services to dental practices.",
+  searchHeadline: "Pick your territory",
   searchSubheadline:
-    "We surface dental practices with clear growth gaps, score the opportunity, and give you contact paths plus outreach you can use today.",
+    "Tell us where you want opportunities — we surface scored practices, contact paths, and outreach you can use today.",
 } as const;
 
 export const HOW_TO_USE_PACK_STEPS: readonly string[] = [
