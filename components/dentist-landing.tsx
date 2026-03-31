@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { FeatureCard } from "@/components/landing/feature-card";
 import { LandingHero } from "@/components/landing/hero";
-import { SampleLeadCard } from "@/components/landing/sample-lead-card";
 import { SectionHeader } from "@/components/landing/section-header";
 import { SiteHeader } from "@/components/landing/site-header";
 import { LandingSection } from "@/components/landing/section";
@@ -10,10 +9,9 @@ import { PricingFaq } from "@/components/pricing-faq";
 import { buttonVariants } from "@/lib/button-variants";
 import { SITE } from "@/lib/site-config";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const FINAL_CTA = "Get Started With Dentily";
+const FINAL_CTA = "Get My First Leads";
 
 const BENEFITS = [
   {
@@ -56,80 +54,34 @@ const TRUST_PROOF = [
   },
 ] as const;
 
-const WHAT_YOU_GET = [
-  "Practice opportunities in your target area",
-  "Visible growth gaps",
-  "Contact details when available",
-  "Clearer outreach angles",
-] as const;
-
 export function DentistLanding() {
   return (
     <div className="min-h-screen bg-white text-slate-900">
       <SiteHeader />
 
       <LandingHero
-        primaryHref="/search"
-        secondaryHref="/#sample-lead"
-        primaryLabel={SITE.primaryCta}
-        secondaryLabel={SITE.secondaryCta}
+        primaryHref="/search#sample-preview"
+        secondaryHref="/search"
+        primaryLabel="View Sample Leads"
+        secondaryLabel="Get My First Leads"
       />
 
-      {/* Sample lead preview */}
-      <LandingSection id="sample-lead" variant="white">
-        <SectionHeader
-          title="See the Opportunities Before You Reach Out"
-          subtitle="Every result shows you exactly where a dental practice is losing growth — so you can pitch with relevance, not guesswork."
-          className="mb-12 md:mb-14"
-        />
-        <div className="grid gap-10 lg:grid-cols-2 lg:items-start lg:gap-12">
-          <div className="space-y-6">
-            <h3 className="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">
-              What a Dentily Opportunity Looks Like
-            </h3>
-            <p className="text-base leading-relaxed text-slate-600 md:text-lg">
-              Instead of handing you a generic list, Dentily highlights real growth gaps inside each practice so you
-              know exactly how to position your service.
-            </p>
-            <ul className="space-y-3 text-sm text-slate-700 md:text-base">
-              <li className="flex gap-3">
-                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-600" aria-hidden />
-                <span>Practice name and location</span>
-              </li>
-              <li className="flex gap-3">
-                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-600" aria-hidden />
-                <span>Key growth gaps and missed opportunities</span>
-              </li>
-              <li className="flex gap-3">
-                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-600" aria-hidden />
-                <span>Contact information when available</span>
-              </li>
-              <li className="flex gap-3">
-                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-600" aria-hidden />
-                <span>Clear outreach angles you can use immediately</span>
-              </li>
-            </ul>
-            <p className="text-sm font-medium text-slate-800">
-              Built to help you start smarter conversations and win clients faster.
-            </p>
+      <section className="border-b border-slate-200 bg-slate-50/70 py-8">
+        <div className="landing-max grid gap-3 md:grid-cols-3 md:gap-6">
+          <div className="flex items-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-slate-200">
+            <span className="h-2 w-2 shrink-0 rounded-full bg-blue-600" aria-hidden />
+            Identify high-opportunity dental leads
           </div>
-          <SampleLeadCard className="lg:sticky lg:top-28" />
-        </div>
-        <div className="mt-12 rounded-xl border border-slate-200 bg-slate-50/90 p-5 md:mt-14 md:p-6">
-          <p className="text-center text-sm font-semibold text-slate-900">What You Get Instantly</p>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {WHAT_YOU_GET.map((item) => (
-              <div
-                key={item}
-                className="flex items-start gap-2 rounded-lg bg-white/80 px-3 py-2.5 text-xs text-slate-700 shadow-sm ring-1 ring-slate-200/80 md:text-sm"
-              >
-                <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" aria-hidden />
-                <span>{item}</span>
-              </div>
-            ))}
+          <div className="flex items-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-slate-200">
+            <span className="h-2 w-2 shrink-0 rounded-full bg-blue-600" aria-hidden />
+            See why each practice is a fit
+          </div>
+          <div className="flex items-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-slate-200">
+            <span className="h-2 w-2 shrink-0 rounded-full bg-blue-600" aria-hidden />
+            Reach out with better pitch angles
           </div>
         </div>
-      </LandingSection>
+      </section>
 
       {/* 2. Problem */}
       <LandingSection id="problem" variant="muted">
@@ -184,36 +136,33 @@ export function DentistLanding() {
 
       {/* 4. How it works */}
       <LandingSection id="how-it-works" variant="muted">
-        <h2 className="text-center text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">How it works</h2>
-        <p className="mx-auto mt-4 max-w-2xl text-center text-sm text-slate-600 md:text-base">
-          Three steps from territory to conversations.
-        </p>
+        <h2 className="text-center text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">How Dentily Works</h2>
         <div className="mt-12 grid gap-6 md:grid-cols-3">
           <Card className="border-slate-200 bg-white shadow-sm">
             <CardHeader className="pb-2">
               <span className="text-xs font-bold text-blue-600">STEP 1</span>
-              <CardTitle className="text-xl text-slate-900">Target Any Area</CardTitle>
+              <CardTitle className="text-xl text-slate-900">Search Your Market</CardTitle>
             </CardHeader>
             <CardContent className="text-sm leading-relaxed text-slate-600">
-              Enter a location and discover dental practices with growth potential.
+              Find dental practices in your target city or area.
             </CardContent>
           </Card>
           <Card className="border-slate-200 bg-white shadow-sm">
             <CardHeader className="pb-2">
               <span className="text-xs font-bold text-blue-600">STEP 2</span>
-              <CardTitle className="text-xl text-slate-900">Reveal Growth Gaps</CardTitle>
+              <CardTitle className="text-xl text-slate-900">Spot the Best Opportunities</CardTitle>
             </CardHeader>
             <CardContent className="text-sm leading-relaxed text-slate-600">
-              See missing website, SEO, and social opportunities surfaced from listing and outreach-ready signals.
+              See which practices show signs they may need marketing help.
             </CardContent>
           </Card>
           <Card className="border-slate-200 bg-white shadow-sm">
             <CardHeader className="pb-2">
               <span className="text-xs font-bold text-blue-600">STEP 3</span>
-              <CardTitle className="text-xl text-slate-900">Reach Out With Confidence</CardTitle>
+              <CardTitle className="text-xl text-slate-900">Reach Out With a Better Pitch</CardTitle>
             </CardHeader>
             <CardContent className="text-sm leading-relaxed text-slate-600">
-              Use data-backed insights to pitch relevant solutions — not generic outreach.
+              Use Dentily&apos;s insights to contact practices with a more relevant offer.
             </CardContent>
           </Card>
         </div>
@@ -256,7 +205,7 @@ export function DentistLanding() {
       <LandingSection id="proof" variant="white">
         <SectionHeader
           title="Built for Real Outreach Results"
-          subtitle="Dentily helps you focus on the right practices with data-backed insights designed for smarter prospecting."
+          subtitle="Dentily helps you focus on the right practices with data-backed insights built for direct outreach."
           className="mb-12 md:mb-14"
         />
         <div className="grid gap-6 md:grid-cols-3">
@@ -324,7 +273,7 @@ export function DentistLanding() {
                   "flex min-h-[48px] w-full items-center justify-center bg-slate-900 text-white hover:bg-slate-900/90"
                 )}
               >
-                {SITE.primaryCta}
+                Get My First Leads
               </Link>
               <Link
                 href="/pricing"
@@ -365,8 +314,8 @@ export function DentistLanding() {
           <Link href="/pricing" className="text-blue-600 hover:underline">
             Pricing
           </Link>
-          <Link href="/search" className="text-blue-600 hover:underline">
-            {SITE.primaryCta}
+          <Link href="/search#sample-preview" className="text-blue-600 hover:underline">
+            View Sample Leads
           </Link>
           <Link href="/" className="text-blue-600 hover:underline">
             Home

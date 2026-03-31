@@ -8,7 +8,7 @@ import { buttonVariants } from "@/lib/button-variants";
 import { cn } from "@/lib/utils";
 
 const NAV_LINKS = [
-  { label: "Product", href: "/#sample-lead" },
+  { label: "Product", href: "/#product" },
   { label: "How It Works", href: "/#how-it-works" },
   { label: "Pricing", href: "/pricing" },
 ] as const;
@@ -51,7 +51,7 @@ export function SiteHeader() {
 
           <div className="flex shrink-0 items-center gap-2">
             <Link
-              href="/#sample-lead"
+              href="/search#sample-preview"
               className={cn(
                 buttonVariants({ variant: "default", size: "default" }),
                 "h-10 whitespace-nowrap bg-slate-900 px-4 text-xs text-white hover:bg-slate-800 sm:text-sm"

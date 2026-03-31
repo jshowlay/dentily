@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 /** Static preview — one row showing the shape of your results, not live data. */
 export function MarketSearchPreview() {
   return (
-    <Card className="border border-dashed border-slate-300 bg-slate-50/80">
+    <Card id="sample-preview" className="border border-dashed border-slate-300 bg-slate-50/80 scroll-mt-24">
       <CardHeader className="pb-2">
         <CardTitle className="text-base text-slate-800">What you&apos;ll see after you search</CardTitle>
         <p className="text-sm text-slate-600">
