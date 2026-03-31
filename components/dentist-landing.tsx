@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { BrandMark } from "@/components/brand-mark";
 import { FeatureCard } from "@/components/landing/feature-card";
 import { LandingHero } from "@/components/landing/hero";
 import { SampleLeadCard } from "@/components/landing/sample-lead-card";
 import { SectionHeader } from "@/components/landing/section-header";
+import { SiteHeader } from "@/components/landing/site-header";
 import { LandingSection } from "@/components/landing/section";
 import { TrustCard } from "@/components/landing/trust-card";
 import { PricingFaq } from "@/components/pricing-faq";
@@ -63,57 +63,10 @@ const WHAT_YOU_GET = [
   "Clearer outreach angles",
 ] as const;
 
-function LandingHeader() {
-  return (
-    <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white/95 py-4 backdrop-blur">
-      <div className="landing-max flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <Link href="/" className="inline-block text-slate-900 no-underline">
-          <BrandMark variant="onLight" />
-        </Link>
-        <nav className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-700">
-          <Link href="/#problem" className="underline-offset-4 hover:text-slate-900 hover:underline">
-            Problem
-          </Link>
-          <Link href="/#solution" className="underline-offset-4 hover:text-slate-900 hover:underline">
-            Solution
-          </Link>
-          <Link href="/#how-it-works" className="underline-offset-4 hover:text-slate-900 hover:underline">
-            How it works
-          </Link>
-          <Link href="/#sample-lead" className="underline-offset-4 hover:text-slate-900 hover:underline">
-            Sample
-          </Link>
-          <Link href="/#benefits" className="underline-offset-4 hover:text-slate-900 hover:underline">
-            Benefits
-          </Link>
-          <Link href="/#audience" className="underline-offset-4 hover:text-slate-900 hover:underline">
-            Who it&apos;s for
-          </Link>
-          <Link href="/#proof" className="underline-offset-4 hover:text-slate-900 hover:underline">
-            Proof
-          </Link>
-          <Link href="/pricing" className="underline-offset-4 hover:text-slate-900 hover:underline">
-            Pricing
-          </Link>
-          <Link
-            href="/search"
-            className={cn(
-              buttonVariants({ variant: "default", size: "default" }),
-              "bg-slate-900 text-white hover:bg-slate-900/90"
-            )}
-          >
-            {SITE.primaryCta}
-          </Link>
-        </nav>
-      </div>
-    </header>
-  );
-}
-
 export function DentistLanding() {
   return (
     <div className="min-h-screen bg-white text-slate-900">
-      <LandingHeader />
+      <SiteHeader />
 
       <LandingHero
         primaryHref="/search"
