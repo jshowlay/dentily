@@ -2,7 +2,11 @@ import { Building2, Mail, Megaphone, Sparkles, Target } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-const WHY_THIS_LEAD = ["Low Google review count", "No visible ads", "Weak local SEO presence"] as const;
+const WHY_THIS_LEAD = [
+  "Low Google review count compared to competitors",
+  "No visible Google Ads activity",
+  "Weak local SEO presence",
+] as const;
 
 export function SampleLeadCard({ className }: { className?: string }) {
   return (
@@ -49,7 +53,7 @@ export function SampleLeadCard({ className }: { className?: string }) {
             <Sparkles className="h-3.5 w-3.5 text-blue-600" aria-hidden />
             Best Contact Method
           </p>
-          <p className="mt-2 text-sm font-semibold leading-relaxed text-slate-900">Email</p>
+          <p className="mt-2 text-sm font-semibold leading-relaxed text-slate-900">Email (high confidence)</p>
         </div>
         <div className="space-y-2 rounded-lg border border-slate-100 bg-white p-4 text-sm text-slate-700">
           <p className="flex items-center gap-2">
