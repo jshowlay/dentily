@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { FeatureCard } from "@/components/landing/feature-card";
 import { LandingHero } from "@/components/landing/hero";
+import { LiveSampleLeads } from "@/components/landing/live-sample-leads";
 import { SectionHeader } from "@/components/landing/section-header";
 import { SiteHeader } from "@/components/landing/site-header";
 import { LandingSection } from "@/components/landing/section";
@@ -67,6 +68,8 @@ export function DentistLanding() {
           </div>
         </div>
       </section>
+
+      <LiveSampleLeads />
 
       {/* How it works */}
       <LandingSection id="how-it-works" variant="muted">
