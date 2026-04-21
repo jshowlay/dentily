@@ -269,7 +269,7 @@ function countSharedAddressClusterGroups(rows: PipelineRow[]): number {
     m.set(k, (m.get(k) ?? 0) + 1);
   }
   let n = 0;
-  for (const c of m.values()) {
+  for (const c of Array.from(m.values())) {
     if (c >= 2) n += 1;
   }
   return n;
@@ -742,7 +742,7 @@ export function buildLeadPackRowsFromExport(rows: ExportLeadRow[]): LeadPackCsvR
       reason: csvCell(computeExportReasonLine(lead, { clusterDemoted: r.cluster_demoted })),
       outreach_draft: csvCell(outreachBody),
       maps_url: mapsUrl,
-      top_lead: topIdx.has(i) ? "Yes" : "No",
+      top_lead: topIdx.has(i) ? ("Yes" as const) : ("No" as const),
       placeholders_remaining: placeholders,
       apollo_enrichment: "",
     };
