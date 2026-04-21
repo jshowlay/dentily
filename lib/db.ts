@@ -39,11 +39,17 @@ let pool: Pool | null = null;
 function isConnectionError(error: unknown): boolean {
   const message =
     error instanceof Error ? error.message : typeof error === "string" ? error : String(error);
+  const code = error && typeof error === "object" && "code" in error ? String((error as any).code) : "";
+  const normalized = message.toLowerCase();
   return (
-    message.includes("not queryable") ||
-    message.includes("Connection terminated unexpectedly") ||
-    message.includes("ECONNRESET") ||
-    message.includes("socket hang up")
+    normalized.includes("not queryable") ||
+    normalized.includes("connection terminated unexpectedly") ||
+    normalized.includes("connection terminated due to connection timeout") ||
+    normalized.includes("connection timeout") ||
+    normalized.includes("socket hang up") ||
+    normalized.includes("etimedout") ||
+    code === "ECONNRESET" ||
+    code === "ETIMEDOUT"
   );
 }
 
@@ -162,6 +168,7 @@ export async function ensureSchema() {
     await client.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS email_status TEXT;`);
     await client.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS email_source TEXT;`);
     await client.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS enrichment_notes TEXT;`);
+    await client.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS email_rejection_reason TEXT;`);
 
     await client.query(`ALTER TABLE searches ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending';`);
     await client.query(`ALTER TABLE searches ADD COLUMN IF NOT EXISTS result_count INTEGER DEFAULT 0;`);
@@ -348,21 +355,23 @@ export async function updateLeadsEnrichmentForSearch(searchId: number, leads: Le
   try {
     await client.query("BEGIN");
     for (const lead of leads) {
-      await client.query(
+        await client.query(
         `UPDATE leads SET
           primary_email = $1,
           email = $1,
           contact_form_url = $2,
           email_status = $3,
           email_source = $4,
-          enrichment_notes = $5
-        WHERE search_id = $6 AND place_id = $7`,
+          enrichment_notes = $5,
+          email_rejection_reason = $6
+        WHERE search_id = $7 AND place_id = $8`,
         [
           lead.primaryEmail,
           lead.contactFormUrl,
           lead.emailStatus,
           lead.emailSource,
           lead.enrichmentNotes,
+          lead.emailRejectionReason ?? null,
           searchId,
           lead.placeId,
         ]
@@ -429,7 +438,7 @@ export async function getSearchWithLeads(searchId: number): Promise<SearchWithLe
       if (!search) return null;
 
       const leadsRes = await client.query(
-        "SELECT place_id, niche, name, address, website, email, primary_email, contact_form_url, email_status, email_source, enrichment_notes, phone, rating, review_count, score, reason, outreach, maps_url, primary_type, metadata, status, opportunity_type, priority, created_at FROM leads WHERE search_id = $1 ORDER BY score DESC NULLS LAST",
+        "SELECT place_id, niche, name, address, website, email, primary_email, contact_form_url, email_status, email_source, enrichment_notes, email_rejection_reason, phone, rating, review_count, score, reason, outreach, maps_url, primary_type, metadata, status, opportunity_type, priority, created_at FROM leads WHERE search_id = $1 ORDER BY score DESC NULLS LAST",
         [searchId]
       );
 
@@ -444,6 +453,7 @@ export async function getSearchWithLeads(searchId: number): Promise<SearchWithLe
         emailStatus: parseEmailStatus(r.email_status),
         emailSource: parseEmailSource(r.email_source),
         enrichmentNotes: r.enrichment_notes ?? null,
+        emailRejectionReason: (r.email_rejection_reason as string | null) ?? null,
         phone: r.phone ?? null,
         rating: r.rating !== null ? Number(r.rating) : null,
         reviewCount: r.review_count ?? null,
@@ -518,7 +528,7 @@ export async function getSearchForExport(searchId: number): Promise<{
 
     const leadsRes = await client.query(
       `SELECT
-         name, address, website, phone, email, primary_email, contact_form_url, email_status, email_source, enrichment_notes, rating, review_count, score, reason, outreach, priority, opportunity_type, primary_type, maps_url, created_at
+         name, address, website, phone, email, primary_email, contact_form_url, email_status, email_source, enrichment_notes, email_rejection_reason, rating, review_count, score, reason, outreach, priority, opportunity_type, primary_type, maps_url, created_at
        FROM leads
        WHERE search_id = $1
        ORDER BY score DESC NULLS LAST, created_at DESC`,
@@ -544,6 +554,7 @@ export async function getSearchForExport(searchId: number): Promise<{
         email_status: r.email_status ?? null,
         email_source: r.email_source ?? null,
         enrichment_notes: r.enrichment_notes ?? null,
+        email_rejection_reason: (r.email_rejection_reason as string | null) ?? null,
         contactable: isLeadContactable(signalLead),
         outreach_readiness: outreachReadinessFromContactSignals(signalLead),
         rating: r.rating !== null && r.rating !== undefined ? Number(r.rating) : null,

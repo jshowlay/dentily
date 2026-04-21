@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { HashSafeLink } from "@/components/hash-safe-link";
 import { SampleLeadCard } from "@/components/landing/sample-lead-card";
 import { buttonVariants } from "@/lib/button-variants";
 import { cn } from "@/lib/utils";
@@ -27,7 +27,7 @@ export function LandingHero({
               the best way to reach out.
             </p>
             <div className="mt-8 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
-              <Link
+              <HashSafeLink
                 href={primaryHref}
                 className={cn(
                   buttonVariants({ size: "lg" }),
@@ -35,8 +35,8 @@ export function LandingHero({
                 )}
               >
                 {primaryLabel}
-              </Link>
-              <Link
+              </HashSafeLink>
+              <HashSafeLink
                 href={secondaryHref}
                 className={cn(
                   buttonVariants({ variant: "outline", size: "lg" }),
@@ -44,7 +44,7 @@ export function LandingHero({
                 )}
               >
                 {secondaryLabel}
-              </Link>
+              </HashSafeLink>
             </div>
             <p className="mt-5 text-sm text-slate-500">
               Built for marketers, agencies, and lead gen operators targeting dental practices.

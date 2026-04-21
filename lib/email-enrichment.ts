@@ -106,6 +106,7 @@ export async function enrichLeadWebsite(
       emailStatus: "skipped",
       emailSource: null,
       enrichmentNotes: "No website available",
+      emailRejectionReason: null,
     };
     logEnrichmentLine({
       placeId: input.placeId,
@@ -137,6 +138,7 @@ export async function enrichLeadWebsite(
       emailStatus: "not_found",
       emailSource: null,
       enrichmentNotes: fetchFailure,
+      emailRejectionReason: null,
     };
   }
 
@@ -174,7 +176,7 @@ export async function enrichLeadWebsite(
     if (subForm && !bestFormUrl) bestFormUrl = subForm;
   }
 
-  const { best, alternates } = pickBestEmail(allCandidates);
+  const { best, alternates, rejectionReason } = pickBestEmail(allCandidates);
   if (best) {
     const notes =
       alternates.length > 0 ? `Alternate candidates: ${alternates.join(", ")}` : null;
@@ -184,6 +186,7 @@ export async function enrichLeadWebsite(
       emailStatus: "found",
       emailSource: best.source,
       enrichmentNotes: notes,
+      emailRejectionReason: null,
     };
     logEnrichmentLine({
       placeId: input.placeId,
@@ -192,6 +195,29 @@ export async function enrichLeadWebsite(
       status: fields.emailStatus,
       primaryEmail: fields.primaryEmail,
       contactFormUrl: fields.contactFormUrl,
+    });
+    return fields;
+  }
+
+  if (rejectionReason && allCandidates.length > 0) {
+    const fields: LeadEnrichmentFields = {
+      primaryEmail: null,
+      contactFormUrl: bestFormUrl,
+      emailStatus: bestFormUrl ? "contact_form_only" : "invalid",
+      emailSource: null,
+      enrichmentNotes: bestFormUrl
+        ? null
+        : `No mailbox passed validation: ${rejectionReason}`,
+      emailRejectionReason: rejectionReason,
+    };
+    logEnrichmentLine({
+      placeId: input.placeId,
+      name: input.name,
+      website: input.website,
+      status: fields.emailStatus,
+      primaryEmail: null,
+      contactFormUrl: fields.contactFormUrl,
+      failureReason: rejectionReason,
     });
     return fields;
   }
@@ -207,6 +233,7 @@ export async function enrichLeadWebsite(
       emailStatus: "invalid",
       emailSource: null,
       enrichmentNotes: "Malformed email candidate discarded",
+      emailRejectionReason: "malformed_candidate",
     };
     logEnrichmentLine({
       placeId: input.placeId,
@@ -227,6 +254,7 @@ export async function enrichLeadWebsite(
       emailStatus: bestFormUrl ? "contact_form_only" : "not_found",
       emailSource: null,
       enrichmentNotes: bestFormUrl ? null : "Only placeholder-style addresses found",
+      emailRejectionReason: null,
     };
     logEnrichmentLine({
       placeId: input.placeId,
@@ -246,6 +274,7 @@ export async function enrichLeadWebsite(
       emailStatus: "contact_form_only",
       emailSource: null,
       enrichmentNotes: null,
+      emailRejectionReason: null,
     };
     logEnrichmentLine({
       placeId: input.placeId,
@@ -264,6 +293,7 @@ export async function enrichLeadWebsite(
     emailStatus: "not_found",
     emailSource: null,
     enrichmentNotes: null,
+    emailRejectionReason: null,
   };
   logEnrichmentLine({
     placeId: input.placeId,
@@ -292,6 +322,7 @@ export async function batchEnrichLeads(leads: Lead[], runtime?: Partial<EmailEnr
       emailStatus: "skipped",
       emailSource: null,
       enrichmentNotes: "Enrichment disabled via DENTILY_DISABLE_EMAIL_ENRICHMENT",
+      emailRejectionReason: null,
     }));
   }
 
@@ -330,6 +361,7 @@ export async function batchEnrichLeads(leads: Lead[], runtime?: Partial<EmailEnr
             emailStatus: "not_found" as const,
             emailSource: null,
             enrichmentNotes: `Enrichment error: ${msg}`,
+            emailRejectionReason: null,
           };
         }
       })

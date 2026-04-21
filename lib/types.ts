@@ -23,6 +23,8 @@ export type LeadEnrichmentFields = {
   emailStatus: EmailStatus;
   emailSource: EmailSource;
   enrichmentNotes: string | null;
+  /** Set when scraped candidates fail strict mailbox validation (CSV column + debugging). */
+  emailRejectionReason?: string | null;
 };
 
 export type Lead = {
@@ -37,6 +39,8 @@ export type Lead = {
   emailStatus: EmailStatus | null;
   emailSource: EmailSource;
   enrichmentNotes: string | null;
+  /** Persisted on lead when enrichment rejects a scraped mailbox (see `email_rejection_reason` column). */
+  emailRejectionReason?: string | null;
   phone: string | null;
   rating: number | null;
   reviewCount: number | null;
@@ -116,6 +120,7 @@ export type ExportLeadRow = {
   email_status: string | null;
   email_source: string | null;
   enrichment_notes: string | null;
+  email_rejection_reason: string | null;
   /** At least one of email, form URL, or phone. */
   contactable: boolean;
   outreach_readiness: string | null;

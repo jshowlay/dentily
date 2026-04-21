@@ -30,6 +30,11 @@ if (listen) {
   console.log(`Port ${port} LISTEN:\n${listen}\n`);
 } else {
   console.log(`Port ${port}: nothing listening — the dev server is NOT running.\n`);
+  console.log(`  Fix: cd to the project, run  npm run dev  (or npm run dev:boot) and leave that terminal open.`);
+  if (port === "3000") {
+    console.log(`       If something might be stuck on 3000:  npm run free:3000  then  npm run dev`);
+  }
+  console.log(`       Wait for "✓ Ready", then open http://127.0.0.1:${port} in the browser.\n`);
 }
 
 await new Promise((resolve) => {
@@ -92,7 +97,7 @@ What to do:
   2. nvm use && node -v   (must be v22.x or v20.x / 18.17+)
   3. npm run dev:boot     (loads nvm, then starts Next — use if IDE shows old Node)
   4. Wait for:  ✓ Ready
-  5. Browser:    http://127.0.0.1:${port}  (try this if "localhost" fails — Chrome -102)
+  5. Browser:    http://127.0.0.1:${port}  (avoid http://localhost — macOS may use IPv6 ::1 first → "refused")
   6. Keep the dev terminal OPEN while you browse.
   7. Unstyled page? Run PORT=${port} npm run doctor — if GET /_next/static/css/... fails, clean + rebuild + one server only.
 `);

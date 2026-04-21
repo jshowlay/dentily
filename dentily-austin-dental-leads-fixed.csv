@@ -1,0 +1,30 @@
+﻿Name,Priority,Action Tier,Why This Lead,Address,Website,Phone,Primary Email,Other Emails,Contact Form URL,Best Contact Method,Reachability Score,Contactable,Cluster Notes,Voicemail Script,Email Status,Email Source,Enrichment Notes,Email Rejection Reason,Outreach Readiness,Estimated Opportunity,Rating,Review Count,Score,Opportunity Type,Why Now,Reason,Outreach Draft (customize before sending),Maps URL,Top Lead,Placeholders Remaining,Apollo Enrichment
+--- HOW TO USE THIS PACK ---,,,,,,,,,,,,,,,,,,,,,,,,,,,"BEFORE YOU SEND: Replace {{your_name}}, {{your_company}}, and {{your_credibility_line}} in every Outreach cell. Example credibility lines: ""I run a dental SEO agency and have worked with 12 practices in the last two years."" / ""I do paid ads for healthcare practices — my last dental client cut their cost-per-new-patient by 40%."" / ""I help local service businesses show up on Google Maps — dentistry is one of my specialties."" Sort by Priority (High first), then Score descending. Start with Email leads before Contact Form leads.",,No,,
+Authentic Smiles,High,Tier 2: Call First,Strong rating (5) with 288 reviews but no visible growth motion — ready for paid acquisition or conversion work. (High priority.),"1 Main St, Austin, TX",https://example.com/authentic,512-555-0003,,,,Phone (no digital path),1,Gatekeeper only,,"Hi Authentic Smiles, this is {{your_name}} from {{your_company}}. I work with a handful of dental practices on new patient acquisition. If you have thirty seconds, I had one specific observation about how you show up locally. Callback is fine whenever works. Thanks.",Pending,,,,Medium,Paid ads + local SEO growth ($5k-$20k/mo),5,288,58,Established Static,,Phone only on file. Digital path still thin.,"{{your_name}} here, from {{your_company}}. {{your_credibility_line}}
+
+Maps lists about 5 stars and roughly 288 reviews in Austin with a site link on the profile. Does inbound still skew through the map entry versus typed search for you?
+
+I will send a 2-minute Loom on the first change I would test. Reply yes if you want it. No call required.
+
+— {{your_name}}",,Yes,"{{your_name}}, {{your_company}}, {{your_credibility_line}}",
+Austin Emergency Dental,Medium,Tier 2: Call First,"Solid fundamentals (4.8 stars, 160 reviews) with room to convert local visibility into more bookings. (Medium priority.)","4419 Frontier Trail # 104, Austin, TX 78745",https://example.com/emergency,512-555-0002,,,,Phone (no digital path),1,Gatekeeper only,Shared address with: South Austin Dental Associates,"Hi Austin Emergency Dental, this is {{your_name}} from {{your_company}}. I work with a handful of dental practices on new patient acquisition. If you have thirty seconds, I had one specific observation about how you show up locally. Callback is fine whenever works. Thanks.",Pending,,,,Medium,Paid ads + local SEO growth ($5k-$20k/mo),4.8,160,54,General Growth,,Phone only on file. Digital path still thin.,"{{your_name}} here, from {{your_company}}. {{your_credibility_line}}
+
+The card in Austin shows about 4.8 stars and roughly 160 reviews. If you squint at that snapshot versus your week, what feels off?
+
+I will send a 2-minute Loom on the first change I would test. Reply yes if you want it. No call required.
+
+— {{your_name}}",,Yes,"{{your_name}}, {{your_company}}, {{your_credibility_line}}",
+West Lake Hills Dental,Medium,Tier 2: Call First,"Solid fundamentals (5 stars, 172 reviews) with room to convert local visibility into more bookings. (Medium priority.)","2 Oak Ln, Austin, TX",https://example.com/westlake,512-555-0004,,,,Phone (no digital path),1,Gatekeeper only,,"Hi West Lake Hills Dental, this is {{your_name}} from {{your_company}}. I work with a handful of dental practices on new patient acquisition. If you have thirty seconds, I had one specific observation about how you show up locally. Callback is fine whenever works. Thanks.",Pending,,,,Medium,Paid ads + local SEO growth ($5k-$20k/mo),5,172,54,General Growth,,Phone only on file. Digital path still thin.,"{{your_name}} here, from {{your_company}}. {{your_credibility_line}}
+
+Public average is about 5 stars with roughly 172 reviews in Austin. Where do you think the listing undersells you today?
+
+I will send a 2-minute Loom on the first change I would test. Reply yes if you want it. No call required.
+
+— {{your_name}}",,Yes,"{{your_name}}, {{your_company}}, {{your_credibility_line}}",
+South Austin Dental Associates,Low,Tier 2: Call First,"Solid fundamentals (4.9 stars, 170 reviews) with room to convert local visibility into more bookings. (Low priority.)","4419 Frontier Trail # 104, Austin, TX 78745",https://example.com/south,512-555-0001,,,,Phone (no digital path),1,Gatekeeper only,Shared address with: Austin Emergency Dental,"Hi South Austin Dental Associates, this is {{your_name}} from {{your_company}}. I work with a handful of dental practices on new patient acquisition. If you have thirty seconds, I had one specific observation about how you show up locally. Callback is fine whenever works. Thanks.",Pending,,,,Medium,Paid ads + local SEO growth ($5k-$20k/mo),4.9,170,40,General Growth,,Co-located listing in this export. Demoted so you do not double-contact the same address.,"{{your_name}} here, from {{your_company}}. {{your_credibility_line}}
+
+I try to ground this in public fields only. About 4.9 stars and roughly 170 reviews show on the listing in Austin. What would you change first if you had to pick one lever?
+
+I will send a 2-minute Loom on the first change I would test. Reply send it and I will push it over. No call required.
+
+— {{your_name}}",,Yes,"{{your_name}}, {{your_company}}, {{your_credibility_line}}",

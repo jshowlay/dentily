@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { HashSafeLink } from "@/components/hash-safe-link";
 import { FeatureCard } from "@/components/landing/feature-card";
 import { LandingHero } from "@/components/landing/hero";
 import { LiveSampleLeads } from "@/components/landing/live-sample-leads";
@@ -35,9 +36,18 @@ const PROOF_CARDS = [
 ] as const;
 
 const WHO_THIS_IS_FOR = [
-  "Freelancers offering dental marketing",
-  "Agencies looking for new clients",
-  "Lead generation businesses targeting dentists",
+  {
+    title: "Freelancers offering dental marketing",
+    body: "You're doing outreach solo. Dentily cuts your research time so you can spend the day on calls and emails, not building lists from scratch.",
+  },
+  {
+    title: "Agencies looking for new clients",
+    body: "Your team needs a repeatable pipeline into dental. Dentily gives you scored, pitch-ready practices so your reps show up with context, not cold guesses.",
+  },
+  {
+    title: "Lead generation businesses targeting dentists",
+    body: "You sell qualified dental leads to clients. Dentily helps you build territory packs faster and deliver leads with signals already baked in.",
+  },
 ] as const;
 
 export function DentistLanding() {
@@ -130,9 +140,9 @@ export function DentistLanding() {
       <LandingSection id="audience" variant="muted">
         <SectionHeader title="Who This Is For" className="mb-10 md:mb-12" />
         <div className="grid gap-4 md:grid-cols-3">
-          {WHO_THIS_IS_FOR.map((line) => (
-            <FeatureCard key={line} title={line}>
-              Built for teams that sell marketing services to dental practices.
+          {WHO_THIS_IS_FOR.map((item) => (
+            <FeatureCard key={item.title} title={item.title}>
+              {item.body}
             </FeatureCard>
           ))}
         </div>
@@ -170,9 +180,29 @@ export function DentistLanding() {
         </p>
       </LandingSection>
 
+      <LandingSection id="relevant-pitch" variant="white">
+        <div className="mx-auto max-w-3xl">
+          <h2 className="text-center text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
+            What happens when the pitch is relevant
+          </h2>
+          <figure className="mt-10 rounded-r-xl border-y border-r border-slate-200 border-l-4 border-l-blue-600 bg-slate-50/80 py-8 pl-6 pr-6 shadow-sm md:pl-8 md:pr-10">
+            <blockquote className="text-base leading-relaxed text-slate-800 md:text-lg">
+              <p>
+                &ldquo;I used the outreach draft almost word for word. The practice owner said it was the first cold
+                email she&apos;d actually read in months. Booked a call the same day.&rdquo;
+              </p>
+            </blockquote>
+            <figcaption className="mt-5 text-sm font-medium text-slate-700">
+              — Freelance dental marketing consultant, Austin TX
+            </figcaption>
+            <p className="mt-3 text-xs text-slate-500 md:text-sm">Result from a beta user. Individual outcomes vary.</p>
+          </figure>
+        </div>
+      </LandingSection>
+
       {/* Pricing + FAQ (kept for conversion + existing FAQ content) */}
       <LandingSection id="pricing-section" variant="muted">
-        <div className="mx-auto max-w-lg">
+        <div className="mx-auto max-w-lg px-4">
           <h2 className="text-center text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">Simple pricing</h2>
           <p className="mt-2 text-center text-sm text-slate-600">
             One-time purchase. Actionable lead pack for people who sell to dental practices.
@@ -212,6 +242,12 @@ export function DentistLanding() {
               >
                 Get My First Leads
               </Link>
+              <p className="text-center text-sm text-slate-600">
+                Need leads every month?{" "}
+                <Link href="/pricing" className="font-medium text-blue-700 underline-offset-4 hover:underline">
+                  Monthly plan — $39/mo →
+                </Link>
+              </p>
               <Link
                 href="/pricing"
                 className="block text-center text-sm font-medium text-blue-700 underline-offset-4 hover:underline"
@@ -249,9 +285,9 @@ export function DentistLanding() {
           <Link href="/pricing" className="text-blue-600 hover:underline">
             Pricing
           </Link>
-          <Link href="/search#sample-preview" className="text-blue-600 hover:underline">
+          <HashSafeLink href="/search#sample-preview" className="text-blue-600 hover:underline">
             View Sample Leads
-          </Link>
+          </HashSafeLink>
           <Link href="/" className="text-blue-600 hover:underline">
             Home
           </Link>

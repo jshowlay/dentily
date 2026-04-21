@@ -1,4 +1,5 @@
 import * as cheerio from "cheerio";
+import { validateMarketingEmail } from "@/lib/marketing-email-validate";
 import type { EmailSource } from "@/lib/types";
 
 const EMAIL_REGEX =
@@ -200,21 +201,34 @@ export type ScoredEmail = { email: string; source: EmailSource };
 export function pickBestEmail(candidates: ScoredEmail[]): {
   best: ScoredEmail | null;
   alternates: string[];
+  rejectionReason: string | null;
 } {
   const seen = new Set<string>();
   const valid: ScoredEmail[] = [];
+  let rejectionReason: string | null = null;
   for (const c of candidates) {
     const n = normalizeEmailCandidate(c.email);
-    if (!n || !isValidEmailShape(n) || isPlaceholderEmail(n)) continue;
-    if (seen.has(n)) continue;
-    seen.add(n);
-    valid.push({ email: n, source: c.source });
+    if (!n) continue;
+    if (!isValidEmailShape(n)) {
+      if (!rejectionReason) rejectionReason = "invalid_shape";
+      continue;
+    }
+    if (isPlaceholderEmail(n)) continue;
+    const strict = validateMarketingEmail(n);
+    if (!strict.ok) {
+      if (!rejectionReason) rejectionReason = strict.reason;
+      continue;
+    }
+    const clean = strict.normalized;
+    if (seen.has(clean)) continue;
+    seen.add(clean);
+    valid.push({ email: clean, source: c.source });
   }
-  if (valid.length === 0) return { best: null, alternates: [] };
+  if (valid.length === 0) return { best: null, alternates: [], rejectionReason };
   valid.sort((a, b) => scoreEmailForRanking(b.email) - scoreEmailForRanking(a.email));
   const best = valid[0] ?? null;
   const alternates = valid.slice(1, 5).map((v) => v.email);
-  return { best, alternates };
+  return { best, alternates, rejectionReason: null };
 }
 
 function pathScore(pathname: string): number {

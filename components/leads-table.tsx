@@ -1,5 +1,5 @@
 import { describeScoreFactors } from "@/lib/lead-score-factors";
-import { computeBestContactMethod } from "@/lib/lead-pack-export";
+import { computeBestContactMethod } from "@/lib/contact-labels";
 import {
   isLeadContactable,
   outreachReadinessFromContactSignals,

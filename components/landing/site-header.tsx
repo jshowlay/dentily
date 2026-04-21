@@ -1,9 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
-import { useEffect, useState } from "react";
 import { BrandMark } from "@/components/brand-mark";
+import { HashSafeLink } from "@/components/hash-safe-link";
 import { buttonVariants } from "@/lib/button-variants";
 import { cn } from "@/lib/utils";
 
@@ -39,18 +40,18 @@ export function SiteHeader() {
 
           <nav className="hidden items-center gap-6 md:flex">
             {NAV_LINKS.map((item) => (
-              <Link
+              <HashSafeLink
                 key={item.label}
                 href={item.href}
                 className="whitespace-nowrap text-sm font-medium text-slate-700 underline-offset-4 hover:text-slate-900 hover:underline"
               >
                 {item.label}
-              </Link>
+              </HashSafeLink>
             ))}
           </nav>
 
           <div className="flex shrink-0 items-center gap-2">
-            <Link
+            <HashSafeLink
               href="/search#sample-preview"
               className={cn(
                 buttonVariants({ variant: "default", size: "default" }),
@@ -58,7 +59,7 @@ export function SiteHeader() {
               )}
             >
               View Sample Leads
-            </Link>
+            </HashSafeLink>
             <button
               type="button"
               aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
@@ -76,14 +77,14 @@ export function SiteHeader() {
         <div className="border-t border-slate-200 bg-white md:hidden">
           <nav className="landing-max flex flex-col gap-1 py-3">
             {NAV_LINKS.map((item) => (
-              <Link
+              <HashSafeLink
                 key={item.label}
                 href={item.href}
                 onClick={() => setMenuOpen(false)}
                 className="rounded-md px-2 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900"
               >
                 {item.label}
-              </Link>
+              </HashSafeLink>
             ))}
           </nav>
         </div>

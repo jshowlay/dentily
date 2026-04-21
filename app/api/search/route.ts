@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getPlaceDetails, searchBusinesses } from "@/lib/google-places";
 import { createSearch, getSearchWithLeads, insertLeads, setSearchStatus } from "@/lib/db";
 import { dedupeLeads } from "@/lib/dedupe-leads";
-import { ensureMinimumHighPriority, type DentistScoringBatchContext } from "@/lib/dentist-scoring";
+import { type DentistScoringBatchContext } from "@/lib/dentist-scoring";
 import { logSearchPrioritySummary, sortByPriorityThenScore } from "@/lib/lead-pack-export";
 import { scoreDentistLeadsBatched, scoreLead } from "@/lib/score-lead";
 import { logDentistScoringBatch } from "@/lib/scoring-log";
@@ -284,10 +284,7 @@ export async function POST(request: Request) {
         );
       }
 
-      const scoredLeads =
-        nicheConfig.id === "dentists"
-          ? ensureMinimumHighPriority(scoredLeadsRaw, { minHigh: 5 })
-          : scoredLeadsRaw;
+      const scoredLeads = scoredLeadsRaw;
       console.log(`[api/search] scoredCount=${scoredLeads.length} failedAIScores=${failedAIScores}`);
       {
         const sortedForTop = sortByPriorityThenScore(scoredLeads);

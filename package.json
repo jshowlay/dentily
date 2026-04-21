@@ -13,6 +13,7 @@
     "predev:ipv4": "node scripts/check-node.mjs",
     "predev:3456": "node scripts/check-node.mjs",
     "predev:clean": "node scripts/check-node.mjs",
+    "predev:loopback": "node scripts/check-node.mjs",
     "prestart": "node scripts/check-node.mjs",
     "clean": "rm -rf .next node_modules/.cache",
     "rebuild": "npm run clean && npm run build",
@@ -20,11 +21,13 @@
     "diagnose": "node scripts/diagnose.mjs",
     "doctor": "node scripts/doctor.mjs",
     "doctor:3010": "PORT=3010 node scripts/doctor.mjs",
+    "free:3000": "lsof -tiTCP:3000 -sTCP:LISTEN 2>/dev/null | xargs kill -9 2>/dev/null; lsof -nP -iTCP:3000 -sTCP:LISTEN 2>/dev/null || echo 'Port 3000 is free.'",
     "dev:log": "node scripts/dev-banner.mjs && next dev -p 3000 -H 0.0.0.0 2>&1 | tee dev-server.log",
     "dev:boot": "bash scripts/start-dev.sh",
     "dev": "node scripts/dev-banner.mjs && next dev -p 3000 -H 0.0.0.0",
     "dev:safe": "node scripts/dev-banner.mjs && NODE_OPTIONS='--max-old-space-size=4096' next dev -p 3000 -H 0.0.0.0",
     "dev:turbo": "node scripts/dev-banner.mjs && next dev -p 3000 --turbo -H 0.0.0.0",
+    "dev:loopback": "node scripts/dev-banner.mjs && next dev -p 3000 -H 127.0.0.1",
     "dev:ipv4": "node scripts/dev-banner.mjs && next dev -p 3000 -H 127.0.0.1",
     "dev:3456": "DEV_PORT=3456 node scripts/dev-banner.mjs && next dev -p 3456 -H 0.0.0.0",
     "dev:3010": "node scripts/dev-banner.mjs && next dev -p 3010 -H 0.0.0.0",
@@ -35,7 +38,8 @@
     "start:3010": "next start -p 3010",
     "preview:3010": "npm run build && next start -p 3010",
     "lint": "next lint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "generate-sample-pack": "GENERATE_SAMPLE_PACK=1 vitest run lib/sample-pack.test.ts"
   },
   "dependencies": {
     "cheerio": "^1.2.0",

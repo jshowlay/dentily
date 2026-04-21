@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS leads (
   email_status TEXT,
   email_source TEXT,
   enrichment_notes TEXT,
+  email_rejection_reason TEXT,
   phone TEXT,
   rating NUMERIC,
   review_count INTEGER,

@@ -5,6 +5,7 @@ import {
   classifyOpportunityType,
   classifyPriorityFromScore,
   computeBaseScore,
+  computeExportReasonLine,
   type DentistScoringBatchContext,
 } from "@/lib/dentist-scoring";
 import { Lead, NicheConfig } from "@/lib/types";
@@ -103,9 +104,7 @@ Rules:
 }
 
 function buildDentistStrategistPrompt(lead: Lead, opportunityType: string, baseScore: number) {
-  return `You are a sales strategist specializing in helping dental practices attract more patients.
-
-Your job is to analyze this business and generate highly specific, data-aware insights.
+  return `You are drafting B2B outreach for a buyer who sells marketing services to dental practices. The buyer will replace placeholders before sending.
 
 Return ONLY valid JSON:
 
@@ -119,9 +118,14 @@ Rules:
 - adjustment must be between -8 and +8 (small tweak to the base score only; do not replace scoring)
 - reason must reference actual signals (reviews, rating, website)
 - DO NOT use generic phrases like "great opportunity"
-- outreach must feel human, not robotic
-- outreach must reference patients, bookings, or appointments
+- outreach must sound like a careful human, not a template
+- outreach must mention new patients, bookings, or scheduling context at least once
 - outreach must include a subtle observation from the data
+- NEVER use the words: leverage, solutions, partner (or partnering)
+- NEVER use long dashes or em dashes. Use periods and short sentences.
+- outreach must start with: {{your_name}} here, from {{your_company}}. {{your_credibility_line}}
+- Do not invent a real person's name or company. Use those placeholders exactly.
+- End with a concrete CTA that names what you will send, how long it takes to consume, and the exact reply token (example: reply LOOM for a 2-minute Loom)
 - keep reason under 140 characters
 - keep outreach under 280 characters
 - JSON only
@@ -140,47 +144,16 @@ Base Score: ${baseScore}
 const GENERIC_REASON_BAN =
   /\b(good lead|great opportunity|potential opportunity|strong opportunity|growth opportunity|solid foundation|measurable opportunity|under-optimized)\b/i;
 
-/** Fallback when AI is missing or too generic — tied to actual signals. */
-function dentistFallbackReasonFromSignals(lead: Lead): string {
-  if (!lead.website?.trim()) {
-    return "No public website — new patients may be choosing easier-to-find practices nearby.";
-  }
-  const rating = lead.rating;
-  const rc = lead.reviewCount;
-  if (rating !== null && rating !== undefined && rating < 4.0) {
-    return `${rating.toFixed(1)} rating suggests room to improve patient perception.`;
-  }
-  if (rc !== null && rc !== undefined && rc < 20) {
-    return "Low review count suggests untapped visibility potential.";
-  }
-  if (rc !== null && rc !== undefined && rc < 75) {
-    return "Moderate review volume suggests room for stronger local demand.";
-  }
-  if (
-    rating !== null &&
-    rating !== undefined &&
-    rating >= 4.8 &&
-    rc !== null &&
-    rc !== undefined &&
-    rc >= 250
-  ) {
-    return "High review volume and strong rating make this a lower-priority target.";
-  }
-  if (rating !== null && rating !== undefined && rating < 4.2) {
-    return `${rating.toFixed(1)} rating suggests room to improve patient perception and bookings.`;
-  }
-  return "Practice appears established but may still have room to improve patient flow.";
-}
-
 function sanitizeDentistReason(lead: Lead, reason: string): string {
   const trimmed = reason.trim().slice(0, 140);
   if (!trimmed || GENERIC_REASON_BAN.test(trimmed)) {
-    return dentistFallbackReasonFromSignals(lead);
+    return computeExportReasonLine(lead).slice(0, 140);
   }
   return trimmed;
 }
 
-const OUTREACH_KEYWORD_RE = /\b(?:patient|patients|booking|bookings|appointment|appointments)\b/i;
+const OUTREACH_KEYWORD_RE =
+  /\b(?:patient|patients|booking|booked|bookings|appointment|appointments|referrals?|hiring|loom|clip|audit|walkthrough|visibility|maps)\b/i;
 
 function sanitizeDentistOutreach(lead: Lead, outreach: string): string {
   let candidate = (outreach ?? "").trim();
@@ -213,7 +186,7 @@ async function scoreDentistLead(
     const finalScore = clampScore(baseScore);
     return {
       score: finalScore,
-      reason: dentistFallbackReasonFromSignals(lead),
+      reason: computeExportReasonLine(lead).slice(0, 140),
       outreach: sanitizeDentistOutreach(
         lead,
         personalizeDentistOutreachWithSignals(lead, pickDentistFallbackOutreach(lead))
@@ -263,7 +236,7 @@ async function scoreDentistLead(
     const finalScore = clampScore(baseScore);
     return {
       score: finalScore,
-      reason: dentistFallbackReasonFromSignals(lead),
+      reason: computeExportReasonLine(lead).slice(0, 140),
       outreach: sanitizeDentistOutreach(
         lead,
         personalizeDentistOutreachWithSignals(lead, pickDentistFallbackOutreach(lead))
@@ -290,12 +263,13 @@ function buildDentistBatchPrompt(
    Base score: ${baseScore}`
   );
   const n = chunk.length;
-  return `You are a sales strategist specializing in helping dental practices attract more patients.
+  return `You are drafting B2B outreach for buyers who sell marketing services to dental practices. They will replace placeholders before sending.
 
 For EACH of the ${n} businesses below, produce:
 - adjustment: integer from -8 to +8 (small tweak to base score only; do not replace scoring)
 - reason: one specific sentence referencing real data, under 140 characters, no generic phrases like "great opportunity"
-- outreach: short personalized message under 280 characters; must feel human; reference patients, bookings, or appointments; include a subtle observation from the data
+- outreach: under 280 characters; human tone; mention new patients or bookings once; include a subtle observation from the data; start with exactly: {{your_name}} here, from {{your_company}}. {{your_credibility_line}}
+- NEVER use: leverage, solutions, partner. NEVER use em dashes. Use a concrete CTA with reply token and time box (e.g. 2-minute Loom).
 
 Return ONLY valid JSON in this exact shape:
 {"items":[{"index":0,"adjustment":0,"reason":"...","outreach":"..."},...]}

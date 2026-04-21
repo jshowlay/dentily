@@ -3,9 +3,10 @@
  * would throw `new URL(...)` and break RSC renders / client navigations.
  */
 export function getMetadataBaseUrl(): URL {
-  let raw =
-    process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/$/, "") ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+  let raw = process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/$/, "") ?? "";
+  if (!raw || raw === "undefined" || raw === "null") {
+    raw = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000";
+  }
 
   if (raw && !/^https?:\/\//i.test(raw)) {
     raw = `http://${raw}`;

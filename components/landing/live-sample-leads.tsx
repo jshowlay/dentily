@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { HashSafeLink } from "@/components/hash-safe-link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { buttonVariants } from "@/lib/button-variants";
 import { cn } from "@/lib/utils";
@@ -138,7 +138,7 @@ export function LiveSampleLeads() {
             offer.
           </p>
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-            <Link
+            <HashSafeLink
               href="/search#sample-preview"
               className={cn(
                 buttonVariants({ size: "lg" }),
@@ -146,8 +146,8 @@ export function LiveSampleLeads() {
               )}
             >
               View Sample Leads
-            </Link>
-            <Link
+            </HashSafeLink>
+            <HashSafeLink
               href="/search"
               className={cn(
                 buttonVariants({ variant: "outline", size: "lg" }),
@@ -155,7 +155,7 @@ export function LiveSampleLeads() {
               )}
             >
               Get My First Leads
-            </Link>
+            </HashSafeLink>
           </div>
         </div>
       </div>

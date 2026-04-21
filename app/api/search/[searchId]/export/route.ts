@@ -5,9 +5,8 @@ import { getSearchForExport } from "@/lib/db";
 import {
   buildLeadPackCsv,
   buildLeadPackRowsFromExport,
-  computeWhyNow,
+  isLeadPackInstructionRow,
   logExportPrioritySummary,
-  sortByPriorityThenScore,
 } from "@/lib/lead-pack-export";
 
 export const dynamic = "force-dynamic";
@@ -42,18 +41,9 @@ export async function GET(
       );
     }
 
-    const withWhy = rows.map((r) => ({
-      ...r,
-      why_now: computeWhyNow({
-        website: r.website,
-        rating: r.rating,
-        review_count: r.review_count,
-      }),
-    }));
-    const sorted = sortByPriorityThenScore(withWhy);
-    const packRows = buildLeadPackRowsFromExport(sorted);
+    const packRows = buildLeadPackRowsFromExport(rows);
     const csv = buildLeadPackCsv(packRows);
-    const topYesCount = packRows.filter((r) => r.top_lead === "Yes").length;
+    const topYesCount = packRows.filter((r) => !isLeadPackInstructionRow(r) && r.top_lead === "Yes").length;
     logExportPrioritySummary(packRows, topYesCount);
     const filename = `dentily-${toSlugPart(search.location)}-dental-leads-${searchId}.csv`;
     const body = `\uFEFF${csv}`;
