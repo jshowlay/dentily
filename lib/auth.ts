@@ -2,13 +2,24 @@ import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import { upsertUserByEmail } from "@/lib/subscription-db";
 
+const googleClientId = (
+  process.env.GOOGLE_CLIENT_ID ??
+  process.env.AUTH_GOOGLE_ID ??
+  ""
+).trim();
+const googleClientSecret = (
+  process.env.GOOGLE_CLIENT_SECRET ??
+  process.env.AUTH_GOOGLE_SECRET ??
+  ""
+).trim();
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
   secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
   providers: [
     Google({
-      clientId: process.env.GOOGLE_CLIENT_ID ?? process.env.AUTH_GOOGLE_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? process.env.AUTH_GOOGLE_SECRET,
+      clientId: googleClientId,
+      clientSecret: googleClientSecret,
     }),
   ],
   pages: {
