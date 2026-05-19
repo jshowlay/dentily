@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { fulfillCheckoutSession } from "@/lib/payments";
+import {
+  fulfillSubscriptionCheckout,
+  handleInvoicePaymentFailed,
+  handleInvoicePaymentSucceeded,
+  handleSubscriptionDeleted,
+  handleSubscriptionUpdated,
+} from "@/lib/subscription-stripe";
 import { getStripe } from "@/lib/stripe";
 
 export const dynamic = "force-dynamic";
@@ -28,14 +35,40 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: { message: "Invalid signature." } }, { status: 400 });
   }
 
-  if (event.type === "checkout.session.completed") {
-    const session = event.data.object as Stripe.Checkout.Session;
-    try {
-      await fulfillCheckoutSession(session);
-    } catch (err) {
-      console.error("[webhooks/stripe] fulfill failed", err);
-      return NextResponse.json({ error: { message: "Fulfillment failed." } }, { status: 500 });
+  try {
+    switch (event.type) {
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        if (session.metadata?.userId && session.metadata?.plan) {
+          await fulfillSubscriptionCheckout(session);
+        } else {
+          await fulfillCheckoutSession(session);
+        }
+        break;
+      }
+      case "customer.subscription.created":
+      case "customer.subscription.updated": {
+        await handleSubscriptionUpdated(event.data.object as Stripe.Subscription);
+        break;
+      }
+      case "customer.subscription.deleted": {
+        await handleSubscriptionDeleted(event.data.object as Stripe.Subscription);
+        break;
+      }
+      case "invoice.payment_succeeded": {
+        await handleInvoicePaymentSucceeded(event.data.object as Stripe.Invoice);
+        break;
+      }
+      case "invoice.payment_failed": {
+        await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice);
+        break;
+      }
+      default:
+        break;
     }
+  } catch (err) {
+    console.error("[webhooks/stripe] handler failed", event.type, err);
+    return NextResponse.json({ error: { message: "Fulfillment failed." } }, { status: 500 });
   }
 
   return NextResponse.json({ received: true });

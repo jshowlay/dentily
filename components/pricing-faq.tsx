@@ -28,8 +28,20 @@ const FAQ_ITEMS: { q: string; a: string }[] = [
     a: "Dentily does not sell individual patient identities or clinical data. You get practice-level opportunities derived from listings such as Google Maps.",
   },
   {
-    q: "Is there a subscription?",
-    a: "The standard opportunity pack is a one-time purchase for that search. No subscription is required in the product flow.",
+    q: "Can I cancel anytime?",
+    a: "Yes. Cancel from your dashboard billing portal. Access continues through the end of your billing period.",
+  },
+  {
+    q: "What counts as a credit?",
+    a: "One search in any city equals one credit. Each search returns up to 50 scored leads.",
+  },
+  {
+    q: "Do I get the same leads twice?",
+    a: "No. Dentily tracks every practice you've seen and filters them out of future searches on your account.",
+  },
+  {
+    q: "What's the difference between Starter and Pro?",
+    a: "Starter is a one-time CSV for one market ($49). Pro is a living pipeline: fresh leads every month, tracked in your dashboard, never duplicated ($99/mo).",
   },
 ];
 

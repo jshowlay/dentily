@@ -1,201 +1,203 @@
 "use client";
 
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { useCallback, useState } from "react";
+import { Loader2 } from "lucide-react";
 import { HowToUsePack } from "@/components/how-to-use-pack";
 import { buttonVariants } from "@/lib/button-variants";
 import { QUALITY_REPLACEMENT_NOTE, SITE } from "@/lib/site-config";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-// Monthly CTA uses NEXT_PUBLIC_STRIPE_MONTHLY_LINK — set in .env.local (see .env.example).
-// TODO: replace placeholder in .env.local with your live Stripe Payment Link when ready.
-const monthlyPlanUrl = process.env.NEXT_PUBLIC_STRIPE_MONTHLY_LINK || "#monthly-plan";
-
-type Plan = "one-time" | "monthly";
+type Plan = "starter" | "pro";
 
 export function PricingPlanOptions() {
-  const [plan, setPlan] = useState<Plan>("one-time");
+  const { data: session } = useSession();
+  const [plan, setPlan] = useState<Plan>("starter");
+  const [loading, setLoading] = useState<Plan | null>(null);
 
-  const openMonthlyTab = useCallback(() => setPlan("monthly"), []);
-  const openOneTimeTab = useCallback(() => setPlan("one-time"), []);
-
-  const onToggleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLDivElement>) => {
-      if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-        e.preventDefault();
-        openMonthlyTab();
-      } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-        e.preventDefault();
-        openOneTimeTab();
+  const startCheckout = useCallback(
+    async (selected: Plan) => {
+      if (!session?.user) {
+        window.location.href = `/login?next=/pricing&plan=${selected}`;
+        return;
+      }
+      setLoading(selected);
+      try {
+        const res = await fetch("/api/stripe/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ plan: selected }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error ?? "Checkout failed");
+        if (data.url) window.location.href = data.url;
+      } catch (e) {
+        alert(e instanceof Error ? e.message : "Checkout failed");
+      } finally {
+        setLoading(null);
       }
     },
-    [openMonthlyTab, openOneTimeTab]
+    [session]
   );
-
-  const monthlyOpensNewTab = /^https?:\/\//i.test(monthlyPlanUrl);
 
   return (
     <div className="w-full">
+      <div className="mx-auto max-w-2xl text-center">
+        <h2 className="text-2xl font-bold text-slate-900">Your dental outreach pipeline. Every month.</h2>
+        <p className="mt-3 text-sm leading-relaxed text-slate-600">
+          Close one client and your subscription pays for itself 30×. Most members close within their first pack.
+        </p>
+      </div>
+
       <div
-        className="mx-auto flex max-w-md flex-col gap-2 rounded-full border border-slate-200 bg-white p-1 shadow-sm transition-shadow duration-200 focus-within:ring-2 focus-within:ring-slate-900/15 sm:flex-row sm:items-center sm:justify-center"
+        className="mx-auto mt-8 flex max-w-md flex-col gap-2 rounded-full border border-slate-200 bg-white p-1 shadow-sm sm:flex-row"
         role="tablist"
         aria-label="Pricing plan"
-        onKeyDown={onToggleKeyDown}
       >
         <button
           type="button"
           role="tab"
-          id="tab-one-time"
-          aria-controls="panel-one-time"
-          aria-selected={plan === "one-time"}
-          tabIndex={0}
+          aria-selected={plan === "starter"}
           className={cn(
-            "min-h-[44px] flex-1 rounded-full px-4 text-sm font-semibold outline-none transition-all duration-200",
-            plan === "one-time"
-              ? "bg-slate-900 text-white shadow-sm"
-              : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+            "min-h-[44px] flex-1 rounded-full px-4 text-sm font-semibold transition-all",
+            plan === "starter" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-50"
           )}
-          onClick={openOneTimeTab}
+          onClick={() => setPlan("starter")}
         >
-          One-Time
+          Starter Pack
         </button>
         <button
           type="button"
           role="tab"
-          id="tab-monthly"
-          aria-controls="panel-monthly"
-          aria-selected={plan === "monthly"}
-          tabIndex={0}
+          aria-selected={plan === "pro"}
           className={cn(
-            "min-h-[44px] flex-1 rounded-full px-4 text-sm font-semibold outline-none transition-all duration-200",
-            plan === "monthly"
-              ? "bg-slate-900 text-white shadow-sm"
-              : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+            "min-h-[44px] flex-1 rounded-full px-4 text-sm font-semibold transition-all",
+            plan === "pro" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-50"
           )}
-          onClick={openMonthlyTab}
+          onClick={() => setPlan("pro")}
         >
-          Monthly — Save $10
+          Pro — $99/mo
         </button>
       </div>
 
       <div className="mt-8 grid gap-6 md:grid-cols-2 md:items-stretch">
         <Card
-          id="panel-one-time"
-          role="tabpanel"
-          aria-labelledby="tab-one-time"
           className={cn(
-            "flex flex-col transition-all duration-200 ease-out",
-            plan === "one-time"
-              ? "z-[1] border-2 border-slate-900 shadow-lg ring-0 md:scale-[1.02]"
-              : "border border-slate-200 bg-slate-50/60 opacity-75 shadow-sm md:scale-[0.99]"
+            "flex flex-col transition-all",
+            plan === "starter"
+              ? "border-2 border-slate-900 shadow-lg md:scale-[1.02]"
+              : "border border-slate-200 opacity-80 md:scale-[0.99]"
           )}
         >
           <CardHeader>
-            <CardTitle className="text-xl">One-Time Pack</CardTitle>
-            <CardDescription className={plan === "monthly" ? "text-slate-500" : undefined}>
-              One-time payment · USD · no subscription
-            </CardDescription>
-            <p className={cn("text-3xl font-bold", plan === "monthly" ? "text-slate-600" : "text-slate-900")}>
-              {SITE.leadPackPriceLabel}
-            </p>
+            <CardTitle className="text-xl">Starter Pack</CardTitle>
+            <CardDescription>One-time · entry product</CardDescription>
+            <p className="text-3xl font-bold text-slate-900">$49</p>
           </CardHeader>
-          <CardContent className="flex flex-1 flex-col space-y-5">
-            <p className="text-sm text-slate-700">
-              <span className="font-semibold text-slate-900">{SITE.leadPackCount} scored practices</span> with
-              priority tiers, &quot;why this lead&quot; rationale, and outreach drafts — CSV export after checkout.
-            </p>
-
-            <ul className="space-y-2 text-sm text-slate-700">
-              <li className="flex gap-2">
-                <span className="text-green-600">✓</span> High / medium / low priority labels
-              </li>
-              <li className="flex gap-2">
-                <span className="text-green-600">✓</span> Explainable score factors from listing data
-              </li>
-              <li className="flex gap-2">
-                <span className="text-green-600">✓</span> Phone, website, and Maps link when available
-              </li>
-              <li className="flex gap-2">
-                <span className="text-green-600">✓</span> Instant CSV download after payment
-              </li>
+          <CardContent className="flex flex-1 flex-col space-y-4 text-sm text-slate-700">
+            <ul className="space-y-2">
+              <li>✓ {SITE.leadPackCount} leads, one market</li>
+              <li>✓ CSV download</li>
+              <li>✓ Scored priorities + outreach drafts</li>
             </ul>
-
-            <p className="rounded-md border border-slate-200 bg-white p-3 text-xs leading-relaxed text-slate-600">
-              <span className="font-medium text-slate-800">Quality:</span> {QUALITY_REPLACEMENT_NOTE}
-            </p>
-            <p className="text-center text-xs font-medium text-slate-600">
-              Limited to one paid pack per search area to reduce overlap.
-            </p>
+            <p className="text-xs text-slate-500">{QUALITY_REPLACEMENT_NOTE}</p>
             <HowToUsePack className="rounded-lg border border-slate-100 bg-slate-50/80 p-4" />
-
             <div className="mt-auto pt-2">
-              <Link
-                href="/search"
-                className={cn(buttonVariants({ size: "lg" }), "flex h-11 w-full items-center justify-center")}
+              <button
+                type="button"
+                className={cn(buttonVariants({ size: "lg" }), "w-full")}
+                onClick={() => startCheckout("starter")}
+                disabled={loading !== null}
               >
-                Get My Lead Pack
+                {loading === "starter" ? <Loader2 className="mx-auto h-5 w-5 animate-spin" /> : "Buy one pack"}
+              </button>
+              <Link href="/search" className="mt-2 block text-center text-xs text-slate-600 underline">
+                Or preview a market first
               </Link>
             </div>
           </CardContent>
         </Card>
 
         <Card
-          id="monthly-plan"
-          role="tabpanel"
-          aria-labelledby="tab-monthly"
           className={cn(
-            "relative flex flex-col transition-all duration-200 ease-out",
-            plan === "monthly"
-              ? "z-[1] border-2 border-blue-700 shadow-xl ring-2 ring-blue-700/15 md:scale-[1.02]"
-              : "border border-slate-200 bg-slate-50/60 opacity-75 shadow-sm md:scale-[0.99]"
+            "relative flex flex-col transition-all",
+            plan === "pro"
+              ? "border-2 border-blue-700 shadow-xl ring-2 ring-blue-700/15 md:scale-[1.02]"
+              : "border border-slate-200 opacity-80 md:scale-[0.99]"
           )}
         >
-          <span className="absolute right-3 top-3 rounded-md border border-blue-100 bg-blue-50/90 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-blue-800 md:text-xs">
-            Best for agencies
+          <span className="absolute right-3 top-3 rounded-md bg-blue-50 px-2 py-1 text-[10px] font-semibold uppercase text-blue-800">
+            Best value
           </span>
-          <CardHeader className="pr-28 pt-10 md:pr-32">
-            <CardTitle className="text-xl">Monthly Plan</CardTitle>
-            <CardDescription>Fresh leads every month · cancel anytime</CardDescription>
-            <p className={cn("text-3xl font-bold", plan === "monthly" ? "text-slate-900" : "text-slate-600")}>
-              $39<span className="text-lg font-semibold text-slate-600">/month</span>
+          <CardHeader className="pt-10">
+            <CardTitle className="text-xl">Dentily Pro</CardTitle>
+            <CardDescription>Living pipeline · cancel anytime</CardDescription>
+            <p className="text-3xl font-bold text-slate-900">
+              $99<span className="text-lg font-semibold text-slate-600">/mo</span>
             </p>
-            <p className="text-sm text-slate-600">Save $10 vs one-time</p>
+            <p className="text-xs text-slate-600">$3k–$20k/mo estimated practice opportunity per lead</p>
           </CardHeader>
-          <CardContent className="flex flex-1 flex-col space-y-4">
-            <ul className="space-y-2 text-sm text-slate-700">
-              <li className="flex gap-2">
-                <span className="text-green-600">✓</span> Fresh {SITE.leadPackCount}-lead pack every month
-              </li>
-              <li className="flex gap-2">
-                <span className="text-green-600">✓</span> Pick a new market each month
-              </li>
-              <li className="flex gap-2">
-                <span className="text-green-600">✓</span> Priority email support
-              </li>
-              <li className="flex gap-2">
-                <span className="text-green-600">✓</span> Cancel anytime
-              </li>
+          <CardContent className="flex flex-1 flex-col space-y-4 text-sm text-slate-700">
+            <ul className="space-y-2">
+              <li>✓ 150 leads/mo (3 searches × 50)</li>
+              <li>✓ De-duplication across months</li>
+              <li>✓ CRM contact status per lead</li>
+              <li>✓ Unlimited markets</li>
+              <li>✓ Dashboard + CSV exports</li>
             </ul>
             <div className="mt-auto pt-2">
-              <a
-                href={monthlyPlanUrl}
-                {...(monthlyOpensNewTab ? ({ target: "_blank", rel: "noopener noreferrer" } as const) : {})}
+              <button
+                type="button"
                 className={cn(
-                  buttonVariants({ size: "lg", variant: "outline" }),
-                  "flex min-h-[48px] w-full items-center justify-center border-blue-700 text-blue-800 hover:bg-blue-50"
+                  buttonVariants({ size: "lg" }),
+                  "w-full border-blue-700 bg-blue-700 hover:bg-blue-800"
                 )}
+                onClick={() => startCheckout("pro")}
+                disabled={loading !== null}
               >
-                Start Monthly Plan
-              </a>
+                {loading === "pro" ? (
+                  <Loader2 className="mx-auto h-5 w-5 animate-spin" />
+                ) : (
+                  "Start Pro — $99/mo"
+                )}
+              </button>
+              <Link href="/dashboard" className="mt-2 block text-center text-xs text-slate-600 underline">
+                Go to dashboard
+              </Link>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <p className="mx-auto mt-6 max-w-xl text-center text-xs text-slate-600 md:text-sm">
-        Monthly plan billed at $39/mo via Stripe. Cancel anytime — no questions asked.
-      </p>
+      <div className="mx-auto mt-10 max-w-3xl overflow-x-auto">
+        <table className="w-full text-left text-sm text-slate-700">
+          <thead>
+            <tr className="border-b text-xs uppercase text-slate-500">
+              <th className="py-2 pr-4" />
+              <th className="py-2 pr-4">Starter</th>
+              <th className="py-2">Pro</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[
+              ["Price", "$49 one-time", "$99/mo"],
+              ["Leads", "50, one market", "150/mo (3 searches)"],
+              ["Refresh", "Never", "Each billing cycle"],
+              ["De-duplication", "—", "✓"],
+              ["CRM tracking", "—", "✓"],
+              ["Markets", "1", "Unlimited"],
+            ].map(([label, starter, pro]) => (
+              <tr key={label} className="border-b border-slate-100">
+                <td className="py-2 pr-4 font-medium text-slate-900">{label}</td>
+                <td className="py-2 pr-4">{starter}</td>
+                <td className="py-2">{pro}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

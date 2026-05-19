@@ -43,22 +43,23 @@
     "generate-sample-austin-dl": "WRITE_DENTILY_SAMPLE_AUSTIN_CSV=1 vitest run lib/dentily-sample-austin-csv.build.test.ts"
   },
   "dependencies": {
+    "autoprefixer": "^10.4.27",
     "cheerio": "^1.2.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.7.0",
     "next": "14.2.35",
+    "next-auth": "^5.0.0-beta.25",
     "openai": "^6.33.0",
     "pg": "^8.20.0",
+    "postcss": "^8",
     "react": "^18",
     "react-dom": "^18",
     "stripe": "^17.7.0",
     "styled-jsx": "^5.1.7",
     "tailwind-merge": "^3.5.0",
-    "zod": "^4.3.6",
-    "autoprefixer": "^10.4.27",
-    "postcss": "^8",
-    "tailwindcss": "^3.4.1"
+    "tailwindcss": "^3.4.1",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/node": "^20",

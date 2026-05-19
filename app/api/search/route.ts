@@ -1,7 +1,15 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { requireUserId } from "@/lib/auth";
 import { getPlaceDetails, searchBusinesses } from "@/lib/google-places";
 import { createSearch, getSearchWithLeads, insertLeads, setSearchStatus } from "@/lib/db";
+import {
+  createSearchForUser,
+  decrementSearchCredit,
+  getExistingPracticeIdsForUser,
+  getSubscriptionByUserId,
+  markSearchPaidForUser,
+} from "@/lib/subscription-db";
 import { dedupeLeads } from "@/lib/dedupe-leads";
 import { type DentistScoringBatchContext } from "@/lib/dentist-scoring";
 import { logSearchPrioritySummary, sortByPriorityThenScore } from "@/lib/lead-pack-export";
@@ -18,6 +26,8 @@ const TARGET_LEAD_COUNT = 50;
 const searchSchema = z.object({
   niche: z.string().trim().min(2),
   location: z.string().trim().min(2),
+  /** When true, authenticated users with an active plan consume one search credit. */
+  useCredits: z.boolean().optional(),
 });
 
 function normalizeText(value: string | null | undefined): string {
@@ -105,12 +115,40 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    const { niche, location } = parsed.data;
+    const { niche, location, useCredits } = parsed.data;
     const nicheConfig = getNicheConfig(niche);
+
+    let subscriptionUserId: number | null = null;
+    if (useCredits) {
+      const userId = await requireUserId();
+      if (!userId) {
+        return NextResponse.json(
+          { error: { message: "Sign in to run a subscription search." } },
+          { status: 401 }
+        );
+      }
+      const sub = await getSubscriptionByUserId(userId);
+      const isActive = sub?.status === "active" || sub?.status === "trialing";
+      const hasCredits = (sub?.creditsRemaining ?? 0) > 0;
+      if (!isActive || !hasCredits) {
+        return NextResponse.json(
+          {
+            error: {
+              message: "No search credits remaining.",
+              upgradeUrl: "/pricing",
+            },
+          },
+          { status: 402 }
+        );
+      }
+      subscriptionUserId = userId;
+    }
 
     let searchId: number;
     try {
-      searchId = await createSearch(niche, location);
+      searchId = subscriptionUserId
+        ? await createSearchForUser(subscriptionUserId, niche, location)
+        : await createSearch(niche, location);
     } catch (dbError) {
       console.error("[api/search] createSearch failed:", dbError);
       const hint =
@@ -168,10 +206,20 @@ export async function POST(request: Request) {
         return Boolean(placeId && name);
       });
       const dedupedOnce = dedupeLeads(withPlaceAndName);
-      const filteredLeads = filterLeadsForQualityAndNiche(dedupedOnce, niche, nicheConfig.id).slice(
+      let filteredLeads = filterLeadsForQualityAndNiche(dedupedOnce, niche, nicheConfig.id).slice(
         0,
         TARGET_LEAD_COUNT
       );
+
+      if (subscriptionUserId) {
+        const seen = await getExistingPracticeIdsForUser(subscriptionUserId);
+        const before = filteredLeads.length;
+        filteredLeads = filteredLeads.filter((l) => !seen.has(l.placeId));
+        console.log(
+          `[api/search] subscription dedupe removed=${before - filteredLeads.length} prior practices`
+        );
+      }
+
       console.log(`[api/search] totalDedupedResults=${filteredLeads.length}`);
 
       if (filteredLeads.length === 0) {
@@ -305,6 +353,18 @@ export async function POST(request: Request) {
       const inserted = await insertLeads(searchId, leadsForInsert);
       console.log(`[api/search] dbInsertedLeads count=${inserted}`);
       await setSearchStatus(searchId, "completed", { resultCount: inserted });
+
+      if (subscriptionUserId) {
+        await markSearchPaidForUser(searchId, subscriptionUserId);
+        const deducted = await decrementSearchCredit(subscriptionUserId);
+        if (!deducted) {
+          console.warn("[api/search] credit deduction failed after successful search", {
+            searchId,
+            subscriptionUserId,
+          });
+        }
+      }
+
       const savedSearch = await getSearchWithLeads(searchId);
       const savedLeads = savedSearch?.leads ?? [];
 
@@ -315,6 +375,7 @@ export async function POST(request: Request) {
         status: "completed",
         resultCount: inserted,
         leads: savedLeads,
+        isPaid: Boolean(subscriptionUserId) || savedSearch?.isPaid,
       });
     } catch (innerError) {
       console.error("[api/search] processing failed:", innerError);

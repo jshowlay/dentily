@@ -41,8 +41,8 @@ export default function PricingPage() {
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Pricing</p>
           <h1 className="mt-2 text-3xl font-bold text-slate-900">{SITE.leadPackName}</h1>
           <p className="mx-auto mt-2 max-w-md text-sm text-slate-600">
-            One-time pack or monthly subscription for agencies, freelancers, and consultants who sell to dental practices
-            — review on screen before you pay.
+            Starter pack ($49) or Dentily Pro ($99/mo) for agencies and consultants who sell to dental practices —
+            review on screen before you pay on the starter path.
           </p>
         </div>
 
