@@ -1,9 +1,27 @@
-import Link from "next/link";
-import { SuccessClient, type SuccessOutcome } from "@/app/success/success-client";
-import { BrandMark } from "@/components/brand-mark";
+import { SuccessClient, type SuccessOutcome, type SuccessPackSummary } from "@/app/success/success-client";
+import { getSearchWithLeads, isDatabaseConfigured } from "@/lib/db";
 import { verifyAndFulfillCheckoutSession } from "@/lib/payments";
 
 export const dynamic = "force-dynamic";
+
+async function loadPackSummary(searchId: number): Promise<SuccessPackSummary | null> {
+  if (!isDatabaseConfigured()) return null;
+  try {
+    const parsed = await getSearchWithLeads(searchId);
+    if (!parsed) return null;
+    const totalCount = parsed.resultCount ?? parsed.leads.length;
+    const highPriorityCount = parsed.leads.filter((l) => (l.priority ?? "").toLowerCase() === "high").length;
+    return {
+      searchId,
+      location: parsed.location,
+      totalCount,
+      highPriorityCount,
+    };
+  } catch (e) {
+    console.error("[success] pack summary", e);
+    return null;
+  }
+}
 
 export default async function SuccessPage({
   searchParams,
@@ -31,22 +49,8 @@ export default async function SuccessPage({
     }
   }
 
-  return (
-    <main className="min-h-screen bg-white">
-      <header className="w-full bg-black py-4 text-white">
-        <div className="container-page flex items-center justify-between">
-          <BrandMark />
-          <Link
-            href="/"
-            className="inline-flex h-10 items-center justify-center rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-black transition-colors hover:bg-slate-100"
-          >
-            Home
-          </Link>
-        </div>
-      </header>
-      <section className="container-page py-10">
-        <SuccessClient outcome={outcome} />
-      </section>
-    </main>
-  );
+  const packSummary =
+    outcome.kind === "ok" ? await loadPackSummary(outcome.searchId) : null;
+
+  return <SuccessClient outcome={outcome} packSummary={packSummary} />;
 }

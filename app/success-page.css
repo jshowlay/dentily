@@ -1,0 +1,415 @@
+/* Dentily /success — post-purchase confirmation */
+
+.dentily-success {
+  --color-bg: #f7f5f0;
+  --color-surface: #ffffff;
+  --color-ink: #1a1a18;
+  --color-muted: #5a5a55;
+  --color-hint: #888880;
+  --color-green: #2e7d52;
+  --color-green-bg: #e8f5ee;
+  --color-border: rgba(0, 0, 0, 0.1);
+
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: "DM Sans", system-ui, sans-serif;
+  min-height: 100vh;
+}
+
+.dentily-success h1,
+.dentily-success h2,
+.dentily-success .dsu-serif {
+  font-family: "Instrument Serif", Georgia, serif;
+  font-weight: 400;
+}
+
+.dentily-success em {
+  font-style: italic;
+  color: var(--color-green);
+}
+
+.dentily-success .dsu-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 40px;
+  background: var(--color-bg);
+  border-bottom: 0.5px solid var(--color-border);
+}
+
+.dentily-success .dsu-logo {
+  font-family: "Instrument Serif", Georgia, serif;
+  font-size: 20px;
+  color: var(--color-ink);
+  text-decoration: none;
+  line-height: 1.2;
+}
+
+.dentily-success .dsu-nav-link {
+  font-size: 13px;
+  color: var(--color-muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.dentily-success .dsu-hero {
+  max-width: 560px;
+  margin: 0 auto;
+  text-align: center;
+  padding: 72px 40px 48px;
+}
+
+.dentily-success .dsu-check-circle {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 24px;
+  border-radius: 50%;
+  background: var(--color-green-bg);
+  border: 0.5px solid #b5dcc6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  color: var(--color-green);
+  line-height: 1;
+}
+
+.dentily-success .dsu-pill {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-green);
+  background: var(--color-green-bg);
+  border: 0.5px solid #b5dcc6;
+  border-radius: 20px;
+  padding: 4px 14px;
+  margin-bottom: 18px;
+}
+
+.dentily-success .dsu-title {
+  font-size: 38px;
+  line-height: 1.12;
+  letter-spacing: -0.5px;
+  margin: 0 0 14px;
+}
+
+.dentily-success .dsu-subtitle {
+  font-size: 15px;
+  color: var(--color-muted);
+  line-height: 1.6;
+  max-width: 420px;
+  margin: 0 auto 36px;
+}
+
+.dentily-success .dsu-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  width: 100%;
+}
+
+.dentily-success .dsu-btn {
+  flex: 1;
+  max-width: 200px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 12px 24px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-family: inherit;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dentily-success .dsu-btn-primary {
+  background: var(--color-ink);
+  color: var(--color-bg);
+}
+
+.dentily-success .dsu-btn-ghost {
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  color: var(--color-ink);
+  background: transparent;
+}
+
+.dentily-success .dsu-context {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #aaa;
+}
+
+.dentily-success .dsu-card-wrap {
+  max-width: 560px;
+  margin: 0 auto 24px;
+  padding: 0 40px;
+}
+
+.dentily-success .dsu-card {
+  background: #fff;
+  border: 0.5px solid var(--color-border);
+  border-radius: 14px;
+  padding: 24px 26px;
+}
+
+.dentily-success .dsu-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-hint);
+  margin: 0 0 14px;
+}
+
+.dentily-success .dsu-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.dentily-success .dsu-stat {
+  text-align: center;
+}
+
+.dentily-success .dsu-stat-value {
+  font-family: "Instrument Serif", Georgia, serif;
+  font-size: 28px;
+  line-height: 1;
+  color: var(--color-ink);
+}
+
+.dentily-success .dsu-stat-label {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--color-hint);
+}
+
+.dentily-success .dsu-divider {
+  height: 0.5px;
+  background: rgba(0, 0, 0, 0.08);
+  margin: 16px 0;
+}
+
+.dentily-success .dsu-feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--color-muted);
+  line-height: 1.45;
+  margin-bottom: 8px;
+}
+
+.dentily-success .dsu-check {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-green-bg);
+  color: var(--color-green);
+  font-size: 9px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.dentily-success .dsu-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dentily-success .dsu-step {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.dentily-success .dsu-step-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--color-ink);
+  color: var(--color-bg);
+  font-size: 10px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+  font-family: "DM Sans", system-ui, sans-serif;
+}
+
+.dentily-success .dsu-step-text {
+  font-size: 13px;
+  color: var(--color-muted);
+  line-height: 1.5;
+  text-align: left;
+}
+
+.dentily-success .dsu-upsell {
+  max-width: 560px;
+  margin: 0 auto 48px;
+  padding: 0 40px;
+}
+
+.dentily-success .dsu-upsell-inner {
+  background: var(--color-ink);
+  border-radius: 14px;
+  padding: 24px 26px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.dentily-success .dsu-upsell h2 {
+  font-size: 18px;
+  color: var(--color-bg);
+  margin: 0 0 4px;
+  line-height: 1.2;
+}
+
+.dentily-success .dsu-upsell p {
+  font-size: 12px;
+  color: rgba(247, 245, 240, 0.5);
+  margin: 0;
+  line-height: 1.45;
+}
+
+.dentily-success .dsu-upsell-btn {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: 7px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  text-decoration: none;
+}
+
+.dentily-success .dsu-support {
+  max-width: 560px;
+  margin: 0 auto 48px;
+  padding: 0 40px;
+  text-align: center;
+  font-size: 12px;
+  color: #aaa;
+  line-height: 1.6;
+}
+
+.dentily-success .dsu-error-card {
+  max-width: 560px;
+  margin: 48px auto;
+  padding: 0 40px;
+}
+
+.dentily-success .dsu-error-inner {
+  background: #fff;
+  border: 0.5px solid #f0c4c4;
+  border-radius: 14px;
+  padding: 24px 26px;
+  text-align: center;
+}
+
+.dentily-success .dsu-error-inner h1 {
+  font-size: 28px;
+  margin: 0 0 12px;
+}
+
+.dentily-success .dsu-error-inner p {
+  font-size: 14px;
+  color: var(--color-muted);
+  line-height: 1.55;
+  margin: 0 0 20px;
+}
+
+.dentily-success .dsu-warn {
+  background: #fff6e5;
+  border: 0.5px solid #f0d08a;
+  border-radius: 14px;
+  padding: 24px 26px;
+  text-align: left;
+}
+
+.dentily-success .dsu-warn p {
+  font-size: 14px;
+  color: var(--color-muted);
+  line-height: 1.55;
+  margin: 8px 0 0;
+}
+
+.dentily-success .dsu-warn strong {
+  color: var(--color-ink);
+}
+
+.dentily-success .dsu-warn-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+@media (max-width: 768px) {
+  .dentily-success .dsu-nav {
+    padding: 14px 16px;
+  }
+
+  .dentily-success .dsu-hero {
+    padding: 48px 20px 32px;
+  }
+
+  .dentily-success .dsu-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dentily-success .dsu-btn {
+    max-width: 100%;
+  }
+
+  .dentily-success .dsu-card-wrap,
+  .dentily-success .dsu-upsell,
+  .dentily-success .dsu-support,
+  .dentily-success .dsu-error-card {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .dentily-success .dsu-card,
+  .dentily-success .dsu-warn {
+    padding: 20px;
+  }
+
+  .dentily-success .dsu-upsell-inner {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .dentily-success .dsu-upsell-btn {
+    display: block;
+    text-align: center;
+  }
+
+  .dentily-success .dsu-stat-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .dentily-success .dsu-stat-value {
+    font-size: 24px;
+  }
+}
