@@ -1,0 +1,786 @@
+/* Dentily /results — matches site design tokens */
+
+.dentily-results {
+  --color-bg: #f7f5f0;
+  --color-surface: #ffffff;
+  --color-ink: #1a1a18;
+  --color-muted: #5a5a55;
+  --color-hint: #888880;
+  --color-green: #2e7d52;
+  --color-green-bg: #e8f5ee;
+  --color-amber: #9a6200;
+  --color-amber-bg: #fff6e5;
+  --color-border: rgba(0, 0, 0, 0.1);
+
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: "DM Sans", system-ui, sans-serif;
+  min-height: 100vh;
+}
+
+.dentily-results h1,
+.dentily-results h2,
+.dentily-results .dr-serif {
+  font-family: "Instrument Serif", Georgia, serif;
+  font-weight: 400;
+}
+
+.dentily-results em {
+  font-style: italic;
+  color: var(--color-green);
+}
+
+.dentily-results .dr-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 32px;
+  background: var(--color-bg);
+  border-bottom: 0.5px solid var(--color-border);
+}
+
+.dentily-results .dr-logo {
+  font-family: "Instrument Serif", Georgia, serif;
+  font-size: 18px;
+  color: var(--color-ink);
+  text-decoration: none;
+  line-height: 1.2;
+}
+
+.dentily-results .dr-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.dentily-results .dr-nav-link {
+  font-size: 13px;
+  color: var(--color-muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.dentily-results .dr-nav-cta {
+  font-family: "DM Sans", system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: 6px;
+  background: var(--color-ink);
+  color: var(--color-bg);
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.dentily-results .dr-nav-cta:hover {
+  opacity: 0.92;
+}
+
+.dentily-results .dr-layout {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  min-height: calc(100vh - 52px);
+}
+
+.dentily-results .dr-main {
+  padding: 32px;
+  min-width: 0;
+}
+
+.dentily-results .dr-sidebar {
+  border-left: 0.5px solid var(--color-border);
+  padding: 32px 24px;
+  background: #fff;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.dentily-results .dr-crumb {
+  font-size: 12px;
+  color: #aaa;
+  margin: 0 0 8px;
+}
+
+.dentily-results .dr-title {
+  font-size: 26px;
+  letter-spacing: -0.3px;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.dentily-results .dr-subtitle {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--color-muted);
+  line-height: 1.5;
+}
+
+.dentily-results .dr-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 24px 0;
+}
+
+.dentily-results .dr-stat {
+  flex: 1 1 0;
+  min-width: 120px;
+  background: #fff;
+  border: 0.5px solid var(--color-border);
+  border-radius: 10px;
+  padding: 12px 16px;
+}
+
+.dentily-results .dr-stat-value {
+  font-family: "Instrument Serif", Georgia, serif;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--color-ink);
+}
+
+.dentily-results .dr-stat-label {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--color-hint);
+}
+
+.dentily-results .dr-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.dentily-results .dr-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dentily-results .dr-pills-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  white-space: nowrap;
+  padding-bottom: 4px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.dentily-results .dr-pill {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 13px;
+  border-radius: 20px;
+  border: 0.5px solid rgba(0, 0, 0, 0.15);
+  background: var(--color-bg);
+  color: var(--color-muted);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.dentily-results .dr-pill.is-active {
+  background: var(--color-ink);
+  color: var(--color-bg);
+  border-color: var(--color-ink);
+}
+
+.dentily-results .dr-toolbar-spacer {
+  flex: 1;
+  min-width: 8px;
+}
+
+.dentily-results .dr-sort-label {
+  font-size: 12px;
+  color: var(--color-hint);
+}
+
+.dentily-results .dr-sort {
+  font-family: "DM Sans", system-ui, sans-serif;
+  font-size: 12px;
+  border: 0.5px solid rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  padding: 5px 10px;
+  background: #fff;
+  color: var(--color-ink);
+}
+
+.dentily-results .dr-table-wrap {
+  background: #fff;
+  border: 0.5px solid var(--color-border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.dentily-results .dr-table-scroll {
+  overflow-x: auto;
+}
+
+.dentily-results .dr-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.dentily-results .dr-table thead tr {
+  background: var(--color-bg);
+  border-bottom: 0.5px solid var(--color-border);
+}
+
+.dentily-results .dr-table thead th {
+  padding: 10px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-hint);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.dentily-results .dr-table tbody tr.dr-row {
+  border-bottom: 0.5px solid rgba(0, 0, 0, 0.07);
+  cursor: pointer;
+}
+
+.dentily-results .dr-table tbody tr.dr-row:last-child {
+  border-bottom: none;
+}
+
+.dentily-results .dr-table tbody tr.dr-row:hover {
+  background: #fafaf8;
+}
+
+.dentily-results .dr-table tbody tr.dr-detail {
+  background: #fafaf8;
+  cursor: default;
+}
+
+.dentily-results .dr-table tbody tr.dr-detail:hover {
+  background: #fafaf8;
+}
+
+.dentily-results .dr-table tbody td {
+  padding: 13px 14px;
+  vertical-align: middle;
+}
+
+.dentily-results .dr-practice-name {
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--color-ink);
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dentily-results .dr-practice-city {
+  font-size: 11px;
+  color: var(--color-hint);
+  margin-top: 2px;
+}
+
+.dentily-results .dr-score {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Instrument Serif", Georgia, serif;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.dentily-results .dr-score.is-high {
+  background: var(--color-ink);
+  color: var(--color-bg);
+}
+
+.dentily-results .dr-score.is-mid {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  border: 0.5px solid rgba(0, 0, 0, 0.15);
+}
+
+.dentily-results .dr-score.is-faded {
+  background: var(--color-bg);
+  color: #aaa;
+  border: 0.5px solid rgba(0, 0, 0, 0.1);
+}
+
+.dentily-results .dr-priority {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 20px;
+}
+
+.dentily-results .dr-priority-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dentily-results .dr-priority.is-high {
+  background: var(--color-green-bg);
+  color: var(--color-green);
+  border: 0.5px solid #b5dcc6;
+}
+
+.dentily-results .dr-priority.is-high .dr-priority-dot {
+  background: var(--color-green);
+}
+
+.dentily-results .dr-priority.is-medium {
+  background: var(--color-amber-bg);
+  color: var(--color-amber);
+  border: 0.5px solid #f0d08a;
+}
+
+.dentily-results .dr-priority.is-medium .dr-priority-dot {
+  background: var(--color-amber);
+}
+
+.dentily-results .dr-priority.is-low {
+  background: var(--color-bg);
+  color: #aaa;
+  border: 0.5px solid rgba(0, 0, 0, 0.1);
+}
+
+.dentily-results .dr-priority.is-low .dr-priority-dot {
+  background: #ccc;
+}
+
+.dentily-results .dr-signal {
+  font-size: 11px;
+  color: var(--color-muted);
+  max-width: 200px;
+  line-height: 1.4;
+}
+
+.dentily-results .dr-rating {
+  font-size: 12px;
+  color: var(--color-ink);
+  white-space: nowrap;
+}
+
+.dentily-results .dr-rating-meta {
+  color: var(--color-hint);
+}
+
+.dentily-results .dr-contact {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-green);
+  white-space: nowrap;
+}
+
+.dentily-results .dr-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.dentily-results .dr-action-btn {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 0.5px solid rgba(0, 0, 0, 0.15);
+  background: var(--color-bg);
+  color: var(--color-muted);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.dentily-results .dr-action-btn.is-active {
+  background: var(--color-ink);
+  color: var(--color-bg);
+  border-color: var(--color-ink);
+}
+
+.dentily-results .dr-maps-link {
+  font-size: 11px;
+  color: var(--color-green);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.dentily-results .dr-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  padding: 12px 14px 18px;
+}
+
+.dentily-results .dr-detail-box {
+  background: #fff;
+  border: 0.5px solid var(--color-border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  position: relative;
+}
+
+.dentily-results .dr-detail-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-hint);
+  margin: 0 0 8px;
+}
+
+.dentily-results .dr-factor-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dentily-results .dr-factor-list li {
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--color-muted);
+  line-height: 1.45;
+}
+
+.dentily-results .dr-factor-list li::before {
+  content: "";
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--color-green);
+  flex-shrink: 0;
+  margin-top: 6px;
+}
+
+.dentily-results .dr-draft {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--color-muted);
+  padding-top: 8px;
+}
+
+.dentily-results .dr-draft-quote {
+  font-family: "Instrument Serif", Georgia, serif;
+  font-size: 24px;
+  color: #ddd;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.dentily-results .dr-token {
+  color: #bbb;
+  font-style: italic;
+}
+
+.dentily-results .dr-copy-btn {
+  margin-top: 10px;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 0.5px solid rgba(0, 0, 0, 0.15);
+  background: var(--color-bg);
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--color-muted);
+}
+
+.dentily-results .dr-maps-inline {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--color-green);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.dentily-results .dr-sidebar-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-hint);
+  margin: 0 0 12px;
+}
+
+.dentily-results .dr-summary {
+  background: var(--color-bg);
+  border-radius: 12px;
+  padding: 18px;
+  margin-bottom: 20px;
+}
+
+.dentily-results .dr-summary-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  margin-bottom: 8px;
+  color: var(--color-muted);
+}
+
+.dentily-results .dr-summary-row span:last-child {
+  font-weight: 500;
+  color: var(--color-ink);
+  text-align: right;
+}
+
+.dentily-results .dr-summary-row .is-ok {
+  color: var(--color-green);
+}
+
+.dentily-results .dr-unlock-card {
+  background: var(--color-ink);
+  border-radius: 12px;
+  padding: 20px;
+  color: var(--color-bg);
+  margin-bottom: 20px;
+}
+
+.dentily-results .dr-unlock-eyebrow {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(247, 245, 240, 0.5);
+  margin: 0 0 8px;
+}
+
+.dentily-results .dr-unlock-price {
+  font-family: "Instrument Serif", Georgia, serif;
+  font-size: 34px;
+  line-height: 1;
+  margin: 0;
+}
+
+.dentily-results .dr-unlock-billing {
+  font-size: 12px;
+  color: rgba(247, 245, 240, 0.5);
+  margin: 6px 0 12px;
+}
+
+.dentily-results .dr-unlock-features {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dentily-results .dr-unlock-features li {
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+  color: rgba(247, 245, 240, 0.75);
+}
+
+.dentily-results .dr-unlock-cta {
+  display: block;
+  width: 100%;
+  text-align: center;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-weight: 600;
+  font-size: 14px;
+  padding: 12px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.dentily-results .dr-unlock-cta:hover:not(:disabled) {
+  opacity: 0.95;
+}
+
+.dentily-results .dr-unlock-cta:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.dentily-results .dr-pricing-link {
+  display: block;
+  margin-top: 10px;
+  text-align: center;
+  font-size: 11px;
+  color: rgba(247, 245, 240, 0.4);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.dentily-results .dr-download-cta {
+  display: block;
+  width: 100%;
+  text-align: center;
+  background: var(--color-green);
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  margin-bottom: 20px;
+}
+
+.dentily-results .dr-legend {
+  margin-bottom: 20px;
+}
+
+.dentily-results .dr-legend-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 12px;
+  color: var(--color-muted);
+  margin-bottom: 8px;
+  line-height: 1.45;
+}
+
+.dentily-results .dr-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.dentily-results .dr-legend-dot.is-high {
+  background: var(--color-ink);
+}
+
+.dentily-results .dr-legend-dot.is-mid {
+  background: var(--color-amber);
+}
+
+.dentily-results .dr-legend-dot.is-low {
+  background: #ccc;
+}
+
+.dentily-results .dr-legend-note {
+  font-size: 12px;
+  color: var(--color-hint);
+  line-height: 1.5;
+  margin: 8px 0 0;
+}
+
+.dentily-results .dr-howto-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dentily-results .dr-howto-step {
+  display: flex;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--color-muted);
+  line-height: 1.5;
+}
+
+.dentily-results .dr-howto-num {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--color-ink);
+  color: var(--color-bg);
+  font-size: 10px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dentily-results .dr-alert {
+  background: #fff;
+  border: 0.5px solid var(--color-border);
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: var(--color-muted);
+}
+
+.dentily-results .dr-alert.is-error {
+  border-color: #f0c4c4;
+  background: #fff8f8;
+  color: #8b2e2e;
+}
+
+.dentily-results .dr-checkout-error {
+  font-size: 11px;
+  color: #fecaca;
+  margin-top: 8px;
+}
+
+.dentily-results .dr-checkout-wrap {
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .dentily-results .dr-nav {
+    padding: 14px 16px;
+  }
+
+  .dentily-results .dr-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .dentily-results .dr-main {
+    padding: 20px 16px;
+  }
+
+  .dentily-results .dr-sidebar {
+    position: static;
+    height: auto;
+    border-left: none;
+    border-top: 0.5px solid var(--color-border);
+    padding: 24px 16px;
+  }
+
+  .dentily-results .dr-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .dentily-results .dr-stat {
+    min-width: 0;
+  }
+
+  .dentily-results .dr-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dentily-results .dr-col-actions {
+    display: none;
+  }
+
+  .dentily-results .dr-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dentily-results .dr-toolbar-spacer {
+    display: none;
+  }
+}
