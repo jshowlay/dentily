@@ -18,6 +18,8 @@ export interface LeadInput {
   actionTier?: string;
   whyThisLead?: string;
   reason?: string;
+  whyNow?: string;
+  clusterNotes?: string;
   bestContactMethod?: string;
   outreachReadiness?: string;
   estimatedOpportunity?: string;
