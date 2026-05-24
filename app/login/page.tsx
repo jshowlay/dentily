@@ -40,8 +40,8 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           <CardHeader>
             <CardTitle>Sign in to Dentily</CardTitle>
             <CardDescription>
-              {plan === "pro"
-                ? "Create your account to start Dentily Pro ($99/mo)."
+              {plan === "starter"
+                ? "Sign in to continue to checkout for your $49 lead pack."
                 : "Access your dashboard, search credits, and saved leads."}
             </CardDescription>
           </CardHeader>

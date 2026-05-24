@@ -168,9 +168,9 @@ export function DashboardClient({ user, subscription, searches: initialSearches 
           <Card className="border-amber-200 bg-amber-50">
             <CardContent className="flex flex-wrap items-center justify-between gap-4 p-5">
               <div>
-                <p className="font-semibold text-amber-950">Get started with Dentily Pro</p>
+                <p className="font-semibold text-amber-950">Unlock your first lead pack</p>
                 <p className="mt-1 text-sm text-amber-900/80">
-                  $99/mo — 3 searches (150 leads), de-duplication, and CRM tracking.
+                  $49 one-time — 50 scored practices per market with outreach drafts and CSV export.
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -178,13 +178,16 @@ export function DashboardClient({ user, subscription, searches: initialSearches 
                   type="button"
                   disabled={checkoutLoading !== null}
                   onClick={() => startCheckout("starter")}
-                  variant="outline"
                 >
-                  {checkoutLoading === "starter" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Buy starter — $49"}
+                  {checkoutLoading === "starter" ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    "Get leads — $49"
+                  )}
                 </Button>
-                <Button type="button" disabled={checkoutLoading !== null} onClick={() => startCheckout("pro")}>
-                  {checkoutLoading === "pro" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Start Pro — $99/mo"}
-                </Button>
+                <Link href="/search" className={cn(buttonVariants({ variant: "outline" }), "inline-flex items-center")}>
+                  Run a search
+                </Link>
               </div>
             </CardContent>
           </Card>

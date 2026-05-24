@@ -39,14 +39,6 @@ const FAQ_ITEMS: { q: string; a: string }[] = [
     q: "Do I get the same leads twice?",
     a: "No. Dentily tracks every practice you've seen and filters them out of future searches on your account.",
   },
-  {
-    q: "What's the difference between Starter and Pro?",
-    a: "Starter is a one-time CSV for one market ($49). Pro is a living pipeline: fresh leads every month, tracked in your dashboard, never duplicated ($99/mo).",
-  },
-  {
-    q: "What's the difference between Pro and Growth?",
-    a: "Pro includes done-for-you outreach (coming soon) and is best for individuals or small teams running one to a few markets. Growth is built for high-volume prospecting across unlimited territories with bulk exports — outreach is handled by you.",
-  },
 ];
 
 type PricingFaqProps = {

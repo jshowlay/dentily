@@ -97,6 +97,14 @@
   margin: 0 auto;
 }
 
+.dentily-pricing .dp-grid--single,
+.dp-pricing-embed .dp-grid--single {
+  grid-template-columns: 1fr;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 0 40px 72px;
+}
+
 .dentily-pricing .dp-card {
   background: #fff;
   border: 0.5px solid var(--color-border);
@@ -432,7 +440,7 @@
   --color-border: rgba(0, 0, 0, 0.1);
 }
 
-.dp-pricing-embed .dp-grid {
+.dp-pricing-embed .dp-grid:not(.dp-grid--single) {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;
@@ -679,13 +687,10 @@
     font-size: 32px;
   }
 
-  .dentily-pricing .dp-grid {
+  .dentily-pricing .dp-grid,
+  .dentily-pricing .dp-grid--single {
     grid-template-columns: 1fr;
     padding: 0 20px 48px;
-  }
-
-  .dentily-pricing .dp-card.is-featured {
-    order: -1;
   }
 
   .dentily-pricing .dp-faq {
