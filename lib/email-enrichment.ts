@@ -312,8 +312,13 @@ export async function enrichLeadWebsite(
  * Runs enrichment with low concurrency, polite delays, and per-lead error isolation.
  * Order of `leads` is preserved. When disabled via env, returns skipped patches without HTTP.
  */
-export async function batchEnrichLeads(leads: Lead[], runtime?: Partial<EmailEnrichmentRuntimeConfig>): Promise<Lead[]> {
+export async function batchEnrichLeads(
+  leads: Lead[],
+  runtime?: Partial<EmailEnrichmentRuntimeConfig>,
+  options?: { hunterFallback?: boolean }
+): Promise<Lead[]> {
   const config = { ...loadEmailEnrichmentConfig(), ...runtime };
+  const runHunter = options?.hunterFallback ?? true;
 
   if (isEmailEnrichmentDisabled()) {
     console.log("[email-enrichment] batch skipped: DENTILY_DISABLE_EMAIL_ENRICHMENT is set");
@@ -373,7 +378,7 @@ export async function batchEnrichLeads(leads: Lead[], runtime?: Partial<EmailEnr
       await sleep(config.politeDelayMs);
     }
   }
-  return runHunterFallback(out);
+  return runHunter ? runHunterFallback(out) : out;
 }
 
 /**
@@ -381,7 +386,7 @@ export async function batchEnrichLeads(leads: Lead[], runtime?: Partial<EmailEnr
  * have a website, query Hunter.io Domain Search. Runs sequentially with a delay
  * and a hard per-search cap to respect Hunter's quota/rate limits.
  */
-async function runHunterFallback(leads: Lead[]): Promise<Lead[]> {
+export async function runHunterFallback(leads: Lead[]): Promise<Lead[]> {
   const hunter = loadHunterFallbackConfig();
   if (!hunter.enabled) return leads;
 

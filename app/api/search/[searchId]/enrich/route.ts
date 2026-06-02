@@ -5,8 +5,17 @@ import {
   markPendingLeadsEnrichmentSkipped,
   updateLeadsEnrichmentForSearch,
 } from "@/lib/db";
-import { batchEnrichLeads } from "@/lib/email-enrichment";
+import { batchEnrichLeads, runHunterFallback } from "@/lib/email-enrichment";
 import { backgroundEnrichmentOverrides, isEmailEnrichmentDisabled } from "@/lib/email-enrichment-config";
+import type { Lead } from "@/lib/types";
+
+/**
+ * Crawl + persist leads in small chunks so progress survives a dropped DB
+ * connection during the long enrichment run (Neon serverless closes idle
+ * connections). Without this, a single end-of-run write could fail and leave
+ * every lead stuck on `pending`.
+ */
+const ENRICH_CHUNK_SIZE = 15;
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -62,10 +71,42 @@ export async function POST(
       return NextResponse.json({ ok: true, updated: 0, skipped });
     }
 
-    const enriched = await batchEnrichLeads(pending, backgroundEnrichmentOverrides());
-    await updateLeadsEnrichmentForSearch(searchId, enriched);
-    console.log(`[api/search/enrich] searchId=${searchId} updated=${enriched.length}`);
-    return NextResponse.json({ ok: true, updated: enriched.length });
+    const overrides = backgroundEnrichmentOverrides();
+
+    // Pass 1: website crawl, persisting after each chunk so partial progress
+    // is never lost if a later chunk or the connection fails.
+    const crawled: Lead[] = [];
+    for (let i = 0; i < pending.length; i += ENRICH_CHUNK_SIZE) {
+      const chunk = pending.slice(i, i + ENRICH_CHUNK_SIZE);
+      const enrichedChunk = await batchEnrichLeads(chunk, overrides, { hunterFallback: false });
+      await updateLeadsEnrichmentForSearch(searchId, enrichedChunk);
+      crawled.push(...enrichedChunk);
+      console.log(
+        `[api/search/enrich] searchId=${searchId} crawled ${Math.min(
+          i + ENRICH_CHUNK_SIZE,
+          pending.length
+        )}/${pending.length}`
+      );
+    }
+
+    // Pass 2: Hunter.io fallback for leads still without an email (global
+    // per-search cap), then persist only the rows it changed.
+    const hunted = await runHunterFallback(crawled);
+    const hunterChanged = hunted.filter((lead, idx) => lead.primaryEmail !== crawled[idx]?.primaryEmail);
+    if (hunterChanged.length > 0) {
+      await updateLeadsEnrichmentForSearch(searchId, hunterChanged);
+    }
+
+    const totalWithEmail = hunted.filter((l) => (l.primaryEmail ?? "").trim()).length;
+    console.log(
+      `[api/search/enrich] searchId=${searchId} updated=${crawled.length} hunterAdded=${hunterChanged.length} totalWithEmail=${totalWithEmail}`
+    );
+    return NextResponse.json({
+      ok: true,
+      updated: crawled.length,
+      hunterAdded: hunterChanged.length,
+      withEmail: totalWithEmail,
+    });
   } catch (e) {
     console.error("[api/search/enrich] failed", e);
     return NextResponse.json(

@@ -389,8 +389,19 @@ export async function insertLeads(searchId: number, leads: Lead[]): Promise<numb
 }
 
 /** Apply website enrichment results to existing rows (second pass). */
-export async function updateLeadsEnrichmentForSearch(searchId: number, leads: Lead[]): Promise<void> {
-  if (leads.length === 0) return;
+function isTransientConnectionError(error: unknown): boolean {
+  const msg = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+  return (
+    msg.includes("connection terminated") ||
+    msg.includes("connection reset") ||
+    msg.includes("econnreset") ||
+    msg.includes("server closed the connection") ||
+    msg.includes("terminating connection") ||
+    msg.includes("socket hang up")
+  );
+}
+
+async function writeLeadEnrichmentBatch(searchId: number, leads: Lead[]): Promise<void> {
   const client = await getPool().connect();
   try {
     await client.query("BEGIN");
@@ -427,6 +438,22 @@ export async function updateLeadsEnrichmentForSearch(searchId: number, leads: Le
     throw error;
   } finally {
     safeReleaseClient(client);
+  }
+}
+
+/**
+ * Persist enrichment results. Retries once on a transient connection drop
+ * (Neon serverless can close idle connections during long enrichment runs).
+ */
+export async function updateLeadsEnrichmentForSearch(searchId: number, leads: Lead[]): Promise<void> {
+  if (leads.length === 0) return;
+  try {
+    await writeLeadEnrichmentBatch(searchId, leads);
+  } catch (error) {
+    if (!isTransientConnectionError(error)) throw error;
+    console.warn("[db] enrichment write hit a transient connection error; retrying once");
+    await new Promise((r) => setTimeout(r, 500));
+    await writeLeadEnrichmentBatch(searchId, leads);
   }
 }
 
