@@ -31,6 +31,10 @@ function parseEmailSource(value: unknown): Lead["emailSource"] {
     "manual",
     "inferred",
     "hunter",
+    "website_crawl",
+    "pattern_guess",
+    "apollo",
+    "npi_prospeo",
     "unknown",
   ];
   return allowed.includes(s as NonNullable<Lead["emailSource"]>) ? (s as Lead["emailSource"]) : null;

@@ -5,7 +5,7 @@ import {
   markPendingLeadsEnrichmentSkipped,
   updateLeadsEnrichmentForSearch,
 } from "@/lib/db";
-import { batchEnrichLeads, runHunterFallback } from "@/lib/email-enrichment";
+import { batchEnrichLeads, runDeepEnrichment, runHunterFallback } from "@/lib/email-enrichment";
 import { backgroundEnrichmentOverrides, isEmailEnrichmentDisabled } from "@/lib/email-enrichment-config";
 import type { Lead } from "@/lib/types";
 
@@ -24,6 +24,12 @@ export const maxDuration = 300;
 const paramsSchema = z.object({
   searchId: z.coerce.number().int().positive(),
 });
+
+/** Best-effort split of a stored search location ("Dallas, TX") into city/state. */
+function parseCityState(location: string): { city: string; state: string } {
+  const parts = (location ?? "").split(",").map((p) => p.trim());
+  return { city: parts[0] ?? "", state: parts[1] ?? "" };
+}
 
 export async function POST(
   _request: Request,
@@ -97,14 +103,24 @@ export async function POST(
       await updateLeadsEnrichmentForSearch(searchId, hunterChanged);
     }
 
-    const totalWithEmail = hunted.filter((l) => (l.primaryEmail ?? "").trim()).length;
+    // Pass 3: multi-tier deep enrichment (deep crawl → ZeroBounce pattern guess →
+    // Apollo → NPI/Prospeo) for whatever is still unresolved. Persist its changes.
+    const { city, state } = parseCityState(search.location);
+    const deepened = await runDeepEnrichment(hunted, { city, state });
+    const deepChanged = deepened.filter((lead, idx) => lead.primaryEmail !== hunted[idx]?.primaryEmail);
+    if (deepChanged.length > 0) {
+      await updateLeadsEnrichmentForSearch(searchId, deepChanged);
+    }
+
+    const totalWithEmail = deepened.filter((l) => (l.primaryEmail ?? "").trim()).length;
     console.log(
-      `[api/search/enrich] searchId=${searchId} updated=${crawled.length} hunterAdded=${hunterChanged.length} totalWithEmail=${totalWithEmail}`
+      `[api/search/enrich] searchId=${searchId} updated=${crawled.length} hunterAdded=${hunterChanged.length} deepAdded=${deepChanged.length} totalWithEmail=${totalWithEmail}`
     );
     return NextResponse.json({
       ok: true,
       updated: crawled.length,
       hunterAdded: hunterChanged.length,
+      deepAdded: deepChanged.length,
       withEmail: totalWithEmail,
     });
   } catch (e) {

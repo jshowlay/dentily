@@ -12,7 +12,9 @@ import {
   loadEmailEnrichmentConfig,
   loadHunterFallbackConfig,
 } from "@/lib/email-enrichment-config";
-import { enrichEmailFromDomain } from "@/lib/enrichment/hunter";
+import { enrichEmailFromDomain, extractDomain } from "@/lib/enrichment/hunter";
+import { enrichEmail, type EnrichSource } from "@/lib/enrichEmail";
+import { validateMarketingEmail } from "@/lib/marketing-email-validate";
 import {
   collectLikelyContactPageUrls,
   mergePageEmails,
@@ -440,6 +442,95 @@ export async function runHunterFallback(leads: Lead[]): Promise<Lead[]> {
   }
 
   console.log(`[hunter] fallback found=${found}/${targets.size}`);
+  if (patched.size === 0) return leads;
+  return leads.map((l) => patched.get(l.placeId) ?? l);
+}
+
+const DEEP_SOURCE_LABEL: Record<EnrichSource, string> = {
+  website_crawl: "deep website crawl",
+  pattern_guess: "verified common-pattern guess",
+  apollo: "Apollo people search",
+  npi_prospeo: "NPI registry + Prospeo",
+};
+
+/**
+ * Final pass: for leads still without an email after the website crawl + Hunter,
+ * run the multi-tier `enrichEmail` pipeline (deep crawl → ZeroBounce pattern guess
+ * → Apollo → NPI/Prospeo). Results are re-validated against the marketing-email
+ * gate (so they match what the CSV export will accept) before being patched in.
+ *
+ * Order is preserved. Bounded by a per-search cap and skippable via
+ * `DENTILY_DISABLE_DEEP_ENRICH`.
+ */
+export async function runDeepEnrichment(
+  leads: Lead[],
+  location: { city: string; state: string }
+): Promise<Lead[]> {
+  if (process.env.DENTILY_DISABLE_DEEP_ENRICH) return leads;
+  const max = Number.parseInt(process.env.DENTILY_DEEP_ENRICH_MAX ?? "50", 10) || 50;
+
+  const candidates = leads.filter(
+    (l) => !(l.primaryEmail ?? "").trim() && (l.website ?? "").trim()
+  );
+  if (candidates.length === 0) return leads;
+
+  const targets = new Set(candidates.slice(0, max).map((l) => l.placeId));
+  console.log(
+    `[deep-enrich] candidates=${candidates.length} attempting=${targets.size} cap=${max}`
+  );
+
+  const patched = new Map<string, Lead>();
+  let found = 0;
+  for (const lead of leads) {
+    if (!targets.has(lead.placeId)) continue;
+    const domain = extractDomain(lead.website);
+    if (!domain) continue;
+
+    try {
+      const result = await enrichEmail({
+        domain,
+        practice_name: lead.name,
+        city: location.city,
+        state: location.state,
+      });
+      if (!result.email || !result.source) continue;
+
+      const validation = validateMarketingEmail(result.email);
+      if (!validation.ok) {
+        console.warn(
+          `[deep-enrich] domain=${domain} rejected ${result.email}: ${validation.reason}`
+        );
+        continue;
+      }
+
+      found += 1;
+      const verifiedNote = result.verified ? " (verified)" : "";
+      const confidenceNote = result.confidence ? ` — ${result.confidence} confidence` : "";
+      patched.set(lead.placeId, {
+        ...lead,
+        primaryEmail: validation.normalized,
+        emailStatus: "found",
+        emailSource: result.source,
+        enrichmentNotes: `Found via ${DEEP_SOURCE_LABEL[result.source]}${verifiedNote}${confidenceNote}`,
+        emailRejectionReason: null,
+      });
+      logEnrichmentLine({
+        placeId: lead.placeId,
+        name: lead.name,
+        website: lead.website,
+        status: "found",
+        primaryEmail: validation.normalized,
+        contactFormUrl: lead.contactFormUrl,
+      });
+    } catch (e) {
+      console.error("[deep-enrich] lead failed", {
+        placeId: lead.placeId,
+        error: e instanceof Error ? e.message : String(e),
+      });
+    }
+  }
+
+  console.log(`[deep-enrich] found=${found}/${targets.size}`);
   if (patched.size === 0) return leads;
   return leads.map((l) => patched.get(l.placeId) ?? l);
 }

@@ -133,13 +133,58 @@ function toLead(place: unknown): NormalizedPlaceLead {
   };
 }
 
+/** Transient network blips (TLS resets, timeouts, DNS hiccups) are worth retrying. */
+function isRetryableFetchError(error: unknown): boolean {
+  const msg = (error instanceof Error ? error.message : String(error)).toLowerCase();
+  const cause = (error as { cause?: { code?: string } } | null)?.cause;
+  const code = String(cause?.code ?? "").toUpperCase();
+  return (
+    msg.includes("fetch failed") ||
+    msg.includes("econnreset") ||
+    msg.includes("etimedout") ||
+    msg.includes("socket hang up") ||
+    msg.includes("network") ||
+    code === "ECONNRESET" ||
+    code === "ETIMEDOUT" ||
+    code === "ENOTFOUND" ||
+    code === "EAI_AGAIN" ||
+    code === "UND_ERR_SOCKET"
+  );
+}
+
+const FETCH_MAX_ATTEMPTS = 3;
+const FETCH_RETRY_BASE_MS = 400;
+
 async function googlePlacesFetchJson<T>(url: string, init: RequestInit): Promise<T> {
-  const res = await fetch(url, init);
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`Google Places request failed: ${res.status} ${res.statusText}. ${text}`);
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= FETCH_MAX_ATTEMPTS; attempt += 1) {
+    try {
+      const res = await fetch(url, init);
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        // Retry on rate-limit / transient server errors; fail fast otherwise.
+        if ((res.status === 429 || res.status >= 500) && attempt < FETCH_MAX_ATTEMPTS) {
+          lastError = new Error(`Google Places request failed: ${res.status} ${res.statusText}. ${text}`);
+          await new Promise((r) => setTimeout(r, FETCH_RETRY_BASE_MS * attempt));
+          continue;
+        }
+        throw new Error(`Google Places request failed: ${res.status} ${res.statusText}. ${text}`);
+      }
+      return (await res.json()) as T;
+    } catch (error) {
+      lastError = error;
+      if (attempt < FETCH_MAX_ATTEMPTS && isRetryableFetchError(error)) {
+        console.warn(
+          `[google-places] fetch attempt ${attempt}/${FETCH_MAX_ATTEMPTS} failed, retrying`,
+          error instanceof Error ? error.message : String(error)
+        );
+        await new Promise((r) => setTimeout(r, FETCH_RETRY_BASE_MS * attempt));
+        continue;
+      }
+      throw error;
+    }
   }
-  return (await res.json()) as T;
+  throw lastError instanceof Error ? lastError : new Error("Google Places request failed.");
 }
 
 function extractLocationFromQuery(query: string): string | null {
@@ -426,12 +471,39 @@ export async function searchBusinesses(
     `[google-places] multiQuery=${useMultiQuery} queryCount=${textQueries.length} target=${cappedTarget}`
   );
 
-  const perQueryResults = await Promise.all(
+  // allSettled so a single query's transient failure can't sink the whole search.
+  const settled = await Promise.allSettled(
     textQueries.map((textQuery) => searchTextQueryAllPages(textQuery, apiKey, textQuery))
   );
 
+  const perQueryResults: GooglePlace[][] = [];
+  let failedQueries = 0;
+  settled.forEach((result, i) => {
+    if (result.status === "fulfilled") {
+      perQueryResults.push(result.value);
+    } else {
+      failedQueries += 1;
+      console.warn(
+        `[google-places] query "${textQueries[i]}" failed`,
+        result.reason instanceof Error ? result.reason.message : String(result.reason)
+      );
+    }
+  });
+
+  // Only hard-fail if every query failed (likely a bad key, quota, or full outage).
+  if (perQueryResults.length === 0) {
+    const firstReason = settled.find((s) => s.status === "rejected") as
+      | PromiseRejectedResult
+      | undefined;
+    throw firstReason?.reason instanceof Error
+      ? firstReason.reason
+      : new Error("All Google Places queries failed.");
+  }
+
   const allPlaces = perQueryResults.flat();
-  console.log(`[google-places] totalRawResults=${allPlaces.length}`);
+  console.log(
+    `[google-places] totalRawResults=${allPlaces.length} failedQueries=${failedQueries}/${textQueries.length}`
+  );
 
   const geoFiltered = geoFilterPlaces(allPlaces, location);
 

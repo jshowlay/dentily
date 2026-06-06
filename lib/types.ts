@@ -16,6 +16,11 @@ export type EmailSource =
   | "manual"
   | "inferred"
   | "hunter"
+  // Multi-tier deep enrichment (lib/enrichEmail.ts)
+  | "website_crawl"
+  | "pattern_guess"
+  | "apollo"
+  | "npi_prospeo"
   | "unknown"
   | null;
 
