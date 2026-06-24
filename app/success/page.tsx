@@ -52,5 +52,5 @@ export default async function SuccessPage({
   const packSummary =
     outcome.kind === "ok" ? await loadPackSummary(outcome.searchId) : null;
 
-  return <SuccessClient outcome={outcome} packSummary={packSummary} />;
+  return <SuccessClient outcome={outcome} packSummary={packSummary} sessionId={sessionId} />;
 }

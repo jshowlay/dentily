@@ -9,9 +9,39 @@ import {
   handleSubscriptionUpdated,
 } from "@/lib/subscription-stripe";
 import { getStripe } from "@/lib/stripe";
+import { sendPackDeliveryEmail } from "@/lib/sendPackDeliveryEmail";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+
+/**
+ * In-process guard so a Stripe retry of the same event doesn't send a duplicate
+ * delivery email. Fulfillment itself is idempotent at the DB layer; this only
+ * dedupes the email side effect within a running instance.
+ */
+const deliveredSessions = new Set<string>();
+
+async function deliverPackEmail(session: Stripe.Checkout.Session): Promise<void> {
+  if (session.payment_status !== "paid") return;
+  if (deliveredSessions.has(session.id)) return;
+
+  const email = session.customer_details?.email ?? session.customer_email ?? null;
+  if (!email) {
+    console.warn("[webhooks/stripe] no buyer email on session; skipping delivery email", session.id);
+    return;
+  }
+
+  deliveredSessions.add(session.id);
+  try {
+    await sendPackDeliveryEmail({ toEmail: email, sessionId: session.id });
+    console.log("[webhooks/stripe] delivery email sent", session.id);
+  } catch (err) {
+    // Best-effort: never fail the webhook on email errors (avoids Stripe retries
+    // re-running fulfillment). Allow a future retry by clearing the guard.
+    deliveredSessions.delete(session.id);
+    console.error("[webhooks/stripe] delivery email failed", session.id, err);
+  }
+}
 
 export async function POST(request: Request) {
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -43,6 +73,7 @@ export async function POST(request: Request) {
           await fulfillSubscriptionCheckout(session);
         } else {
           await fulfillCheckoutSession(session);
+          await deliverPackEmail(session);
         }
         break;
       }

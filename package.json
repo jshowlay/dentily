@@ -45,6 +45,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.98.0",
+    "@react-pdf/renderer": "^4.5.1",
     "@vercel/functions": "^3.6.0",
     "autoprefixer": "^10.4.27",
     "cheerio": "^1.2.0",

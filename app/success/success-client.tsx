@@ -26,9 +26,10 @@ const UNLOCKED_FEATURES = [
 type Props = {
   outcome: SuccessOutcome;
   packSummary?: SuccessPackSummary | null;
+  sessionId?: string | null;
 };
 
-export function SuccessClient({ outcome, packSummary }: Props) {
+export function SuccessClient({ outcome, packSummary, sessionId }: Props) {
   const location = packSummary?.location?.trim() ?? "";
   const totalCount = packSummary?.totalCount ?? 0;
   const highPriority = packSummary?.highPriorityCount ?? 0;
@@ -55,8 +56,7 @@ export function SuccessClient({ outcome, packSummary }: Props) {
               You&apos;re in — pack <em>unlocked</em>
             </h1>
             <p className="dsu-subtitle">
-              Your scored practice list and CSV download are ready. Start with the High-priority rows and adapt the
-              outreach drafts.
+              Your leads are ready. Check your email for the download link, or grab it directly below.
             </p>
             <div className="dsu-actions">
               <Link href={`/results?searchId=${outcome.searchId}`} className="dsu-btn dsu-btn-primary">
@@ -69,6 +69,14 @@ export function SuccessClient({ outcome, packSummary }: Props) {
               >
                 ⬇ Download CSV
               </a>
+              {sessionId ? (
+                <a
+                  href={`/api/download?session_id=${encodeURIComponent(sessionId)}`}
+                  className="dsu-btn dsu-btn-ghost"
+                >
+                  Download Quick Start Guide →
+                </a>
+              ) : null}
             </div>
             <p className="dsu-context">
               Search #{outcome.searchId}
