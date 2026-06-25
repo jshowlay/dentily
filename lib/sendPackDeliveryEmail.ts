@@ -5,6 +5,8 @@ export interface SendPackDeliveryEmailOptions {
   toEmail: string;
   /** Stripe Checkout Session id — used to build the verified download link. */
   sessionId: string;
+  /** e.g. "Dallas", "Austin", "Houston" */
+  market?: string;
 }
 
 /**
@@ -15,6 +17,7 @@ export interface SendPackDeliveryEmailOptions {
 export async function sendPackDeliveryEmail({
   toEmail,
   sessionId,
+  market,
 }: SendPackDeliveryEmailOptions): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY?.trim();
   if (!apiKey) {
@@ -25,17 +28,19 @@ export async function sendPackDeliveryEmail({
   const baseUrl = getAppBaseUrl().replace(/\/$/, "");
   const downloadUrl = `${baseUrl}/api/download?session_id=${encodeURIComponent(sessionId)}`;
   const resend = new Resend(apiKey);
+  const marketLabel = market?.trim() || "your market";
+  const subject = `Your ${marketLabel} dental leads pack from Dentily`;
 
   await resend.emails.send({
     from,
     to: toEmail,
-    subject: "Your Dallas leads pack from Dentily",
+    subject,
     text: [
       "Hi there,",
       "",
-      "Your Dallas Dental Leads Pack is ready.",
+      `Your ${marketLabel} Dental Leads Pack is ready.`,
       "",
-      `Download your pack here: ${downloadUrl}`,
+      `Access your pack here: ${downloadUrl}`,
       "",
       "The guide walks you through sorting your leads, filling in your outreach templates, and getting your first emails out today.",
       "",
@@ -49,7 +54,7 @@ export async function sendPackDeliveryEmail({
         <p style="font-size: 13px; color: #64748b; margin: 0 0 24px;">From the Dentily Team · dentily.co</p>
         <p style="font-size: 15px; line-height: 1.6; margin: 0 0 16px;">Hi there,</p>
         <p style="font-size: 15px; color: #334155; line-height: 1.6; margin: 0 0 24px;">
-          Your Dallas Dental Leads Pack is ready. Click below to access your quick start guide and leads.
+          Your ${marketLabel} Dental Leads Pack is ready. Click below to access your quick start guide and leads.
         </p>
         <p style="margin: 0 0 28px;">
           <a href="${downloadUrl}"

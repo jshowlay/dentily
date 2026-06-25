@@ -8,6 +8,7 @@ import {
   handleSubscriptionDeleted,
   handleSubscriptionUpdated,
 } from "@/lib/subscription-stripe";
+import { getSearchLocation } from "@/lib/db";
 import { getStripe } from "@/lib/stripe";
 import { sendPackDeliveryEmail } from "@/lib/sendPackDeliveryEmail";
 
@@ -35,10 +36,22 @@ async function deliverPackEmail(session: Stripe.Checkout.Session): Promise<void>
     return;
   }
 
+  const raw = session.metadata?.searchId;
+  const searchId = raw ? Number(raw) : NaN;
+  let market: string | undefined;
+  if (Number.isFinite(searchId) && searchId > 0) {
+    try {
+      const location = await getSearchLocation(searchId);
+      if (location) market = location;
+    } catch (e) {
+      console.warn("[webhooks/stripe] could not fetch market for session", session.id, e);
+    }
+  }
+
   deliveredSessions.add(session.id);
   try {
-    await sendPackDeliveryEmail({ toEmail: email, sessionId: session.id });
-    console.log("[webhooks/stripe] delivery email sent", session.id);
+    await sendPackDeliveryEmail({ toEmail: email, sessionId: session.id, market });
+    console.log("[webhooks/stripe] delivery email sent", session.id, { market });
   } catch (err) {
     // Best-effort: never fail the webhook on email errors (avoids Stripe retries
     // re-running fulfillment). Allow a future retry by clearing the guard.

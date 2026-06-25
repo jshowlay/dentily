@@ -750,14 +750,33 @@ export async function getRecentLeads(limit = 50) {
 
 export async function getSearchRowForPayment(
   searchId: number
-): Promise<{ id: number; isPaid: boolean } | null> {
+): Promise<{ id: number; isPaid: boolean; location: string | null } | null> {
   await ensureSchema();
   const client = await getPool().connect();
   try {
-    const res = await client.query("SELECT id, is_paid FROM searches WHERE id = $1", [searchId]);
+    const res = await client.query(
+      "SELECT id, is_paid, location FROM searches WHERE id = $1",
+      [searchId]
+    );
     const row = res.rows[0];
     if (!row) return null;
-    return { id: row.id as number, isPaid: Boolean(row.is_paid) };
+    return {
+      id: row.id as number,
+      isPaid: Boolean(row.is_paid),
+      location: (row.location as string) ?? null,
+    };
+  } finally {
+    safeReleaseClient(client);
+  }
+}
+
+export async function getSearchLocation(searchId: number): Promise<string | null> {
+  await ensureSchema();
+  const client = await getPool().connect();
+  try {
+    const res = await client.query("SELECT location FROM searches WHERE id = $1", [searchId]);
+    const row = res.rows[0];
+    return row ? (row.location as string) : null;
   } finally {
     safeReleaseClient(client);
   }

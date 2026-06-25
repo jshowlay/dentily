@@ -46,6 +46,7 @@ export async function POST(request: Request) {
       cancel_url: `${base}/pricing?searchId=${searchId}`,
       metadata: {
         searchId: String(searchId),
+        market: row.location ?? "",
       },
     });
 
