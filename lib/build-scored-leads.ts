@@ -10,6 +10,18 @@ import { EMPTY_LEAD_ENRICHMENT, type Lead } from "@/lib/types";
 
 export const TARGET_LEAD_COUNT = 150;
 
+const INTERMEDIATE_LEAD_CAP = 200;
+
+const dentalTerms = [
+  "dentist",
+  "dental office",
+  "dental clinic",
+  "orthodontist",
+  "oral surgeon",
+  "periodontist",
+  "pediatric dentist",
+];
+
 function normalizeText(value: string | null | undefined): string {
   return (value ?? "").trim().toLowerCase();
 }
@@ -83,9 +95,28 @@ export async function buildScoredLeads(params: BuildScoredLeadsParams): Promise<
     throw new Error("Missing GOOGLE_MAPS_API_KEY.");
   }
 
-  const query = `${niche} in ${location}`;
-  const found = await searchBusinesses(query, MAX_RAW_RESULTS);
-  console.log(`[build-scored-leads] searchId=${searchId} totalRawResults=${found.length}`);
+  const terms =
+    nicheConfig.id === "dentists" ? dentalTerms : [`${niche} in ${location}`];
+
+  const allRaw = await Promise.all(
+    terms.map((term) =>
+      searchBusinesses(
+        nicheConfig.id === "dentists" ? `${term} in ${location}` : term,
+        MAX_RAW_RESULTS
+      )
+    )
+  );
+
+  const seenPlaceIds = new Set<string>();
+  const found = allRaw.flat().filter((l) => {
+    if (seenPlaceIds.has(l.placeId)) return false;
+    seenPlaceIds.add(l.placeId);
+    return true;
+  });
+
+  console.log(
+    `[build-scored-leads] searchId=${searchId} terms=${terms.length} totalRawResults=${found.length}`
+  );
 
   const normalizedLeads: Lead[] = found.map((l) => ({
     placeId: l.placeId,
@@ -111,7 +142,7 @@ export async function buildScoredLeads(params: BuildScoredLeadsParams): Promise<
   const dedupedOnce = dedupeLeads(withPlaceAndName);
   let filteredLeads = filterLeadsForQualityAndNiche(dedupedOnce, niche, nicheConfig.id).slice(
     0,
-    TARGET_LEAD_COUNT
+    INTERMEDIATE_LEAD_CAP
   );
 
   if (subscriptionUserId) {
@@ -122,6 +153,8 @@ export async function buildScoredLeads(params: BuildScoredLeadsParams): Promise<
       `[build-scored-leads] subscription dedupe removed=${before - filteredLeads.length}`
     );
   }
+
+  filteredLeads = filteredLeads.slice(0, TARGET_LEAD_COUNT);
 
   if (filteredLeads.length === 0) {
     return [];
@@ -171,7 +204,7 @@ export async function buildScoredLeads(params: BuildScoredLeadsParams): Promise<
     }
   }
 
-  const dedupedForScoring = dedupeLeads(filteredLeads).slice(0, TARGET_LEAD_COUNT);
+  const dedupedForScoring = dedupeLeads(filteredLeads).slice(0, INTERMEDIATE_LEAD_CAP);
 
   const dentistBatch: DentistScoringBatchContext | undefined =
     nicheConfig.id === "dentists"
