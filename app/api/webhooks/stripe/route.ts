@@ -8,7 +8,8 @@ import {
   handleSubscriptionDeleted,
   handleSubscriptionUpdated,
 } from "@/lib/subscription-stripe";
-import { getSearchLocation } from "@/lib/db";
+import { getSearchDeliveryInfo } from "@/lib/db";
+import { buildPackCsvAttachment } from "@/lib/build-pack-csv-for-search";
 import { getStripe } from "@/lib/stripe";
 import { sendPackDeliveryEmail } from "@/lib/sendPackDeliveryEmail";
 
@@ -39,19 +40,51 @@ async function deliverPackEmail(session: Stripe.Checkout.Session): Promise<void>
   const raw = session.metadata?.searchId;
   const searchId = raw ? Number(raw) : NaN;
   let market: string | undefined;
+  let csvPath: string | undefined;
+  let csvUrl: string | undefined;
+  let csvBuffer: Buffer | undefined;
+  let csvFilename: string | undefined;
+
   if (Number.isFinite(searchId) && searchId > 0) {
     try {
-      const location = await getSearchLocation(searchId);
-      if (location) market = location;
+      const info = await getSearchDeliveryInfo(searchId);
+      if (info?.location) market = info.location;
+      if (info?.csvPath?.trim()) csvPath = info.csvPath.trim();
+      if (info?.csvUrl?.trim()) csvUrl = info.csvUrl.trim();
     } catch (e) {
-      console.warn("[webhooks/stripe] could not fetch market for session", session.id, e);
+      console.warn("[webhooks/stripe] could not fetch delivery info for session", session.id, e);
+    }
+
+    if (!csvPath && !csvUrl) {
+      try {
+        const built = await buildPackCsvAttachment(searchId);
+        if (built) {
+          csvBuffer = built.buffer;
+          csvFilename = built.filename;
+        } else {
+          console.warn("[webhooks/stripe] no CSV rows for search; email will omit attachment", searchId);
+        }
+      } catch (e) {
+        console.warn("[webhooks/stripe] could not build CSV attachment for session", session.id, e);
+      }
     }
   }
 
   deliveredSessions.add(session.id);
   try {
-    await sendPackDeliveryEmail({ toEmail: email, sessionId: session.id, market });
-    console.log("[webhooks/stripe] delivery email sent", session.id, { market });
+    await sendPackDeliveryEmail({
+      toEmail: email,
+      sessionId: session.id,
+      market,
+      csvPath,
+      csvUrl,
+      csvBuffer,
+      csvFilename,
+    });
+    console.log("[webhooks/stripe] delivery email sent", session.id, {
+      market,
+      csvAttached: Boolean(csvPath || csvUrl || csvBuffer),
+    });
   } catch (err) {
     // Best-effort: never fail the webhook on email errors (avoids Stripe retries
     // re-running fulfillment). Allow a future retry by clearing the guard.

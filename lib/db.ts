@@ -184,6 +184,8 @@ export async function ensureSchema() {
     await client.query(`ALTER TABLE searches ADD COLUMN IF NOT EXISTS result_count INTEGER DEFAULT 0;`);
     await client.query(`ALTER TABLE searches ADD COLUMN IF NOT EXISTS error_message TEXT;`);
     await client.query(`ALTER TABLE searches ADD COLUMN IF NOT EXISTS is_paid BOOLEAN DEFAULT false;`);
+    await client.query(`ALTER TABLE searches ADD COLUMN IF NOT EXISTS csv_url TEXT;`);
+    await client.query(`ALTER TABLE searches ADD COLUMN IF NOT EXISTS csv_path TEXT;`);
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS payments (
@@ -771,12 +773,29 @@ export async function getSearchRowForPayment(
 }
 
 export async function getSearchLocation(searchId: number): Promise<string | null> {
+  const info = await getSearchDeliveryInfo(searchId);
+  return info?.location ?? null;
+}
+
+export async function getSearchDeliveryInfo(searchId: number): Promise<{
+  location: string | null;
+  csvUrl: string | null;
+  csvPath: string | null;
+} | null> {
   await ensureSchema();
   const client = await getPool().connect();
   try {
-    const res = await client.query("SELECT location FROM searches WHERE id = $1", [searchId]);
+    const res = await client.query(
+      "SELECT location, csv_url, csv_path FROM searches WHERE id = $1",
+      [searchId]
+    );
     const row = res.rows[0];
-    return row ? (row.location as string) : null;
+    if (!row) return null;
+    return {
+      location: (row.location as string) ?? null,
+      csvUrl: (row.csv_url as string | null) ?? null,
+      csvPath: (row.csv_path as string | null) ?? null,
+    };
   } finally {
     safeReleaseClient(client);
   }

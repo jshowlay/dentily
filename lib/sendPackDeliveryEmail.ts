@@ -1,3 +1,4 @@
+import { readFile } from "fs/promises";
 import { Resend } from "resend";
 import { getAppBaseUrl } from "@/lib/stripe";
 
@@ -7,6 +8,51 @@ export interface SendPackDeliveryEmailOptions {
   sessionId: string;
   /** e.g. "Dallas", "Austin", "Houston" */
   market?: string;
+  /** Local filesystem path to the CSV (optional). */
+  csvPath?: string;
+  /** Remote URL to fetch the CSV from (optional). */
+  csvUrl?: string;
+  /** Pre-built CSV bytes — used when path/url are unavailable (e.g. generated from DB). */
+  csvBuffer?: Buffer;
+  /** Attachment filename when csvBuffer is provided. */
+  csvFilename?: string;
+}
+
+async function loadCsvAttachment(options: {
+  csvPath?: string;
+  csvUrl?: string;
+  csvBuffer?: Buffer;
+}): Promise<Buffer | null> {
+  if (options.csvBuffer && options.csvBuffer.length > 0) {
+    return options.csvBuffer;
+  }
+
+  const csvPath = options.csvPath?.trim();
+  if (csvPath) {
+    try {
+      return await readFile(csvPath);
+    } catch (err) {
+      console.warn("[sendPackDeliveryEmail] could not read csvPath", csvPath, err);
+      return null;
+    }
+  }
+
+  const csvUrl = options.csvUrl?.trim();
+  if (csvUrl) {
+    try {
+      const res = await fetch(csvUrl);
+      if (!res.ok) {
+        console.warn("[sendPackDeliveryEmail] CSV fetch failed", res.status, csvUrl);
+        return null;
+      }
+      return Buffer.from(await res.arrayBuffer());
+    } catch (err) {
+      console.warn("[sendPackDeliveryEmail] could not fetch csvUrl", csvUrl, err);
+      return null;
+    }
+  }
+
+  return null;
 }
 
 /**
@@ -18,6 +64,10 @@ export async function sendPackDeliveryEmail({
   toEmail,
   sessionId,
   market,
+  csvPath,
+  csvUrl,
+  csvBuffer,
+  csvFilename,
 }: SendPackDeliveryEmailOptions): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY?.trim();
   if (!apiKey) {
@@ -31,6 +81,16 @@ export async function sendPackDeliveryEmail({
   const marketLabel = market?.trim() || "your market";
   const subject = `Your ${marketLabel} dental leads pack from Dentily`;
 
+  const attachmentBuffer = await loadCsvAttachment({ csvPath, csvUrl, csvBuffer });
+  if (!attachmentBuffer && (csvPath || csvUrl || csvBuffer)) {
+    console.warn("[sendPackDeliveryEmail] sending without CSV attachment", { sessionId });
+  }
+
+  const filename = csvFilename?.trim() || "dental-leads.csv";
+  const csvAttachedLine = attachmentBuffer
+    ? "Your leads CSV is attached to this email for instant access."
+    : null;
+
   await resend.emails.send({
     from,
     to: toEmail,
@@ -40,6 +100,7 @@ export async function sendPackDeliveryEmail({
       "",
       `Your ${marketLabel} Dental Leads Pack is ready.`,
       "",
+      ...(csvAttachedLine ? [csvAttachedLine, ""] : []),
       `Access your pack here: ${downloadUrl}`,
       "",
       "The guide walks you through sorting your leads, filling in your outreach templates, and getting your first emails out today.",
@@ -56,6 +117,11 @@ export async function sendPackDeliveryEmail({
         <p style="font-size: 15px; color: #334155; line-height: 1.6; margin: 0 0 24px;">
           Your ${marketLabel} Dental Leads Pack is ready. Click below to access your quick start guide and leads.
         </p>
+        ${
+          csvAttachedLine
+            ? `<p style="font-size: 14px; color: #475569; line-height: 1.6; margin: 0 0 16px;">${csvAttachedLine}</p>`
+            : ""
+        }
         <p style="margin: 0 0 28px;">
           <a href="${downloadUrl}"
              style="display: inline-block; background: #0ea5e9; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 15px; padding: 13px 22px; border-radius: 8px;">
@@ -75,5 +141,6 @@ export async function sendPackDeliveryEmail({
         </p>
       </div>
     `,
+    attachments: attachmentBuffer ? [{ filename, content: attachmentBuffer }] : [],
   });
 }
