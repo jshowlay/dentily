@@ -146,6 +146,10 @@ export async function sendPackDeliveryEmail({
         </div>
       </div>
     `,
+    headers: {
+      "List-Unsubscribe": "<mailto:hello@dentily.co?subject=unsubscribe>",
+      "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+    },
     attachments: attachmentBuffer ? [{ filename, content: attachmentBuffer }] : [],
   });
 }
