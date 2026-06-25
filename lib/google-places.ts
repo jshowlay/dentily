@@ -54,7 +54,8 @@ export type NormalizedPlaceLead = Pick<
 
 /** Google allows up to 3 pages (≈60 places) per text search query. */
 const MAX_PAGES_PER_QUERY = 3;
-const DEFAULT_TARGET_COUNT = 150;
+/** Max unique places returned from Places before quality/geo filtering downstream. */
+export const MAX_RAW_RESULTS = 200;
 const PAGE_SIZE = 20;
 /** nextPageToken is invalid until this delay elapses (Places API requirement). */
 const PAGE_TOKEN_DELAY_MS = 2000;
@@ -198,17 +199,30 @@ function isDentalRelatedQuery(query: string): boolean {
   return /dent|dental|orthodont|oral/i.test(query);
 }
 
+const DENTAL_SEARCH_TERMS = [
+  "dentist",
+  "dental office",
+  "dental clinic",
+  "orthodontist",
+  "oral surgeon",
+];
+
 function buildDentalSearchQueries(location: string, primaryQuery: string): string[] {
   const loc = location.trim();
-  const variants = [
-    primaryQuery,
-    `dental practices in ${loc}`,
-    `dentist office in ${loc}`,
-    `family dentistry in ${loc}`,
-    `cosmetic dentist in ${loc}`,
-    `orthodontist in ${loc}`,
-  ];
+  const variants = [primaryQuery, ...DENTAL_SEARCH_TERMS.map((term) => `${term} in ${loc}`)];
   return Array.from(new Set(variants.map((q) => q.trim()).filter(Boolean)));
+}
+
+function dedupePlacesById(places: GooglePlace[]): GooglePlace[] {
+  const seen = new Set<string>();
+  const out: GooglePlace[] = [];
+  for (const place of places) {
+    const id = place.id?.trim();
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    out.push(place);
+  }
+  return out;
 }
 
 /** Full US state names → USPS abbreviations (for geo-validation fallback). */
@@ -451,7 +465,7 @@ async function searchTextQueryAllPages(
 
 export async function searchBusinesses(
   query: string,
-  targetCount = DEFAULT_TARGET_COUNT
+  targetCount = MAX_RAW_RESULTS
 ): Promise<NormalizedPlaceLead[]> {
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
   if (!apiKey) {
@@ -459,7 +473,7 @@ export async function searchBusinesses(
   }
 
   const normalizedQuery = query.trim();
-  const cappedTarget = Math.max(1, Math.min(targetCount, DEFAULT_TARGET_COUNT));
+  const cappedTarget = Math.max(1, Math.min(targetCount, MAX_RAW_RESULTS));
 
   const location = extractLocationFromQuery(normalizedQuery) ?? normalizedQuery;
   const useMultiQuery = isDentalRelatedQuery(normalizedQuery);
@@ -500,7 +514,7 @@ export async function searchBusinesses(
       : new Error("All Google Places queries failed.");
   }
 
-  const allPlaces = perQueryResults.flat();
+  const allPlaces = dedupePlacesById(perQueryResults.flat());
   console.log(
     `[google-places] totalRawResults=${allPlaces.length} failedQueries=${failedQueries}/${textQueries.length}`
   );

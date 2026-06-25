@@ -1,4 +1,4 @@
-import { getPlaceDetails, searchBusinesses } from "@/lib/google-places";
+import { getPlaceDetails, MAX_RAW_RESULTS, searchBusinesses } from "@/lib/google-places";
 import { dedupeLeads } from "@/lib/dedupe-leads";
 import { type DentistScoringBatchContext } from "@/lib/dentist-scoring";
 import { logSearchPrioritySummary, sortByPriorityThenScore } from "@/lib/lead-pack-export";
@@ -84,7 +84,7 @@ export async function buildScoredLeads(params: BuildScoredLeadsParams): Promise<
   }
 
   const query = `${niche} in ${location}`;
-  const found = await searchBusinesses(query, TARGET_LEAD_COUNT);
+  const found = await searchBusinesses(query, MAX_RAW_RESULTS);
   console.log(`[build-scored-leads] searchId=${searchId} totalRawResults=${found.length}`);
 
   const normalizedLeads: Lead[] = found.map((l) => ({
