@@ -79,7 +79,7 @@ export async function sendPackDeliveryEmail({
   const downloadUrl = `${baseUrl}/api/download?session_id=${encodeURIComponent(sessionId)}`;
   const resend = new Resend(apiKey);
   const marketLabel = market?.trim() || "your market";
-  const subject = `Your ${marketLabel} dental leads pack from Dentily`;
+  const subject = `Your ${marketLabel} dental leads from Dentily`;
 
   const attachmentBuffer = await loadCsvAttachment({ csvPath, csvUrl, csvBuffer });
   if (!attachmentBuffer && (csvPath || csvUrl || csvBuffer)) {
@@ -88,34 +88,40 @@ export async function sendPackDeliveryEmail({
 
   const filename = csvFilename?.trim() || "dental-leads.csv";
   const csvAttachedLine = attachmentBuffer
-    ? "Your leads CSV is attached to this email for instant access."
+    ? "Your leads CSV is also attached directly to this email for quick access."
     : null;
+
+  const plainText = [
+    "From the Dentily Team · dentily.co",
+    "",
+    "Hi there,",
+    "",
+    `Your ${marketLabel} dental leads pack from Dentily.`,
+    "",
+    ...(csvAttachedLine ? [csvAttachedLine, ""] : []),
+    `Quick start guide: ${downloadUrl}`,
+    "",
+    "The guide walks you through sorting your leads, filling in your outreach templates, and getting your first emails out today.",
+    "",
+    "Questions? Just reply to this email.",
+    "",
+    "— The Dentily Team",
+    "dentily.co",
+    "",
+    "You're receiving this because you purchased a leads pack at dentily.co · dentily.co",
+  ].join("\n");
 
   await resend.emails.send({
     from,
     to: toEmail,
     subject,
-    text: [
-      "Hi there,",
-      "",
-      `Your ${marketLabel} Dental Leads Pack is ready.`,
-      "",
-      ...(csvAttachedLine ? [csvAttachedLine, ""] : []),
-      `Access your pack here: ${downloadUrl}`,
-      "",
-      "The guide walks you through sorting your leads, filling in your outreach templates, and getting your first emails out today.",
-      "",
-      "Questions? Just reply to this email.",
-      "",
-      "— The Dentily Team",
-      "dentily.co",
-    ].join("\n"),
+    text: plainText,
     html: `
       <div style="font-family: 'DM Sans', Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 40px 24px; color: #0f172a;">
         <p style="font-size: 13px; color: #64748b; margin: 0 0 24px;">From the Dentily Team · dentily.co</p>
         <p style="font-size: 15px; line-height: 1.6; margin: 0 0 16px;">Hi there,</p>
         <p style="font-size: 15px; color: #334155; line-height: 1.6; margin: 0 0 24px;">
-          Your ${marketLabel} Dental Leads Pack is ready. Click below to access your quick start guide and leads.
+          Your ${marketLabel} dental leads pack from Dentily. Open your quick start guide below to get started with your leads.
         </p>
         ${
           csvAttachedLine
@@ -135,10 +141,9 @@ export async function sendPackDeliveryEmail({
           Questions? Just reply to this email.
         </p>
         <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 0 0 24px;" />
-        <p style="font-size: 12px; color: #94a3b8; margin: 0;">
-          Dentily · dentily.co<br/>
-          You received this because you purchased a leads pack from Dentily.
-        </p>
+        <div style="font-size: 12px; color: #94a3b8; line-height: 1.5;">
+          You&apos;re receiving this because you purchased a leads pack at dentily.co · dentily.co
+        </div>
       </div>
     `,
     attachments: attachmentBuffer ? [{ filename, content: attachmentBuffer }] : [],
