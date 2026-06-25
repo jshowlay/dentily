@@ -14,6 +14,10 @@ import { sendPackDeliveryEmail } from "@/lib/sendPackDeliveryEmail";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
+// Public route — no session auth. Stripe verifies via stripe-signature header below.
+// Endpoint URL in Stripe Dashboard must be https://www.dentily.co/api/webhooks/stripe
+// (apex dentily.co returns HTTP 307 before this handler runs).
+
 /**
  * In-process guard so a Stripe retry of the same event doesn't send a duplicate
  * delivery email. Fulfillment itself is idempotent at the DB layer; this only

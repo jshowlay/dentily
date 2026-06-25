@@ -13,6 +13,19 @@ export function getStripe(): Stripe {
   return stripe;
 }
 
+/** Apex dentily.co 307-redirects to www at Vercel; prefer www for absolute URLs. */
+function canonicalAppOrigin(origin: string): string {
+  try {
+    const u = new URL(origin.startsWith("http") ? origin : `https://${origin}`);
+    if (u.hostname === "dentily.co") {
+      u.hostname = "www.dentily.co";
+    }
+    return u.origin.replace(/\/$/, "");
+  } catch {
+    return origin.replace(/\/$/, "");
+  }
+}
+
 /**
  * Base URL for Stripe redirects and absolute links.
  * When a Request is passed (e.g. from /api/checkout), prefers the Host the user actually used
@@ -29,17 +42,17 @@ export function getAppBaseUrl(request?: Request): string {
       /^localhost(:\d+)?$/i.test(hostRaw) ||
       /^127\.0\.0\.1(:\d+)?$/i.test(hostRaw);
     if (!isLocal && hostRaw) {
-      return `${proto}://${hostRaw}`.replace(/\/$/, "");
+      return canonicalAppOrigin(`${proto}://${hostRaw}`);
     }
   }
 
   const fromEnv = process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/$/, "");
-  if (fromEnv) return fromEnv;
+  if (fromEnv) return canonicalAppOrigin(fromEnv);
 
   const vercelUrl = process.env.VERCEL_URL?.trim();
   if (vercelUrl) {
     const host = vercelUrl.replace(/^https?:\/\//i, "");
-    return `https://${host}`.replace(/\/$/, "");
+    return canonicalAppOrigin(`https://${host}`);
   }
 
   const port = process.env.PORT?.trim() || "3000";
