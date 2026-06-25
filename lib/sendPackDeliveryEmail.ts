@@ -29,27 +29,45 @@ export async function sendPackDeliveryEmail({
   await resend.emails.send({
     from,
     to: toEmail,
-    subject: "Your Dallas Dental Leads are ready — here's your download",
+    subject: "Your Dallas leads pack from Dentily",
+    text: [
+      "Hi there,",
+      "",
+      "Your Dallas Dental Leads Pack is ready.",
+      "",
+      `Download your pack here: ${downloadUrl}`,
+      "",
+      "The guide walks you through sorting your leads, filling in your outreach templates, and getting your first emails out today.",
+      "",
+      "Questions? Just reply to this email.",
+      "",
+      "— The Dentily Team",
+      "dentily.co",
+    ].join("\n"),
     html: `
       <div style="font-family: 'DM Sans', Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 40px 24px; color: #0f172a;">
+        <p style="font-size: 13px; color: #64748b; margin: 0 0 24px;">From the Dentily Team · dentily.co</p>
         <p style="font-size: 15px; line-height: 1.6; margin: 0 0 16px;">Hi there,</p>
         <p style="font-size: 15px; color: #334155; line-height: 1.6; margin: 0 0 24px;">
-          Your Dallas Dental Leads Pack is ready. Click below to download your quick start guide and CSV.
+          Your Dallas Dental Leads Pack is ready. Click below to access your quick start guide and leads.
         </p>
         <p style="margin: 0 0 28px;">
           <a href="${downloadUrl}"
              style="display: inline-block; background: #0ea5e9; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 15px; padding: 13px 22px; border-radius: 8px;">
-            Download Your Pack &rarr;
+            Access Your Pack &rarr;
           </a>
         </p>
-        <p style="font-size: 14px; color: #475569; line-height: 1.6; margin: 0 0 24px;">
-          The guide walks you through sorting your leads, filling in your outreach templates, and getting
-          your first emails out today.
+        <p style="font-size: 14px; color: #475569; line-height: 1.6; margin: 0 0 16px;">
+          The guide walks you through sorting your leads, filling in your outreach templates, and getting your first emails out today.
         </p>
-        <p style="font-size: 14px; color: #475569; line-height: 1.6; margin: 0 0 24px;">
+        <p style="font-size: 14px; color: #475569; line-height: 1.6; margin: 0 0 32px;">
           Questions? Just reply to this email.
         </p>
-        <p style="font-size: 14px; color: #0f172a; margin: 0;">&mdash; The Dentily Team</p>
+        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 0 0 24px;" />
+        <p style="font-size: 12px; color: #94a3b8; margin: 0;">
+          Dentily · dentily.co<br/>
+          You received this because you purchased a leads pack from Dentily.
+        </p>
       </div>
     `,
   });
