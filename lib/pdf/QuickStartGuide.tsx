@@ -6,26 +6,35 @@ import React from "react";
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 
 const COLORS = {
-  primary: "#0ea5e9",
-  dark: "#0f172a",
-  light: "#f8fafc",
+  navy: "#0f172a",
+  skyBlue: "#0ea5e9",
+  skyLight: "#e0f2fe",
+  white: "#ffffff",
+  offWhite: "#f8fafc",
   border: "#e2e8f0",
   muted: "#64748b",
-  white: "#ffffff",
+  body: "#334155",
 };
 
 const styles = StyleSheet.create({
   page: {
-    backgroundColor: COLORS.light,
+    backgroundColor: COLORS.offWhite,
     paddingBottom: 56,
     fontSize: 11,
-    color: COLORS.dark,
+    color: COLORS.navy,
     fontFamily: "Helvetica",
   },
   headerBar: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.navy,
     paddingVertical: 22,
     paddingHorizontal: 40,
+  },
+  headerAccentStripe: {
+    height: 4,
+    backgroundColor: COLORS.skyBlue,
+    marginHorizontal: -40,
+    marginTop: -22,
+    marginBottom: 18,
   },
   wordmark: {
     color: COLORS.white,
@@ -37,16 +46,16 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontSize: 12,
     marginTop: 4,
-    opacity: 0.92,
+    opacity: 0.75,
   },
   body: {
     paddingHorizontal: 40,
     paddingTop: 28,
   },
   sectionTitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontFamily: "Helvetica-Bold",
-    color: COLORS.dark,
+    color: COLORS.navy,
     marginBottom: 14,
   },
   sectionSpacer: {
@@ -58,34 +67,34 @@ const styles = StyleSheet.create({
   },
   pill: {
     flex: 1,
-    backgroundColor: COLORS.white,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: COLORS.skyLight,
+    borderWidth: 0,
     borderRadius: 10,
-    paddingVertical: 16,
+    paddingVertical: 18,
     paddingHorizontal: 12,
     alignItems: "center",
   },
   pillValue: {
-    fontSize: 22,
+    fontSize: 26,
     fontFamily: "Helvetica-Bold",
-    color: COLORS.primary,
+    color: COLORS.skyBlue,
   },
   pillLabel: {
-    fontSize: 10,
+    fontSize: 9.5,
     color: COLORS.muted,
-    marginTop: 6,
+    marginTop: 5,
     textAlign: "center",
   },
   table: {
     borderWidth: 1,
     borderColor: COLORS.border,
-    borderRadius: 10,
+    borderRadius: 8,
     overflow: "hidden",
+    backgroundColor: COLORS.white,
   },
   tableHeadRow: {
     flexDirection: "row",
-    backgroundColor: COLORS.dark,
+    backgroundColor: COLORS.navy,
   },
   tableRow: {
     flexDirection: "row",
@@ -104,13 +113,13 @@ const styles = StyleSheet.create({
     fontSize: 10.5,
     paddingVertical: 11,
     paddingHorizontal: 12,
-    color: COLORS.dark,
+    color: COLORS.body,
   },
   colType: { width: "30%" },
   colCount: { width: "28%" },
   colDesc: { width: "42%" },
   tdMutedCount: {
-    color: COLORS.primary,
+    color: COLORS.skyBlue,
     fontFamily: "Helvetica-Bold",
   },
   footerNote: {
@@ -127,7 +136,7 @@ const styles = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.navy,
     color: COLORS.white,
     fontFamily: "Helvetica-Bold",
     fontSize: 12,
@@ -141,12 +150,12 @@ const styles = StyleSheet.create({
   stepTitle: {
     fontSize: 12,
     fontFamily: "Helvetica-Bold",
-    color: COLORS.dark,
+    color: COLORS.navy,
     marginBottom: 3,
   },
   stepDesc: {
     fontSize: 10.5,
-    color: "#334155",
+    color: COLORS.body,
     lineHeight: 1.5,
   },
   stepEm: {
@@ -155,7 +164,7 @@ const styles = StyleSheet.create({
   },
   mono: {
     fontFamily: "Courier",
-    color: COLORS.dark,
+    color: COLORS.navy,
   },
   pageFooter: {
     position: "absolute",
@@ -223,6 +232,7 @@ export function QuickStartGuide({
       {/* Page 1 — Welcome & What's Inside */}
       <Page size="A4" style={styles.page}>
         <View style={styles.headerBar}>
+          <View style={styles.headerAccentStripe} />
           <Text style={styles.wordmark}>Dentily</Text>
           <Text style={styles.tagline}>{market} Dental Leads Pack</Text>
         </View>
@@ -268,6 +278,7 @@ export function QuickStartGuide({
       {/* Page 2 — How to Use This Pack — unchanged */}
       <Page size="A4" style={styles.page}>
         <View style={styles.headerBar}>
+          <View style={styles.headerAccentStripe} />
           <Text style={styles.wordmark}>Dentily</Text>
           <Text style={styles.tagline}>How to use this pack</Text>
         </View>
