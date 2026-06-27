@@ -67,7 +67,7 @@ export function SiteHeader({ homeStyle = false }: { homeStyle?: boolean }) {
                     )
               )}
             >
-              View Sample Leads
+              See a Real Lead Pack
             </HashSafeLink>
             <button
               type="button"

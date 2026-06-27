@@ -28,11 +28,10 @@ export function LandingHeroRedesign({
             B2B prospecting for dental marketers
           </div>
           <h1>
-            Find Dental Practices That <em>Need Marketing Help</em>
+            150 Scored Dental Leads, <em>Delivered With a Pitch Angle for Each One.</em>
           </h1>
           <p className="dh-hero-lead">
-            Dentily shows you which dental practices have clear growth opportunities, why they are a good fit, and
-            the best way to reach out.
+            Stop cold-guessing. Know why each practice needs you — and what to say — before you ever reach out.
           </p>
           <div className="dh-hero-ctas">
             <HashSafeLink href={primaryHref} className="dh-btn-primary">

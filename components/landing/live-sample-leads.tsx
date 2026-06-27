@@ -184,7 +184,7 @@ export function LiveSampleLeads() {
                 "min-h-[48px] bg-slate-900 px-8 text-white hover:bg-slate-900/90"
               )}
             >
-              View Sample Leads
+              See a Real Lead Pack
             </HashSafeLink>
             <HashSafeLink
               href="/search"
@@ -193,7 +193,7 @@ export function LiveSampleLeads() {
                 "min-h-[48px] border-slate-300 px-8 text-slate-900 hover:bg-slate-100"
               )}
             >
-              Get My First Leads
+              Preview My Market Free
             </HashSafeLink>
           </div>
         </div>

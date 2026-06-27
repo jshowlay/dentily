@@ -14,13 +14,7 @@ import { buttonVariants } from "@/lib/button-variants";
 import { cn } from "@/lib/utils";
 import "@/app/landing-home.css";
 
-const FINAL_CTA = "Get My First Leads";
-
-const WHY_DENTILY_POINTS = [
-  "You don’t just get a list of practices",
-  "You see why each one is a good opportunity",
-  "You know what to say before you reach out",
-] as const;
+const FINAL_CTA = "Preview My Market Free";
 
 const PROOF_CARDS = [
   {
@@ -60,37 +54,35 @@ export function DentistLanding() {
       <LandingHeroRedesign
         primaryHref="/search#sample-preview"
         secondaryHref="/search"
-        primaryLabel="View Sample Leads"
-        secondaryLabel="Get My First Leads"
+        primaryLabel="See a Real Lead Pack"
+        secondaryLabel="Preview My Market Free"
       />
 
       <LandingStatsStrip />
 
       <LiveSampleLeads />
 
-      <LandingHowItWorks />
-
-      <LandingSection id="why-dentily" variant="white">
-        <SectionHeader
-          title="Stop wasting time on the wrong leads"
-          subtitle="Most dental outreach is guesswork. You don’t know who actually needs help—you just hope someone responds."
-          className="mb-10 md:mb-12"
-        />
-        <p className="mx-auto max-w-3xl text-center text-base leading-relaxed text-slate-600 md:text-lg">
-          Dentily analyzes dental practices and surfaces real signals that indicate opportunity—so you can focus on
-          leads that are more likely to convert.
-        </p>
-        <div className="mx-auto mt-10 max-w-2xl">
-          <ul className="space-y-3 text-left text-sm text-slate-700 md:text-base">
-            {WHY_DENTILY_POINTS.map((line) => (
-              <li key={line} className="flex gap-3">
-                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-600" aria-hidden />
-                <span>{line}</span>
-              </li>
-            ))}
-          </ul>
+      <LandingSection id="relevant-pitch" variant="white">
+        <div className="mx-auto max-w-3xl">
+          <h2 className="text-center text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
+            What happens when the pitch is relevant
+          </h2>
+          <figure className="mt-10 rounded-r-xl border-y border-r border-slate-200 border-l-4 border-l-blue-600 bg-slate-50/80 py-8 pl-6 pr-6 md:pl-8 md:pr-10">
+            <blockquote className="text-base leading-relaxed text-slate-800 md:text-lg">
+              <p>
+                &ldquo;I used the outreach draft almost word for word. The practice owner said it was the first cold
+                email she&apos;d actually read in months. Booked a call the same day.&rdquo;
+              </p>
+            </blockquote>
+            <figcaption className="mt-5 text-sm font-medium text-slate-700">
+              — Freelance dental marketing consultant, Austin TX
+            </figcaption>
+            <p className="mt-3 text-xs text-slate-500 md:text-sm">Result from a beta user. Individual outcomes vary.</p>
+          </figure>
         </div>
       </LandingSection>
+
+      <LandingHowItWorks />
 
       <LandingSection id="audience" variant="muted">
         <SectionHeader title="Who This Is For" className="mb-10 md:mb-12" />
@@ -134,26 +126,6 @@ export function DentistLanding() {
         </p>
       </LandingSection>
 
-      <LandingSection id="relevant-pitch" variant="white">
-        <div className="mx-auto max-w-3xl">
-          <h2 className="text-center text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
-            What happens when the pitch is relevant
-          </h2>
-          <figure className="mt-10 rounded-r-xl border-y border-r border-slate-200 border-l-4 border-l-blue-600 bg-slate-50/80 py-8 pl-6 pr-6 md:pl-8 md:pr-10">
-            <blockquote className="text-base leading-relaxed text-slate-800 md:text-lg">
-              <p>
-                &ldquo;I used the outreach draft almost word for word. The practice owner said it was the first cold
-                email she&apos;d actually read in months. Booked a call the same day.&rdquo;
-              </p>
-            </blockquote>
-            <figcaption className="mt-5 text-sm font-medium text-slate-700">
-              — Freelance dental marketing consultant, Austin TX
-            </figcaption>
-            <p className="mt-3 text-xs text-slate-500 md:text-sm">Result from a beta user. Individual outcomes vary.</p>
-          </figure>
-        </div>
-      </LandingSection>
-
       <LandingSection id="pricing-section" variant="muted">
         <PricingSection showFooterTip />
         <div className="mx-auto mt-12 max-w-lg px-4">
@@ -163,7 +135,7 @@ export function DentistLanding() {
 
       <LandingSection variant="dark" className="border-slate-800">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-bold tracking-tight text-white md:text-4xl">Start Finding Better Dental Clients Today</h2>
+          <h2 className="text-3xl font-bold tracking-tight text-white md:text-4xl">Ready to See What&apos;s in Your Market?</h2>
           <p className="mt-4 text-lg text-white/85">
             Get access to high-opportunity leads and reach out with confidence.
           </p>
@@ -186,7 +158,7 @@ export function DentistLanding() {
             Pricing
           </Link>
           <HashSafeLink href="/search#sample-preview" className="text-blue-600 hover:underline">
-            View Sample Leads
+            See a Real Lead Pack
           </HashSafeLink>
           <Link href="/" className="text-blue-600 hover:underline">
             Home
