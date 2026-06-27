@@ -114,6 +114,7 @@ export async function sendPackDeliveryEmail({
   await resend.emails.send({
     from,
     to: toEmail,
+    replyTo: "hello@dentily.co",
     subject,
     text: plainText,
     html: `
