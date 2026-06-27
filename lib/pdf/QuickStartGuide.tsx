@@ -174,18 +174,6 @@ const styles = StyleSheet.create({
 
 type BreakdownRow = { type: string; count: string; description: string };
 
-const BREAKDOWN: BreakdownRow[] = [
-  { type: "Email leads", count: "57 practices", description: "Ready to email directly" },
-  { type: "Contact Form", count: "59 practices", description: "Submit via their web form" },
-  { type: "Phone only", count: "33 practices", description: "Call or voicemail" },
-];
-
-const STATS = [
-  { value: "149", label: "Dental Practices" },
-  { value: "116", label: "Contactable Leads" },
-  { value: "10", label: "Top-Priority Leads" },
-];
-
 function PageFooter({ page }: { page: number }) {
   return (
     <View style={styles.pageFooter} fixed>
@@ -195,24 +183,54 @@ function PageFooter({ page }: { page: number }) {
   );
 }
 
-export function QuickStartGuide() {
+export interface QuickStartGuideProps {
+  market: string;
+  totalPractices: number;
+  contactableLeads: number;
+  topPriorityLeads: number;
+  emailCount: number;
+  formCount: number;
+  phoneCount: number;
+}
+
+export function QuickStartGuide({
+  market,
+  totalPractices,
+  contactableLeads,
+  topPriorityLeads,
+  emailCount,
+  formCount,
+  phoneCount,
+}: QuickStartGuideProps) {
+  const stats = [
+    { value: String(totalPractices), label: "Dental Practices" },
+    { value: String(contactableLeads), label: "Contactable Leads" },
+    { value: String(topPriorityLeads), label: "Top-Priority Leads" },
+  ];
+
+  const breakdown: BreakdownRow[] = [
+    { type: "Email leads", count: `${emailCount} practices`, description: "Ready to email directly" },
+    { type: "Contact Form", count: `${formCount} practices`, description: "Submit via their web form" },
+    { type: "Phone only", count: `${phoneCount} practices`, description: "Call or voicemail" },
+  ];
+
   return (
     <Document
-      title="Dentily — Dallas Dental Leads Quick Start Guide"
+      title={`Dentily — ${market} Dental Leads Quick Start Guide`}
       author="Dentily"
-      subject="Quick start guide for your Dallas Dental Leads Pack"
+      subject={`Quick start guide for your ${market} Dental Leads Pack`}
     >
       {/* Page 1 — Welcome & What's Inside */}
       <Page size="A4" style={styles.page}>
         <View style={styles.headerBar}>
           <Text style={styles.wordmark}>Dentily</Text>
-          <Text style={styles.tagline}>Dallas Dental Leads Pack</Text>
+          <Text style={styles.tagline}>{market} Dental Leads Pack</Text>
         </View>
 
         <View style={styles.body}>
           <Text style={styles.sectionTitle}>What&apos;s inside</Text>
           <View style={styles.pillRow}>
-            {STATS.map((s) => (
+            {stats.map((s) => (
               <View key={s.label} style={styles.pill}>
                 <Text style={styles.pillValue}>{s.value}</Text>
                 <Text style={styles.pillLabel}>{s.label}</Text>
@@ -228,7 +246,7 @@ export function QuickStartGuide() {
                 <Text style={[styles.th, styles.colCount]}>Volume</Text>
                 <Text style={[styles.th, styles.colDesc]}>What to do</Text>
               </View>
-              {BREAKDOWN.map((row) => (
+              {breakdown.map((row) => (
                 <View key={row.type} style={styles.tableRow}>
                   <Text style={[styles.td, styles.colType]}>{row.type}</Text>
                   <Text style={[styles.td, styles.colCount, styles.tdMutedCount]}>{row.count}</Text>
@@ -239,7 +257,7 @@ export function QuickStartGuide() {
           </View>
 
           <Text style={styles.footerNote}>
-            All leads are verified Dallas-area dental practices sourced from Google Maps and enriched
+            All leads are verified {market}-area dental practices sourced from Google Maps and enriched
             with contact data.
           </Text>
         </View>
@@ -247,7 +265,7 @@ export function QuickStartGuide() {
         <PageFooter page={1} />
       </Page>
 
-      {/* Page 2 — How to Use This Pack */}
+      {/* Page 2 — How to Use This Pack — unchanged */}
       <Page size="A4" style={styles.page}>
         <View style={styles.headerBar}>
           <Text style={styles.wordmark}>Dentily</Text>

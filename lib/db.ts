@@ -781,12 +781,41 @@ export async function getSearchDeliveryInfo(searchId: number): Promise<{
   location: string | null;
   csvUrl: string | null;
   csvPath: string | null;
+  totalPractices: number;
+  contactableLeads: number;
+  topPriorityLeads: number;
+  emailCount: number;
+  formCount: number;
+  phoneCount: number;
 } | null> {
   await ensureSchema();
   const client = await getPool().connect();
   try {
     const res = await client.query(
-      "SELECT location, csv_url, csv_path FROM searches WHERE id = $1",
+      `SELECT
+         s.location,
+         s.csv_url,
+         s.csv_path,
+         COUNT(l.id)::int AS total_practices,
+         COUNT(l.id) FILTER (
+           WHERE NULLIF(TRIM(l.primary_email), '') IS NOT NULL
+              OR NULLIF(TRIM(l.contact_form_url), '') IS NOT NULL
+         )::int AS contactable_leads,
+         COUNT(l.id) FILTER (WHERE LOWER(l.priority) = 'high')::int AS top_priority_leads,
+         COUNT(l.id) FILTER (WHERE NULLIF(TRIM(l.primary_email), '') IS NOT NULL)::int AS email_count,
+         COUNT(l.id) FILTER (
+           WHERE NULLIF(TRIM(l.primary_email), '') IS NULL
+             AND NULLIF(TRIM(l.contact_form_url), '') IS NOT NULL
+         )::int AS form_count,
+         COUNT(l.id) FILTER (
+           WHERE NULLIF(TRIM(l.primary_email), '') IS NULL
+             AND NULLIF(TRIM(l.contact_form_url), '') IS NULL
+             AND NULLIF(TRIM(l.phone), '') IS NOT NULL
+         )::int AS phone_count
+       FROM searches s
+       LEFT JOIN leads l ON l.search_id = s.id
+       WHERE s.id = $1
+       GROUP BY s.id, s.location, s.csv_url, s.csv_path`,
       [searchId]
     );
     const row = res.rows[0];
@@ -795,6 +824,12 @@ export async function getSearchDeliveryInfo(searchId: number): Promise<{
       location: (row.location as string) ?? null,
       csvUrl: (row.csv_url as string | null) ?? null,
       csvPath: (row.csv_path as string | null) ?? null,
+      totalPractices: Number(row.total_practices ?? 0),
+      contactableLeads: Number(row.contactable_leads ?? 0),
+      topPriorityLeads: Number(row.top_priority_leads ?? 0),
+      emailCount: Number(row.email_count ?? 0),
+      formCount: Number(row.form_count ?? 0),
+      phoneCount: Number(row.phone_count ?? 0),
     };
   } finally {
     safeReleaseClient(client);
