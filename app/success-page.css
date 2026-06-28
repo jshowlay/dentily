@@ -1,4 +1,4 @@
-/* Dentily /success — post-purchase confirmation */
+/* Dentily /success page */
 
 .dentily-success {
   --color-bg: #f7f5f0;
@@ -16,400 +16,390 @@
   min-height: 100vh;
 }
 
-.dentily-success h1,
-.dentily-success h2,
-.dentily-success .dsu-serif {
-  font-family: "Instrument Serif", Georgia, serif;
-  font-weight: 400;
-}
-
-.dentily-success em {
-  font-style: italic;
-  color: var(--color-green);
-}
-
-.dentily-success .dsu-nav {
+/* Nav */
+.dsu-nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 40px;
-  background: var(--color-bg);
+  padding: 0 32px;
+  height: 60px;
   border-bottom: 0.5px solid var(--color-border);
+  background: var(--color-surface);
 }
 
-.dentily-success .dsu-logo {
-  font-family: "Instrument Serif", Georgia, serif;
-  font-size: 20px;
+.dsu-logo {
+  font-family: "DM Sans", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 18px;
   color: var(--color-ink);
   text-decoration: none;
-  line-height: 1.2;
+  letter-spacing: -0.3px;
 }
 
-.dentily-success .dsu-nav-link {
+.dsu-nav-link {
   font-size: 13px;
   color: var(--color-muted);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.dentily-success .dsu-hero {
-  max-width: 560px;
-  margin: 0 auto;
-  text-align: center;
-  padding: 72px 40px 48px;
-}
-
-.dentily-success .dsu-check-circle {
-  width: 64px;
-  height: 64px;
-  margin: 0 auto 24px;
-  border-radius: 50%;
-  background: var(--color-green-bg);
-  border: 0.5px solid #b5dcc6;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 28px;
-  color: var(--color-green);
-  line-height: 1;
-}
-
-.dentily-success .dsu-pill {
-  display: inline-block;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--color-green);
-  background: var(--color-green-bg);
-  border: 0.5px solid #b5dcc6;
-  border-radius: 20px;
-  padding: 4px 14px;
-  margin-bottom: 18px;
-}
-
-.dentily-success .dsu-title {
-  font-size: 38px;
-  line-height: 1.12;
-  letter-spacing: -0.5px;
-  margin: 0 0 14px;
-}
-
-.dentily-success .dsu-subtitle {
-  font-size: 15px;
-  color: var(--color-muted);
-  line-height: 1.6;
-  max-width: 420px;
-  margin: 0 auto 36px;
-}
-
-.dentily-success .dsu-actions {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-  width: 100%;
-}
-
-.dentily-success .dsu-btn {
-  flex: 1;
-  max-width: 200px;
-  text-align: center;
-  font-size: 14px;
-  font-weight: 500;
-  padding: 12px 24px;
-  border-radius: 8px;
   text-decoration: none;
-  font-family: inherit;
-  border: none;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
 }
 
-.dentily-success .dsu-btn-primary {
-  background: var(--color-ink);
-  color: var(--color-bg);
-}
-
-.dentily-success .dsu-btn-ghost {
-  border: 1px solid rgba(0, 0, 0, 0.2);
+.dsu-nav-link:hover {
   color: var(--color-ink);
-  background: transparent;
 }
 
-.dentily-success .dsu-context {
-  margin-top: 10px;
-  font-size: 12px;
-  color: #aaa;
-}
-
-.dentily-success .dsu-card-wrap {
+/* Hero */
+.dsu-hero {
   max-width: 560px;
-  margin: 0 auto 24px;
-  padding: 0 40px;
-}
-
-.dentily-success .dsu-card {
-  background: #fff;
-  border: 0.5px solid var(--color-border);
-  border-radius: 14px;
-  padding: 24px 26px;
-}
-
-.dentily-success .dsu-label {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--color-hint);
-  margin: 0 0 14px;
-}
-
-.dentily-success .dsu-stat-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin-bottom: 18px;
-}
-
-.dentily-success .dsu-stat {
+  margin: 64px auto 0;
+  padding: 0 24px;
   text-align: center;
 }
 
-.dentily-success .dsu-stat-value {
-  font-family: "Instrument Serif", Georgia, serif;
-  font-size: 28px;
-  line-height: 1;
-  color: var(--color-ink);
-}
-
-.dentily-success .dsu-stat-label {
-  margin-top: 6px;
-  font-size: 11px;
-  color: var(--color-hint);
-}
-
-.dentily-success .dsu-divider {
-  height: 0.5px;
-  background: rgba(0, 0, 0, 0.08);
-  margin: 16px 0;
-}
-
-.dentily-success .dsu-feature {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  font-size: 13px;
-  color: var(--color-muted);
-  line-height: 1.45;
-  margin-bottom: 8px;
-}
-
-.dentily-success .dsu-check {
-  width: 16px;
-  height: 16px;
+.dsu-check-circle {
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
   background: var(--color-green-bg);
   color: var(--color-green);
-  font-size: 9px;
+  font-size: 22px;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  margin-top: 2px;
+  margin: 0 auto 20px;
 }
 
-.dentily-success .dsu-steps {
+.dsu-pill {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--color-green);
+  background: var(--color-green-bg);
+  border: 0.5px solid #b5dcc6;
+  border-radius: 20px;
+  padding: 4px 12px;
+  margin-bottom: 18px;
+}
+
+.dsu-title {
+  font-family: "Instrument Serif", Georgia, serif;
+  font-weight: 400;
+  font-size: 38px;
+  line-height: 1.15;
+  letter-spacing: -0.5px;
+  color: var(--color-ink);
+  margin: 0 0 16px;
+}
+
+.dsu-title em {
+  font-style: italic;
+  color: var(--color-green);
+}
+
+.dsu-subtitle {
+  font-size: 15px;
+  color: var(--color-muted);
+  line-height: 1.6;
+  margin: 0 0 32px;
+}
+
+/* Actions */
+.dsu-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.dsu-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "DM Sans", system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 12px 24px;
+  border-radius: 9px;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  width: 100%;
+  max-width: 320px;
+  transition: opacity 0.15s;
+}
+
+.dsu-btn-primary {
+  background: var(--color-ink);
+  color: var(--color-bg);
+}
+
+.dsu-btn-primary:hover {
+  opacity: 0.88;
+}
+
+.dsu-btn-ghost {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  border: 0.5px solid var(--color-border);
+}
+
+.dsu-btn-ghost:hover {
+  border-color: var(--color-ink);
+}
+
+.dsu-context {
+  font-size: 12px;
+  color: var(--color-hint);
+  margin: 8px 0 56px;
+}
+
+/* Cards */
+.dsu-card-wrap {
+  max-width: 560px;
+  margin: 0 auto 20px;
+  padding: 0 24px;
+}
+
+.dsu-card {
+  background: var(--color-surface);
+  border: 0.5px solid var(--color-border);
+  border-radius: 14px;
+  padding: 28px;
+}
+
+.dsu-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-hint);
+  margin: 0 0 20px;
+}
+
+/* Stat grid */
+.dsu-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.dsu-stat {
+  background: var(--color-bg);
+  border-radius: 10px;
+  padding: 16px 12px;
+  text-align: center;
+}
+
+.dsu-stat-value {
+  font-family: "Instrument Serif", Georgia, serif;
+  font-size: 28px;
+  line-height: 1;
+  color: var(--color-ink);
+}
+
+.dsu-stat-label {
+  font-size: 11px;
+  color: var(--color-hint);
+  margin-top: 6px;
+}
+
+.dsu-divider {
+  height: 0.5px;
+  background: var(--color-border);
+  margin: 0 0 20px;
+}
+
+/* Feature list */
+.dsu-feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13.5px;
+  color: var(--color-ink);
+  line-height: 1.45;
+  margin-bottom: 12px;
+}
+
+.dsu-feature:last-child {
+  margin-bottom: 0;
+}
+
+.dsu-check {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-green-bg);
+  color: var(--color-green);
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+}
+
+/* Steps */
+.dsu-steps {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-}
-
-.dentily-success .dsu-step {
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-}
-
-.dentily-success .dsu-step-num {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: var(--color-ink);
-  color: var(--color-bg);
-  font-size: 10px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  margin-top: 1px;
-  font-family: "DM Sans", system-ui, sans-serif;
-}
-
-.dentily-success .dsu-step-text {
-  font-size: 13px;
-  color: var(--color-muted);
-  line-height: 1.5;
-  text-align: left;
-}
-
-.dentily-success .dsu-upsell {
-  max-width: 560px;
-  margin: 0 auto 48px;
-  padding: 0 40px;
-}
-
-.dentily-success .dsu-upsell-inner {
-  background: var(--color-ink);
-  border-radius: 14px;
-  padding: 24px 26px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   gap: 16px;
 }
 
-.dentily-success .dsu-upsell h2 {
-  font-size: 18px;
+.dsu-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 13.5px;
+  color: var(--color-ink);
+  line-height: 1.5;
+}
+
+.dsu-step-num {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--color-ink);
   color: var(--color-bg);
-  margin: 0 0 4px;
-  line-height: 1.2;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
 }
 
-.dentily-success .dsu-upsell p {
-  font-size: 12px;
-  color: rgba(247, 245, 240, 0.5);
+.dsu-step-text {
+  color: var(--color-muted);
+}
+
+/* Upsell banner */
+.dsu-upsell {
+  max-width: 560px;
+  margin: 0 auto 20px;
+  padding: 0 24px;
+}
+
+.dsu-upsell-inner {
+  background: var(--color-ink);
+  color: var(--color-bg);
+  border-radius: 14px;
+  padding: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.dsu-upsell-inner h2 {
+  font-family: "Instrument Serif", Georgia, serif;
+  font-weight: 400;
+  font-size: 22px;
+  margin: 0 0 6px;
+  color: #fff;
+}
+
+.dsu-upsell-inner p {
+  font-size: 13px;
+  color: rgba(255,255,255,0.65);
   margin: 0;
-  line-height: 1.45;
 }
 
-.dentily-success .dsu-upsell-btn {
+.dsu-upsell-btn {
+  flex-shrink: 0;
   background: var(--color-bg);
   color: var(--color-ink);
+  font-family: "DM Sans", system-ui, sans-serif;
   font-size: 13px;
   font-weight: 600;
-  padding: 10px 20px;
-  border-radius: 7px;
-  white-space: nowrap;
-  flex-shrink: 0;
+  padding: 11px 20px;
+  border-radius: 8px;
   text-decoration: none;
+  white-space: nowrap;
+  transition: opacity 0.15s;
 }
 
-.dentily-success .dsu-support {
+.dsu-upsell-btn:hover {
+  opacity: 0.88;
+}
+
+/* Support line */
+.dsu-support {
   max-width: 560px;
-  margin: 0 auto 48px;
-  padding: 0 40px;
-  text-align: center;
+  margin: 0 auto 64px;
+  padding: 0 24px;
   font-size: 12px;
-  color: #aaa;
+  color: var(--color-hint);
   line-height: 1.6;
-}
-
-.dentily-success .dsu-error-card {
-  max-width: 560px;
-  margin: 48px auto;
-  padding: 0 40px;
-}
-
-.dentily-success .dsu-error-inner {
-  background: #fff;
-  border: 0.5px solid #f0c4c4;
-  border-radius: 14px;
-  padding: 24px 26px;
   text-align: center;
 }
 
-.dentily-success .dsu-error-inner h1 {
-  font-size: 28px;
-  margin: 0 0 12px;
+/* Error states */
+.dsu-error-card {
+  max-width: 560px;
+  margin: 64px auto;
+  padding: 0 24px;
 }
 
-.dentily-success .dsu-error-inner p {
+.dsu-warn,
+.dsu-error-inner {
+  background: var(--color-surface);
+  border: 0.5px solid var(--color-border);
+  border-radius: 14px;
+  padding: 32px;
+}
+
+.dsu-warn p,
+.dsu-error-inner p {
   font-size: 14px;
   color: var(--color-muted);
-  line-height: 1.55;
+  line-height: 1.6;
   margin: 0 0 20px;
 }
 
-.dentily-success .dsu-warn {
-  background: #fff6e5;
-  border: 0.5px solid #f0d08a;
-  border-radius: 14px;
-  padding: 24px 26px;
-  text-align: left;
+.dsu-error-inner h1 {
+  font-family: "Instrument Serif", Georgia, serif;
+  font-weight: 400;
+  font-size: 26px;
+  margin: 0 0 12px;
 }
 
-.dentily-success .dsu-warn p {
-  font-size: 14px;
-  color: var(--color-muted);
-  line-height: 1.55;
-  margin: 8px 0 0;
-}
-
-.dentily-success .dsu-warn strong {
-  color: var(--color-ink);
-}
-
-.dentily-success .dsu-warn-actions {
+.dsu-warn-actions {
   display: flex;
-  flex-wrap: wrap;
   gap: 10px;
-  margin-top: 16px;
+  flex-wrap: wrap;
 }
 
-@media (max-width: 768px) {
-  .dentily-success .dsu-nav {
-    padding: 14px 16px;
+/* Responsive */
+@media (max-width: 600px) {
+  .dsu-hero {
+    margin-top: 40px;
   }
 
-  .dentily-success .dsu-hero {
-    padding: 48px 20px 32px;
+  .dsu-title {
+    font-size: 30px;
   }
 
-  .dentily-success .dsu-actions {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .dentily-success .dsu-btn {
-    max-width: 100%;
-  }
-
-  .dentily-success .dsu-card-wrap,
-  .dentily-success .dsu-upsell,
-  .dentily-success .dsu-support,
-  .dentily-success .dsu-error-card {
-    padding-left: 16px;
-    padding-right: 16px;
-  }
-
-  .dentily-success .dsu-card,
-  .dentily-success .dsu-warn {
-    padding: 20px;
-  }
-
-  .dentily-success .dsu-upsell-inner {
-    flex-direction: column;
-    align-items: stretch;
-    text-align: center;
-  }
-
-  .dentily-success .dsu-upsell-btn {
-    display: block;
-    text-align: center;
-  }
-
-  .dentily-success .dsu-stat-grid {
+  .dsu-stat-grid {
     grid-template-columns: repeat(3, 1fr);
     gap: 8px;
   }
 
-  .dentily-success .dsu-stat-value {
-    font-size: 24px;
+  .dsu-upsell-inner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .dsu-upsell-btn {
+    width: 100%;
+    text-align: center;
   }
 }

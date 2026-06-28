@@ -48,19 +48,18 @@ export function SuccessClient({ outcome, packSummary, sessionId }: Props) {
       {outcome.kind === "ok" ? (
         <>
           <section className="dsu-hero">
-            <div className="dsu-check-circle" aria-hidden>
-              ✓
-            </div>
+            <div className="dsu-check-circle" aria-hidden>✓</div>
             <span className="dsu-pill">Payment confirmed</span>
             <h1 className="dsu-title dsu-serif">
-              You&apos;re in — pack <em>unlocked</em>
+              Your {location ? `${location} ` : ""}leads are <em>ready</em>
             </h1>
             <p className="dsu-subtitle">
-              Your leads are ready. Check your email for the download link, or grab it directly below.
+              Check your email — we sent your pack and quick start guide to the address you used at checkout. You can
+              also grab everything directly below.
             </p>
             <div className="dsu-actions">
               <Link href={`/results?searchId=${outcome.searchId}`} className="dsu-btn dsu-btn-primary">
-                View results table →
+                View your leads →
               </Link>
               <a
                 href={`/api/search/${outcome.searchId}/export`}
@@ -74,19 +73,18 @@ export function SuccessClient({ outcome, packSummary, sessionId }: Props) {
                   href={`/api/download?session_id=${encodeURIComponent(sessionId)}`}
                   className="dsu-btn dsu-btn-ghost"
                 >
-                  Download Quick Start Guide →
+                  Download Quick Start Guide
                 </a>
               ) : null}
             </div>
             <p className="dsu-context">
-              Search #{outcome.searchId}
-              {location ? ` · ${location}` : ""}
+              Search #{outcome.searchId}{location ? ` · ${location}` : ""}
             </p>
           </section>
 
           <div className="dsu-card-wrap">
             <div className="dsu-card">
-              <p className="dsu-label">What you unlocked — search #{outcome.searchId}</p>
+              <p className="dsu-label">What you unlocked</p>
               <div className="dsu-stat-grid">
                 <div className="dsu-stat">
                   <div className="dsu-stat-value">{totalCount || "—"}</div>
@@ -104,9 +102,7 @@ export function SuccessClient({ outcome, packSummary, sessionId }: Props) {
               <div className="dsu-divider" />
               {UNLOCKED_FEATURES.map((item) => (
                 <div key={item} className="dsu-feature">
-                  <span className="dsu-check" aria-hidden>
-                    ✓
-                  </span>
+                  <span className="dsu-check" aria-hidden>✓</span>
                   <span>{item}</span>
                 </div>
               ))}
@@ -119,9 +115,7 @@ export function SuccessClient({ outcome, packSummary, sessionId }: Props) {
               <ol className="dsu-steps">
                 {HOW_TO_USE_PACK_STEPS.map((step, i) => (
                   <li key={step} className="dsu-step">
-                    <span className="dsu-step-num" aria-hidden>
-                      {i + 1}
-                    </span>
+                    <span className="dsu-step-num" aria-hidden>{i + 1}</span>
                     <span className="dsu-step-text">{step}</span>
                   </li>
                 ))}
@@ -132,7 +126,7 @@ export function SuccessClient({ outcome, packSummary, sessionId }: Props) {
           <div className="dsu-upsell">
             <div className="dsu-upsell-inner">
               <div>
-                <h2 className="dsu-serif">Ready for another market?</h2>
+                <h2>Ready for another market?</h2>
                 <p>Each territory is a separate search. {SITE.leadPackPriceLabel} one-time per pack.</p>
               </div>
               <Link href="/search" className="dsu-upsell-btn">
@@ -142,8 +136,8 @@ export function SuccessClient({ outcome, packSummary, sessionId }: Props) {
           </div>
 
           <p className="dsu-support">
-            Questions about your file? Email your account contact or use the same channel you used to reach Dentily —
-            we&apos;ll help with good-faith data issues per our quality note on the pricing page.
+            Questions about your file? Reply to your delivery email or reach us at hello@dentily.co — we&apos;ll help
+            with good-faith data issues per our quality note on the pricing page.
           </p>
         </>
       ) : null}
