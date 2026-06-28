@@ -1,13 +1,6 @@
 import { Check, Zap } from "lucide-react";
 import { HashSafeLink } from "@/components/hash-safe-link";
 
-const AVATARS = [
-  { initials: "JM", bg: "#2E7D52" },
-  { initials: "AK", bg: "#5a7a9a" },
-  { initials: "RL", bg: "#8b6b4a" },
-  { initials: "TC", bg: "#6b5b95" },
-] as const;
-
 export function LandingHeroRedesign({
   primaryHref,
   secondaryHref,
@@ -40,16 +33,6 @@ export function LandingHeroRedesign({
             <HashSafeLink href={secondaryHref} className="dh-btn-ghost">
               {secondaryLabel}
             </HashSafeLink>
-          </div>
-          <div className="dh-social-proof">
-            <div className="dh-avatars" aria-hidden>
-              {AVATARS.map((a) => (
-                <span key={a.initials} className="dh-avatar" style={{ background: a.bg }}>
-                  {a.initials}
-                </span>
-              ))}
-            </div>
-            <span className="dh-social-text">Used by 200+ dental marketers and agencies</span>
           </div>
           <p className="dh-hero-micro">
             Built for marketers, agencies, and lead gen operators targeting dental practices.
