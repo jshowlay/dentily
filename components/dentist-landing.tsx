@@ -3,7 +3,6 @@ import { HashSafeLink } from "@/components/hash-safe-link";
 import { FeatureCard } from "@/components/landing/feature-card";
 import { LandingHeroRedesign } from "@/components/landing/landing-hero";
 import { LandingHowItWorks } from "@/components/landing/landing-how-it-works";
-import { LandingStatsStrip } from "@/components/landing/landing-stats-strip";
 import { LiveSampleLeads } from "@/components/landing/live-sample-leads";
 import { SectionHeader } from "@/components/landing/section-header";
 import { SiteHeader } from "@/components/landing/site-header";
@@ -57,8 +56,6 @@ export function DentistLanding() {
         primaryLabel="See a Real Lead Pack"
         secondaryLabel="Preview My Market Free"
       />
-
-      <LandingStatsStrip />
 
       <LiveSampleLeads />
 
