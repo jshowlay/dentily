@@ -7,23 +7,6 @@ import { useCallback, useState } from "react";
 import { SITE } from "@/lib/site-config";
 import "@/app/pricing-page.css";
 
-const STARTER_PLAN = {
-  tierLabel: "STARTER",
-  price: SITE.leadPackPriceLabel,
-  billing: "One-time · no subscription",
-  tagline: "Test one market before committing to a pipeline.",
-  cta: "Get started",
-  ctaHref: "/search",
-  features: [
-    `${SITE.leadPackCount} scored dental practices`,
-    "Priority tiers + numeric scores",
-    "Why-this-lead rationale per row",
-    "Best contact path per lead",
-    "Ready-to-use outreach drafts",
-    "CSV download, instant access",
-  ],
-} as const;
-
 function FeatureCheck({ text }: { text: string }) {
   return (
     <div className="dp-feature">
@@ -42,12 +25,18 @@ type PricingSectionProps = {
   hideIntro?: boolean;
   /** Show bottom tip — landing only. */
   showFooterTip?: boolean;
+  /** Override display price label (e.g. from landing constants). */
+  priceLabel?: string;
+  /** Override lead count in feature list (e.g. from landing constants). */
+  leadCount?: number;
 };
 
 export function PricingSection({
   enableCheckout = false,
   hideIntro = false,
   showFooterTip = false,
+  priceLabel = SITE.leadPackPriceLabel,
+  leadCount = SITE.leadPackCount,
 }: PricingSectionProps) {
   const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
@@ -74,11 +63,28 @@ export function PricingSection({
     }
   }, [session]);
 
+  const starterPlan = {
+    tierLabel: "STARTER",
+    price: priceLabel,
+    billing: "One-time · no subscription",
+    tagline: "Test one market before committing to a pipeline.",
+    cta: "Get started",
+    ctaHref: "/search",
+    features: [
+      `${leadCount} scored dental practices`,
+      "Priority tiers + numeric scores",
+      "Why-this-lead rationale per row",
+      "Best contact path per lead",
+      "Ready-to-use outreach drafts",
+      "CSV download, instant access",
+    ],
+  } as const;
+
   const useStripeCheckout = enableCheckout;
   const CtaTag = useStripeCheckout ? "button" : "a";
   const ctaProps = useStripeCheckout
     ? { type: "button" as const, onClick: startCheckout, disabled: loading }
-    : { href: STARTER_PLAN.ctaHref };
+    : { href: starterPlan.ctaHref };
 
   return (
     <section id="pricing" className={hideIntro ? undefined : "dp-pricing-embed"}>
@@ -91,24 +97,24 @@ export function PricingSection({
             Simple, transparent pricing
           </h2>
           <p style={{ fontSize: 16, color: "var(--color-muted)", margin: 0, maxWidth: 520, lineHeight: 1.6 }}>
-            One market, one pack — scored, pitch-ready dental leads for {STARTER_PLAN.price}.
+            One market, one pack — scored, pitch-ready dental leads for {starterPlan.price}.
           </p>
         </div>
       ) : null}
 
       <div className="dp-grid dp-grid--single">
         <article className="dp-card">
-          <p className="dp-tier">{STARTER_PLAN.tierLabel}</p>
+          <p className="dp-tier">{starterPlan.tierLabel}</p>
 
           <div className="dp-price-row">
-            <span className="dp-price">{STARTER_PLAN.price}</span>
+            <span className="dp-price">{starterPlan.price}</span>
           </div>
 
-          <p className="dp-billing">{STARTER_PLAN.billing}</p>
-          <p className="dp-tagline">{STARTER_PLAN.tagline}</p>
+          <p className="dp-billing">{starterPlan.billing}</p>
+          <p className="dp-tagline">{starterPlan.tagline}</p>
 
           <div className="dp-features">
-            {STARTER_PLAN.features.map((f) => (
+            {starterPlan.features.map((f) => (
               <FeatureCheck key={f} text={f} />
             ))}
           </div>
@@ -117,7 +123,7 @@ export function PricingSection({
             {loading ? (
               <Loader2 size={18} className="mx-auto animate-spin" aria-label="Loading" />
             ) : (
-              `${STARTER_PLAN.cta} →`
+              `${starterPlan.cta} →`
             )}
           </CtaTag>
         </article>
@@ -127,7 +133,7 @@ export function PricingSection({
         <div className="dp-tip">
           <div className="dp-tip-inner">
             <strong>Not sure where to start?</strong> Run a search for your first market, review the sample results,
-            then unlock the full pack for {STARTER_PLAN.price}.{" "}
+            then unlock the full pack for {starterPlan.price}.{" "}
             <Link href="/search">Preview a market first</Link>.
           </div>
         </div>

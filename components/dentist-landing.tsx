@@ -13,7 +13,18 @@ import { buttonVariants } from "@/lib/button-variants";
 import { cn } from "@/lib/utils";
 import "@/app/landing-home.css";
 
+// TODO: CONFIRM PRICING — update PRICE and LEAD_COUNT below before shipping
+const PRICE = 99; // CONFIRM
+const LEAD_COUNT = 150; // CONFIRM
+const PRICE_LABEL = `$${PRICE}`;
+
 const FINAL_CTA = "Preview My Market Free";
+
+const DIFFERENTIATION_POINTS = [
+  "Every lead is scored with a specific reason it's a good fit — not just a name and phone number",
+  "Every row includes a ready-to-use pitch angle and outreach draft, not just contact info",
+  "This isn't a raw directory scrape — practices are pre-qualified and sales-ready before you download",
+] as const;
 
 const PROOF_CARDS = [
   {
@@ -55,6 +66,7 @@ export function DentistLanding() {
         secondaryHref="/search"
         primaryLabel="See a Real Lead Pack"
         secondaryLabel="Preview My Market Free"
+        leadCount={LEAD_COUNT}
       />
 
       <LiveSampleLeads />
@@ -76,10 +88,11 @@ export function DentistLanding() {
             </figcaption>
             <p className="mt-3 text-xs text-slate-500 md:text-sm">Result from a beta user. Individual outcomes vary.</p>
           </figure>
+          {/* TODO: Add 2-3 more real customer testimonials here once collected */}
         </div>
       </LandingSection>
 
-      <LandingHowItWorks />
+      <LandingHowItWorks leadCount={LEAD_COUNT} />
 
       <LandingSection id="audience" variant="muted">
         <SectionHeader title="Who This Is For" className="mb-10 md:mb-12" />
@@ -123,10 +136,29 @@ export function DentistLanding() {
         </p>
       </LandingSection>
 
+      <LandingSection id="differentiation" variant="white">
+        <SectionHeader
+          title="What makes Dentily different"
+          subtitle="Generic scraped lists give you names. Dentily gives you a reason to reach out and something to say."
+          className="mb-10 md:mb-12"
+        />
+        <ul className="mx-auto max-w-2xl space-y-4">
+          {DIFFERENTIATION_POINTS.map((point) => (
+            <li key={point} className="flex gap-3 text-sm leading-relaxed text-slate-700 md:text-base">
+              <span
+                className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-600"
+                aria-hidden
+              />
+              <span>{point}</span>
+            </li>
+          ))}
+        </ul>
+      </LandingSection>
+
       <LandingSection id="pricing-section" variant="muted">
-        <PricingSection showFooterTip />
+        <PricingSection showFooterTip priceLabel={PRICE_LABEL} leadCount={LEAD_COUNT} />
         <div className="mx-auto mt-12 max-w-lg px-4">
-          <PricingFaq />
+          <PricingFaq leadCount={LEAD_COUNT} />
         </div>
       </LandingSection>
 

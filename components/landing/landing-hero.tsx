@@ -6,11 +6,13 @@ export function LandingHeroRedesign({
   secondaryHref,
   primaryLabel,
   secondaryLabel,
+  leadCount,
 }: {
   primaryHref: string;
   secondaryHref: string;
   primaryLabel: string;
   secondaryLabel: string;
+  leadCount: number;
 }) {
   return (
     <section id="product" className="dh-hero">
@@ -21,7 +23,7 @@ export function LandingHeroRedesign({
             B2B prospecting for dental marketers
           </div>
           <h1>
-            150 Scored Dental Leads, <em>Delivered With a Pitch Angle for Each One.</em>
+            {leadCount} Scored Dental Leads, <em>Delivered With a Pitch Angle for Each One.</em>
           </h1>
           <p className="dh-hero-lead">
             Stop cold-guessing. Know why each practice needs you — and what to say — before you ever reach out.
@@ -79,7 +81,7 @@ export function LandingHeroRedesign({
 
           <div className="dh-float-badge dh-float-badge--leads">
             <Check size={14} strokeWidth={2.5} aria-hidden />
-            150 scored leads ready
+            {leadCount} scored leads ready
           </div>
           <div className="dh-float-badge dh-float-badge--outreach">
             <Zap size={14} fill="currentColor" aria-hidden />
