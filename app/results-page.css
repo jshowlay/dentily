@@ -784,3 +784,94 @@
     display: none;
   }
 }
+
+/* Preview email capture (post-search results, pre-purchase) */
+.dentily-results .dr-preview-capture {
+  margin: 0 0 24px;
+  padding: 24px;
+  background: var(--color-surface, #fff);
+  border: 0.5px solid var(--color-border, rgba(0, 0, 0, 0.1));
+  border-radius: 12px;
+}
+
+.dentily-results .dr-preview-capture.is-success {
+  background: #e8f5ee;
+  border-color: #b5dcc6;
+}
+
+.dentily-results .dr-preview-capture-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-ink, #1a1a18);
+  margin: 0 0 8px;
+}
+
+.dentily-results .dr-preview-capture-sub {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--color-muted, #5a5a55);
+  margin: 0 0 16px;
+}
+
+.dentily-results .dr-preview-capture-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.dentily-results .dr-preview-capture-input {
+  flex: 1 1 200px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 0.5px solid var(--color-border, rgba(0, 0, 0, 0.1));
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  background: #fff;
+}
+
+.dentily-results .dr-preview-capture-btn {
+  min-height: 44px;
+  padding: 0 18px;
+  border: none;
+  border-radius: 8px;
+  background: var(--color-ink, #1a1a18);
+  color: var(--color-bg, #f7f5f0);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.dentily-results .dr-preview-capture-btn:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.dentily-results .dr-preview-capture-error {
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: #b91c1c;
+}
+
+.dentily-results .dr-preview-capture-hp {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.dentily-results .dr-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

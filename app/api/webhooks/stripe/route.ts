@@ -124,6 +124,19 @@ export async function POST(request: Request) {
         } else {
           await fulfillCheckoutSession(session);
           await deliverPackEmail(session);
+          try {
+            const email = session.customer_details?.email ?? session.customer_email ?? null;
+            const market = session.metadata?.market ?? "";
+            if (email && market.trim()) {
+              const { markPreviewCapturesConverted } = await import("@/lib/preview-captures");
+              const updated = await markPreviewCapturesConverted(email, market);
+              if (updated > 0) {
+                console.log("[webhooks/stripe] preview capture converted", { email, market, updated });
+              }
+            }
+          } catch (convErr) {
+            console.warn("[webhooks/stripe] preview conversion tracking failed", convErr);
+          }
         }
         break;
       }

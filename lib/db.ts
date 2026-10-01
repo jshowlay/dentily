@@ -234,6 +234,35 @@ export async function ensureSchema() {
       await client.query(`CREATE INDEX IF NOT EXISTS lead_statuses_user_id_idx ON lead_statuses(user_id);`);
       await client.query(`CREATE INDEX IF NOT EXISTS searches_user_id_idx ON searches(user_id);`);
 
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS preview_captures (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          email TEXT NOT NULL,
+          market TEXT NOT NULL,
+          search_id TEXT,
+          lead_count INTEGER NOT NULL DEFAULT 0,
+          preview_snapshot JSONB NOT NULL DEFAULT '[]'::jsonb,
+          unsubscribe_token TEXT NOT NULL UNIQUE,
+          email_1_sent_at TIMESTAMPTZ,
+          email_2_sent_at TIMESTAMPTZ,
+          email_3_sent_at TIMESTAMPTZ,
+          converted_at TIMESTAMPTZ,
+          unsubscribed_at TIMESTAMPTZ,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          CONSTRAINT preview_captures_email_market_unique UNIQUE (email, market)
+        );
+      `);
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS preview_captures_followup_1_idx
+          ON preview_captures (email_1_sent_at)
+          WHERE email_2_sent_at IS NULL AND converted_at IS NULL AND unsubscribed_at IS NULL;
+      `);
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS preview_captures_followup_2_idx
+          ON preview_captures (email_2_sent_at)
+          WHERE email_3_sent_at IS NULL AND converted_at IS NULL AND unsubscribed_at IS NULL;
+      `);
+
       return;
     } catch (error) {
       const retryable = isConnectionError(error);

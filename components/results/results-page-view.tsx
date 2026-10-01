@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Fragment, useMemo, useRef, useState } from "react";
 import { BuyLeadPackButton } from "@/components/buy-lead-pack-button";
+import { PreviewEmailCapture } from "@/components/preview-email-capture";
 import { ResultsSidebar } from "@/components/results/results-sidebar";
 import {
   cityFromAddress,
@@ -160,6 +161,10 @@ export function ResultsPageView(props: ResultsPageViewProps) {
               <div className="dr-stat-label">Signal types</div>
             </div>
           </div>
+
+          {!isPaid && leads.length > 0 && canExport ? (
+            <PreviewEmailCapture searchId={searchId} market={location} />
+          ) : null}
 
           {leads.length === 0 ? (
             <p className="dr-subtitle">No leads found for this search.</p>

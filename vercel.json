@@ -1,4 +1,10 @@
 {
+  "crons": [
+    {
+      "path": "/api/cron/preview-followups",
+      "schedule": "0 16 * * *"
+    }
+  ],
   "functions": {
     "app/api/search/route.ts": {
       "maxDuration": 120
