@@ -39,7 +39,6 @@ export function initPostHogClient(): typeof posthog | null {
       api_host: getPostHogApiHost(),
       person_profiles: "identified_only",
       capture_pageview: false,
-      debug: true,
     });
     initialized = true;
     console.info("[PostHog] initialized", {
