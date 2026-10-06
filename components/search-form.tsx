@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { capturePostHogEvent, parseMarketCityState, POSTHOG_EVENTS } from "@/lib/posthog-events";
 import { SITE } from "@/lib/site-config";
 import { cn } from "@/lib/utils";
 
@@ -80,6 +81,8 @@ export function SearchForm({
       if (!data?.searchId) {
         throw new Error("No searchId returned from server.");
       }
+      const { city, state } = parseMarketCityState(location);
+      capturePostHogEvent(POSTHOG_EVENTS.previewSearchRun, { city, state });
       const next = `/results?searchId=${encodeURIComponent(String(data.searchId))}`;
       window.location.assign(next);
     } catch (err) {

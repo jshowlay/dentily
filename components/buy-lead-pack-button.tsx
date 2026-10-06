@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { capturePostHogEvent, POSTHOG_EVENTS } from "@/lib/posthog-events";
 import { SITE } from "@/lib/site-config";
 
 type Props = {
@@ -24,6 +25,7 @@ export function BuyLeadPackButton({
   async function onClick() {
     setError(null);
     setLoading(true);
+    capturePostHogEvent(POSTHOG_EVENTS.checkoutClicked, { search_id: searchId });
     try {
       const res = await fetch("/api/checkout", {
         method: "POST",

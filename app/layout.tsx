@@ -1,5 +1,6 @@
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
+import { PostHogAnalyticsProvider } from "@/components/posthog-provider";
 import { AuthSessionProvider } from "@/components/session-provider";
 import { getMetadataBaseUrl } from "@/lib/metadata-base-url";
 
@@ -32,7 +33,9 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen antialiased">
-        <AuthSessionProvider>{children}</AuthSessionProvider>
+        <AuthSessionProvider>
+          <PostHogAnalyticsProvider>{children}</PostHogAnalyticsProvider>
+        </AuthSessionProvider>
       </body>
     </html>
   );

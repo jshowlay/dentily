@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { capturePostHogEvent, parseMarketCityState, POSTHOG_EVENTS } from "@/lib/posthog-events";
 
 type Props = {
   searchId: number;
@@ -35,6 +36,12 @@ export function PreviewEmailCapture({ searchId, market }: Props) {
       if (!res.ok) {
         throw new Error(data?.error?.message ? String(data.error.message) : "Could not send preview.");
       }
+      const { city, state } = parseMarketCityState(market);
+      capturePostHogEvent(POSTHOG_EVENTS.previewEmailSubmitted, {
+        city,
+        state,
+        search_id: searchId,
+      });
       setStatus("success");
     } catch (err) {
       setStatus("error");
