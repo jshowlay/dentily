@@ -1,16 +1,16 @@
 "use client";
 
-import { Suspense, useEffect } from "react";
+import { Suspense, useLayoutEffect, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { PostHogProvider } from "posthog-js/react";
-import { initPostHogClient, posthog } from "@/lib/posthog-client";
+import { getPostHogProjectToken, initPostHogClient, posthog } from "@/lib/posthog-client";
 
 function PostHogPageviews() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const client = initPostHogClient();
     if (!client) return;
     let url = window.origin + pathname;
@@ -25,7 +25,7 @@ function PostHogPageviews() {
 function PostHogIdentify() {
   const { data: session, status } = useSession();
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const client = initPostHogClient();
     if (!client) return;
     if (status === "authenticated" && session?.user?.id) {
@@ -42,13 +42,25 @@ function PostHogIdentify() {
   return null;
 }
 
+/**
+ * Next.js 14 App Router: client provider in root layout (no instrumentation-client.ts).
+ * Init runs in useLayoutEffect before child effects so capture() works on first interaction.
+ */
 export function PostHogAnalyticsProvider({ children }: { children: React.ReactNode }) {
-  useEffect(() => {
-    initPostHogClient();
-  }, []);
+  const token = getPostHogProjectToken();
+  const [clientReady, setClientReady] = useState(false);
 
-  const token = process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN?.trim();
+  useLayoutEffect(() => {
+    if (!token) return;
+    initPostHogClient();
+    setClientReady(true);
+  }, [token]);
+
   if (!token) {
+    return <>{children}</>;
+  }
+
+  if (!clientReady) {
     return <>{children}</>;
   }
 
