@@ -114,7 +114,7 @@ export function isIndependentRow(r: LeadPackCsvRow): boolean {
 /** Fixed homepage showcase set (regenerate in this order; row 1 = Top Lead). */
 export const PINNED_AUSTIN_HOMEPAGE_SAMPLE_NAMES = [
   "Dental Smiles",
-  "Breeze Dental",
+  "Forest Family Dentistry - Eastside",
   "Smile 360",
   "Treaty Oak Dental",
   "Arboretum & Westlake Orthodontics",
@@ -125,17 +125,55 @@ export const PINNED_AUSTIN_HOMEPAGE_SAMPLE_NAMES = [
   "South Austin Dental Implant Studio",
 ] as const;
 
+/** When the same practice name maps to multiple Places listings, prefer on-domain email and avoid saturation rows. */
+export function pinnedNameRowPreferenceScore(r: LeadPackCsvRow): number {
+  let s = Number(r.score) || 0;
+  if (hasFoundEmailRow(r) && isOnDomainPrimaryRow(r)) s += 120;
+  else if (hasFoundEmailRow(r)) s += 40;
+  else if (isFormPrimaryRow(r)) s += 20;
+  if (isPhoneOnlyRow(r)) s -= 40;
+  if (oppKey(r.opportunity_type) === "high_volume_saturation") s -= 200;
+  return s;
+}
+
+export function pickBestRowForPinnedPracticeName(
+  pool: LeadPackCsvRow[],
+  pinnedDisplayName: string
+): LeadPackCsvRow | null {
+  const key = normalizePracticeDisplayName(pinnedDisplayName).toLowerCase();
+  const matches = pool.filter((r) => normalizePracticeDisplayName(r.name).toLowerCase() === key);
+  if (matches.length === 0) return null;
+  return [...matches].sort((a, b) => pinnedNameRowPreferenceScore(b) - pinnedNameRowPreferenceScore(a))[0]!;
+}
+
+/** Next Independent with on-domain Found email; excludes High Volume Saturation and rows that conflict with the current set. */
+export function pickNextBestIndependentEmailForHomepageSample(
+  pool: LeadPackCsvRow[],
+  chosen: LeadPackCsvRow[]
+): LeadPackCsvRow | null {
+  const candidates = pool
+    .filter((r) => !packRowConflictsWithSet(r, chosen))
+    .filter((r) => !isExcludedHomepageSampleName(r))
+    .filter((r) => isIndependentRow(r) && hasFoundEmailRow(r) && isOnDomainPrimaryRow(r))
+    .filter((r) => !isLikelyDsoRow(r))
+    .filter((r) => oppKey(r.opportunity_type) !== "high_volume_saturation")
+    .sort((a, b) => {
+      const ds = Number(b.score) - Number(a.score);
+      if (ds !== 0) return ds;
+      return priorityRank(a.priority) - priorityRank(b.priority);
+    });
+  return candidates[0] ?? null;
+}
+
 export function selectPinnedAustinHomepageSampleRows(
   data: LeadPackCsvRow[],
   names: readonly string[] = PINNED_AUSTIN_HOMEPAGE_SAMPLE_NAMES
 ): LeadPackCsvRow[] {
   const pool = data.filter((r) => !isLeadPackInstructionRow(r));
-  const byName = new Map(pool.map((r) => [normalizePracticeDisplayName(r.name).toLowerCase(), r]));
   const chosen: LeadPackCsvRow[] = [];
   const missing: string[] = [];
   for (const raw of names) {
-    const key = normalizePracticeDisplayName(raw).toLowerCase();
-    const row = byName.get(key);
+    const row = pickBestRowForPinnedPracticeName(pool, raw);
     if (row) chosen.push(row);
     else missing.push(raw);
   }

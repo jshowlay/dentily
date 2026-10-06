@@ -1,5 +1,9 @@
 import { MARCUS_PERSONA, REPUTATION_GAP_RATING_BELOW, REVIEW_SATURATION } from "@/lib/lead-pipeline-config";
-import { MARCUS_OUTREACH_CTA, normalizeOutreachCta } from "@/lib/outreach-cta";
+import {
+  MARCUS_OUTREACH_CTA,
+  MARCUS_OUTREACH_CTA_HIRING,
+  normalizeOutreachCta,
+} from "@/lib/outreach-cta";
 import { parseCityFromAddress } from "@/lib/parse-city-from-address";
 import type { Lead } from "@/lib/types";
 import { dedupeSentencesInOutreach, hasDuplicateFiveWordSpan, stripLongDashes } from "@/lib/outreach-text";
@@ -103,11 +107,11 @@ function establishedBodies(
 
 function highVolumeBodies(ratingStr: string, rcStr: string): readonly string[] {
   return [
-    `You are not a growth cold call. The listing shows very high review volume at about ${rcStr} reviews and roughly ${ratingStr} stars. I treat that as schedule and hiring pressure, not a visibility gap.`,
-    `With roughly ${rcStr} public reviews at about ${ratingStr} stars, pitching more ads would waste your time. I only reach out on hiring handoffs or referral routing when the calendar looks full.`,
-    `The profile shows about ${rcStr} reviews and roughly ${ratingStr} stars. That is past the point where I sell more map impressions. If anything, I help with associate pipeline or specialist referral handoffs.`,
-    `Maps lists about ${rcStr} reviews averaging about ${ratingStr} stars. I am not here to promise more rankings. I use that proof level as a cue to talk about capacity, hiring, or referral bottlenecks instead.`,
-    `Roughly ${rcStr} reviews show at about ${ratingStr} stars. That reads as dominant social proof, so I skip the growth pitch. I only ask whether hiring or referral coordination is the next headache.`,
+    `Your Maps profile shows about ${rcStr} reviews at roughly ${ratingStr} stars. If you are hiring an associate or hygienist this quarter, I can send two screened candidates who fit that volume.`,
+    `With roughly ${rcStr} public reviews at about ${ratingStr} stars, the calendar is usually the constraint. I help with associate hiring handoffs or specialist referral intros when cases need another chair.`,
+    `The listing reads about ${rcStr} reviews averaging roughly ${ratingStr} stars. Are you actively recruiting an associate, or looking for endodontic or ortho referral routing you trust?`,
+    `Maps shows about ${rcStr} reviews at roughly ${ratingStr} stars. I keep a short associate pipeline and a shortlist of specialists for practices that are already booked solid.`,
+    `Roughly ${rcStr} reviews at about ${ratingStr} stars on the profile. If hiring or trusted specialist referrals is the next bottleneck, I can share the shortlists I use for similar volume.`,
   ] as const;
 }
 
@@ -158,7 +162,7 @@ export function buildMarcusWrittenOutreach(lead: Lead): string {
   const cityPhrase = city ? ` in ${city}` : "";
 
   let observation = "";
-  const cta = MARCUS_OUTREACH_CTA;
+  let cta = MARCUS_OUTREACH_CTA;
 
   if (arch === "reputation_gap") {
     const geo = city ? `In ${city}` : "In most markets";
@@ -170,6 +174,7 @@ export function buildMarcusWrittenOutreach(lead: Lead): string {
   } else if (arch === "high_volume_saturation") {
     const bodies = highVolumeBodies(ratingStr, rcStr);
     observation = pick(bodies, bodySeed);
+    cta = MARCUS_OUTREACH_CTA_HIRING;
   } else if (arch === "newer_unknown") {
     const bodies = newerUnknownBodies(cityPhrase, rcStr, hasSite);
     observation = pick(bodies, bodySeed);
@@ -181,10 +186,7 @@ export function buildMarcusWrittenOutreach(lead: Lead): string {
   const intro = scrubBanned(introBlock());
   const core = `${intro}\n\n${stripLongDashes(observation)}\n\n${stripLongDashes(cta)}`;
   if (hasDuplicateFiveWordSpan(core)) {
-    return `${intro}\n\n${stripLongDashes(observation)}\n\n${MARCUS_OUTREACH_CTA}${signOffBlock()}`.slice(
-      0,
-      2000
-    );
+    return `${intro}\n\n${stripLongDashes(observation)}\n\n${cta}${signOffBlock()}`.slice(0, 2000);
   }
   return `${core}${signOffBlock()}`.slice(0, 2000);
 }

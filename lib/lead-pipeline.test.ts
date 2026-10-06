@@ -3,7 +3,13 @@ import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { computeBaseScore, classifyPriorityFromScore } from "@/lib/dentist-scoring";
 import { exportRowToLead } from "@/lib/export-lead-adapter";
-import { buildMarcusWrittenOutreach } from "@/lib/marcus-outreach";
+import { buildMarcusWrittenOutreach, classifyOutreachArchetype } from "@/lib/marcus-outreach";
+import { MARCUS_OUTREACH_CTA, MARCUS_OUTREACH_CTA_HIRING } from "@/lib/outreach-cta";
+import { REVIEW_SATURATION } from "@/lib/lead-pipeline-config";
+import {
+  pickBestRowForPinnedPracticeName,
+  type LeadPackCsvRow,
+} from "@/lib/austin-homepage-sample";
 import {
   ACTION_TIER_CALL,
   ACTION_TIER_READY,
@@ -30,6 +36,58 @@ describe("lead pipeline", () => {
       const text = buildMarcusWrittenOutreach(lead);
       expect(hasDup5(text)).toBe(false);
     }
+  });
+
+  it("uses hiring CTA and direct offer copy for high volume saturation", () => {
+    const lead = exportRowToLead(
+      makeFixtureExportRow({
+        name: "Saturated Practice",
+        website: "https://saturated.example.com/",
+        rating: 4.9,
+        review_count: REVIEW_SATURATION,
+      }),
+      0
+    );
+    expect(classifyOutreachArchetype(lead)).toBe("high_volume_saturation");
+    const text = buildMarcusWrittenOutreach(lead);
+    expect(text).toContain(MARCUS_OUTREACH_CTA_HIRING);
+    expect(text).not.toContain(MARCUS_OUTREACH_CTA);
+    expect(text.toLowerCase()).not.toMatch(/skip the growth pitch|not a growth cold call|waste your time/);
+  });
+
+  it("prefers on-domain email location when a pinned name has multiple listings", () => {
+    const pool = [
+      {
+        name: "Breeze Dental",
+        address: "1601 S Lamar Blvd, Austin, TX 78704",
+        website: "https://breeze.example.com/",
+        primary_email: "",
+        email_status: "Contact Form Only",
+        score: "11",
+        opportunity_type: "High Volume Saturation",
+        review_count: "1000",
+        rating: "4.8",
+        contact_form_url: "https://breeze.example.com/contact",
+        best_contact_method: "Contact Form",
+        priority: "Low",
+      },
+      {
+        name: "Breeze Dental",
+        address: "3800 N Lamar Blvd Ste 130, Austin, TX 78756",
+        website: "https://breeze.example.com/",
+        primary_email: "hello@breezeoralcare.com",
+        email_status: "Found",
+        score: "54",
+        opportunity_type: "General Growth",
+        review_count: "172",
+        rating: "4.9",
+        contact_form_url: "",
+        best_contact_method: "Email",
+        priority: "Medium",
+      },
+    ] as LeadPackCsvRow[];
+    const picked = pickBestRowForPinnedPracticeName(pool, "Breeze Dental");
+    expect(picked?.address).toContain("3800 N Lamar");
   });
 
   it("is deterministic for the same lead input", () => {
