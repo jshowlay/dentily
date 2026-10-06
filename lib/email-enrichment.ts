@@ -12,6 +12,7 @@ import {
   loadEmailEnrichmentConfig,
   loadHunterFallbackConfig,
 } from "@/lib/email-enrichment-config";
+import { sanitizeContactFormUrlForExport } from "@/lib/contact-form-url";
 import { enrichEmailFromDomain, extractDomain } from "@/lib/enrichment/hunter";
 import { enrichEmail, type EnrichSource } from "@/lib/enrichEmail";
 import { validateMarketingEmail } from "@/lib/marketing-email-validate";
@@ -20,14 +21,37 @@ import {
   mergePageEmails,
   normalizeEmailCandidate,
   normalizeWebsiteUrl,
+  OFF_DOMAIN_PRIMARY_EMAIL_NOTE,
   pickBestEmail,
   type ScoredEmail,
   isPlaceholderEmail,
   isValidEmailShape,
 } from "@/lib/email-enrichment-helpers";
+import { emailMatchesWebsiteDomain } from "@/lib/url-normalize";
+import { htmlMentionsSmileGeneration } from "@/lib/dso-listing-url";
+import {
+  discoverCorrectedPracticeWebsite,
+  digitsOnlyPhone,
+  formatWebsiteCorrectedNote,
+} from "@/lib/website-discovery";
 import type { EmailStatus, Lead, LeadEnrichmentFields } from "@/lib/types";
 
 export type { EmailEnrichmentRuntimeConfig };
+
+function gateContactFormUrl(
+  website: string | null | undefined,
+  formUrl: string | null | undefined
+): string | null {
+  return sanitizeContactFormUrlForExport(website, formUrl);
+}
+
+function mergeEnrichmentNotes(parts: Array<string | null | undefined>): string | null {
+  const merged = parts
+    .map((p) => (p ?? "").trim())
+    .filter(Boolean)
+    .join(" ");
+  return merged.length > 0 ? merged : null;
+}
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -96,11 +120,65 @@ export type EnrichLeadInput = {
   placeId?: string;
   name: string;
   website: string | null;
+  address?: string | null;
+  phone?: string | null;
 };
+
+type EnrichLeadOptions = {
+  skipWebsiteDiscovery?: boolean;
+};
+
+function formatUsPhone10(digits10: string): string {
+  if (digits10.length !== 10) return digits10;
+  return `(${digits10.slice(0, 3)}) ${digits10.slice(3, 6)}-${digits10.slice(6)}`;
+}
+
+async function tryWebsiteDiscoveryPass(
+  input: EnrichLeadInput,
+  config: EmailEnrichmentRuntimeConfig,
+  googleWebsite: string | null
+): Promise<LeadEnrichmentFields | null> {
+  if (!(input.address?.trim() || input.phone?.trim())) return null;
+
+  const corrected = await discoverCorrectedPracticeWebsite({
+    practiceName: input.name,
+    address: input.address ?? null,
+    phone: input.phone ?? null,
+    googleWebsite,
+    fetchHtml: (url) => fetchHtml(url, config),
+  });
+  if (!corrected) return null;
+
+  const retry = await enrichLeadWebsite(
+    { ...input, website: corrected.website },
+    config,
+    { skipWebsiteDiscovery: true }
+  );
+
+  const googleDigits = digitsOnlyPhone(input.phone);
+  let phone: string | null = null;
+  let phoneNote: string | null = null;
+  if (corrected.phoneFromSite && corrected.phoneFromSite !== googleDigits) {
+    phone = formatUsPhone10(corrected.phoneFromSite);
+    phoneNote = `Site phone ${phone} differs from Google listing.`;
+  }
+
+  return {
+    ...retry,
+    website: corrected.website,
+    phone,
+    enrichmentNotes: mergeEnrichmentNotes([
+      formatWebsiteCorrectedNote(googleWebsite),
+      phoneNote,
+      retry.enrichmentNotes,
+    ]),
+  };
+}
 
 export async function enrichLeadWebsite(
   input: EnrichLeadInput,
-  config: EmailEnrichmentRuntimeConfig
+  config: EmailEnrichmentRuntimeConfig,
+  options?: EnrichLeadOptions
 ): Promise<LeadEnrichmentFields> {
   const baseUrlRaw = normalizeWebsiteUrl(input.website);
   if (!baseUrlRaw) {
@@ -123,10 +201,23 @@ export async function enrichLeadWebsite(
     return fields;
   }
 
-  let fetchFailure: string | null = null;
   const home = await fetchHtml(baseUrlRaw, config);
   if (!home) {
-    fetchFailure = "Homepage fetch failed after retries";
+    if (!options?.skipWebsiteDiscovery) {
+      const discovered = await tryWebsiteDiscoveryPass(input, config, input.website);
+      if (discovered) {
+        logEnrichmentLine({
+          placeId: input.placeId,
+          name: input.name,
+          website: discovered.website ?? input.website,
+          status: discovered.emailStatus,
+          primaryEmail: discovered.primaryEmail,
+          contactFormUrl: discovered.contactFormUrl,
+        });
+        return discovered;
+      }
+    }
+    const fetchFailure = "Homepage fetch failed after retries";
     logEnrichmentLine({
       placeId: input.placeId,
       name: input.name,
@@ -145,6 +236,10 @@ export async function enrichLeadWebsite(
       emailRejectionReason: null,
     };
   }
+
+  const homepageMentionsSmileGeneration = htmlMentionsSmileGeneration(home.html);
+  const withHomepageDso = (fields: LeadEnrichmentFields): LeadEnrichmentFields =>
+    homepageMentionsSmileGeneration ? { ...fields, homepageMentionsSmileGeneration: true } : fields;
 
   const pageUrl = new URL(home.finalUrl);
   const { orderedCandidates: homeCandidates, contactFormUrl: homeForm } = mergePageEmails(
@@ -180,10 +275,21 @@ export async function enrichLeadWebsite(
     if (subForm && !bestFormUrl) bestFormUrl = subForm;
   }
 
-  const { best, alternates, rejectionReason } = pickBestEmail(allCandidates);
+  bestFormUrl = gateContactFormUrl(input.website, bestFormUrl);
+
+  const { best, alternates, rejectionReason, domainMismatchWarning } = pickBestEmail(
+    allCandidates,
+    input.website
+  );
   if (best) {
-    const notes =
-      alternates.length > 0 ? `Alternate candidates: ${alternates.join(", ")}` : null;
+    const exportAlternates =
+      emailMatchesWebsiteDomain(best.email, input.website)
+        ? alternates.filter((e) => emailMatchesWebsiteDomain(e, input.website))
+        : alternates;
+    const notes = mergeEnrichmentNotes([
+      exportAlternates.length > 0 ? `Alternate candidates: ${exportAlternates.join(", ")}` : null,
+      domainMismatchWarning ? OFF_DOMAIN_PRIMARY_EMAIL_NOTE : null,
+    ]);
     const fields: LeadEnrichmentFields = {
       primaryEmail: best.email,
       contactFormUrl: bestFormUrl,
@@ -191,6 +297,7 @@ export async function enrichLeadWebsite(
       emailSource: best.source,
       enrichmentNotes: notes,
       emailRejectionReason: null,
+      homepageMentionsSmileGeneration,
     };
     logEnrichmentLine({
       placeId: input.placeId,
@@ -200,7 +307,7 @@ export async function enrichLeadWebsite(
       primaryEmail: fields.primaryEmail,
       contactFormUrl: fields.contactFormUrl,
     });
-    return fields;
+    return withHomepageDso(fields);
   }
 
   if (rejectionReason && allCandidates.length > 0) {
@@ -223,7 +330,7 @@ export async function enrichLeadWebsite(
       contactFormUrl: fields.contactFormUrl,
       failureReason: rejectionReason,
     });
-    return fields;
+    return withHomepageDso(fields);
   }
 
   const normalized = allCandidates
@@ -248,7 +355,7 @@ export async function enrichLeadWebsite(
       contactFormUrl: fields.contactFormUrl,
       failureReason: fields.enrichmentNotes,
     });
-    return fields;
+    return withHomepageDso(fields);
   }
 
   if (normalized.length > 0 && normalized.every((n) => isPlaceholderEmail(n))) {
@@ -268,7 +375,7 @@ export async function enrichLeadWebsite(
       primaryEmail: null,
       contactFormUrl: fields.contactFormUrl,
     });
-    return fields;
+    return withHomepageDso(fields);
   }
 
   if (bestFormUrl) {
@@ -288,7 +395,22 @@ export async function enrichLeadWebsite(
       primaryEmail: null,
       contactFormUrl: bestFormUrl,
     });
-    return fields;
+    return withHomepageDso(fields);
+  }
+
+  if (!options?.skipWebsiteDiscovery) {
+    const discovered = await tryWebsiteDiscoveryPass(input, config, input.website);
+    if (discovered) {
+      logEnrichmentLine({
+        placeId: input.placeId,
+        name: input.name,
+        website: discovered.website ?? input.website,
+        status: discovered.emailStatus,
+        primaryEmail: discovered.primaryEmail,
+        contactFormUrl: discovered.contactFormUrl,
+      });
+      return discovered;
+    }
   }
 
   const fields: LeadEnrichmentFields = {
@@ -307,7 +429,25 @@ export async function enrichLeadWebsite(
     primaryEmail: null,
     contactFormUrl: null,
   });
-  return fields;
+  return withHomepageDso(fields);
+}
+
+function mergeEnrichmentOntoLead(lead: Lead, patch: LeadEnrichmentFields): Lead {
+  const intel = (lead.metadata?.intelligence ?? {}) as Record<string, unknown>;
+  const metadata =
+    patch.homepageMentionsSmileGeneration
+      ? {
+          ...lead.metadata,
+          intelligence: { ...intel, homepageMentionsSmileGeneration: true },
+        }
+      : lead.metadata;
+  return {
+    ...lead,
+    ...patch,
+    website: patch.website ?? lead.website,
+    phone: patch.phone ?? lead.phone,
+    metadata,
+  };
 }
 
 /**
@@ -336,6 +476,8 @@ export async function batchEnrichLeads(
   }
 
   const out: Lead[] = [];
+  const websiteCorrected: Array<{ name: string; from: string; to: string; email: string | null }> =
+    [];
   for (let i = 0; i < leads.length; i += config.concurrency) {
     const chunk = leads.slice(i, i + config.concurrency);
     const chunkResults = await Promise.all(
@@ -343,10 +485,28 @@ export async function batchEnrichLeads(
         if (j > 0) await sleep(config.politeDelayMs);
         try {
           const patch = await enrichLeadWebsite(
-            { placeId: lead.placeId, name: lead.name, website: lead.website },
+            {
+              placeId: lead.placeId,
+              name: lead.name,
+              website: lead.website,
+              address: lead.address,
+              phone: lead.phone,
+            },
             config
           );
-          return { ...lead, ...patch };
+          if (
+            patch.website &&
+            patch.enrichmentNotes?.includes("Website corrected") &&
+            patch.website !== lead.website
+          ) {
+            websiteCorrected.push({
+              name: lead.name,
+              from: lead.website ?? "",
+              to: patch.website,
+              email: patch.primaryEmail,
+            });
+          }
+          return mergeEnrichmentOntoLead(lead, patch);
         } catch (e) {
           const msg = e instanceof Error ? e.message : String(e);
           console.error("[email-enrichment] lead failed", {
@@ -380,7 +540,12 @@ export async function batchEnrichLeads(
       await sleep(config.politeDelayMs);
     }
   }
-  return runHunter ? runHunterFallback(out) : out;
+  console.log(
+    `[email-enrichment] website_corrected_count=${websiteCorrected.length}`,
+    websiteCorrected.slice(0, 20)
+  );
+  const enriched = runHunter ? await runHunterFallback(out) : out;
+  return enriched;
 }
 
 /**

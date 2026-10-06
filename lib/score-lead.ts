@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { z } from "zod";
 import { personalizeDentistOutreachWithSignals } from "@/lib/dentist-outreach";
+import { MARCUS_OUTREACH_CTA } from "@/lib/outreach-cta";
 import {
   classifyOpportunityType,
   classifyPriorityFromScore,
@@ -125,7 +126,7 @@ Rules:
 - NEVER use long dashes or em dashes. Use periods and short sentences.
 - outreach must start with: {{your_name}} here, from {{your_company}}. {{your_credibility_line}}
 - Do not invent a real person's name or company. Use those placeholders exactly.
-- End with a concrete CTA that names what you will send, how long it takes to consume, and the exact reply token (example: reply LOOM for a 2-minute Loom)
+- End outreach with this exact CTA (copy verbatim): ${MARCUS_OUTREACH_CTA}
 - keep reason under 140 characters
 - keep outreach under 280 characters
 - JSON only
@@ -269,7 +270,7 @@ For EACH of the ${n} businesses below, produce:
 - adjustment: integer from -8 to +8 (small tweak to base score only; do not replace scoring)
 - reason: one specific sentence referencing real data, under 140 characters, no generic phrases like "great opportunity"
 - outreach: under 280 characters; human tone; mention new patients or bookings once; include a subtle observation from the data; start with exactly: {{your_name}} here, from {{your_company}}. {{your_credibility_line}}
-- NEVER use: leverage, solutions, partner. NEVER use em dashes. Use a concrete CTA with reply token and time box (e.g. 2-minute Loom).
+- NEVER use: leverage, solutions, partner. NEVER use em dashes. End outreach with this exact CTA (copy verbatim): ${MARCUS_OUTREACH_CTA}
 
 Return ONLY valid JSON in this exact shape:
 {"items":[{"index":0,"adjustment":0,"reason":"...","outreach":"..."},...]}

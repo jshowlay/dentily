@@ -41,6 +41,8 @@
     "test": "vitest run",
     "generate-sample-pack": "GENERATE_SAMPLE_PACK=1 vitest run lib/sample-pack.test.ts",
     "generate-sample-austin-dl": "WRITE_DENTILY_SAMPLE_AUSTIN_CSV=1 vitest run lib/dentily-sample-austin-csv.build.test.ts",
+    "generate-austin-homepage-sample": "npx tsx --env-file=.env.local scripts/generate-austin-homepage-sample.ts",
+    "generate-austin-homepage-sample:write": "WRITE_AUSTIN_SAMPLE=1 npx tsx --env-file=.env.local scripts/generate-austin-homepage-sample.ts",
     "fill-csv-gaps": "node scripts/fill-csv-gaps.mjs"
   },
   "dependencies": {

@@ -32,6 +32,10 @@ export type LeadEnrichmentFields = {
   enrichmentNotes: string | null;
   /** Set when scraped candidates fail strict mailbox validation (CSV column + debugging). */
   emailRejectionReason?: string | null;
+  /** Patched when Google website was wrong and discovery found the real domain. */
+  website?: string | null;
+  phone?: string | null;
+  homepageMentionsSmileGeneration?: boolean;
 };
 
 export type Lead = {
@@ -145,4 +149,6 @@ export type ExportLeadRow = {
   primary_type: string | null;
   maps_url: string | null;
   created_at: string | null;
+  /** Set when website crawl saw Smile Generation (Pacific Dental Services). */
+  homepage_dso_smile_generation?: boolean | null;
 };

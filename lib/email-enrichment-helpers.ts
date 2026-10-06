@@ -1,6 +1,11 @@
 import * as cheerio from "cheerio";
+import { isContactLikePath, isValidContactFormUrl } from "@/lib/contact-form-url";
 import { validateMarketingEmail } from "@/lib/marketing-email-validate";
+import { emailMatchesWebsiteDomain } from "@/lib/url-normalize";
 import type { EmailSource } from "@/lib/types";
+
+export const OFF_DOMAIN_PRIMARY_EMAIL_NOTE =
+  "Email domain does not match website — verify before sending.";
 
 const EMAIL_REGEX =
   /\b[a-z0-9][a-z0-9._%+\-]*@[a-z0-9](?:[a-z0-9\-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9\-]{0,61}[a-z0-9])?)+\b/gi;
@@ -16,8 +21,23 @@ const ROLE_LOCALPARTS = new Set([
   "reception",
   "care",
   "team",
-  "billing",
   "support",
+]);
+
+/** Never use as Primary Email — may appear in Other Emails. */
+const NON_OUTREACH_LOCALPARTS = new Set([
+  "recruiting",
+  "recruitment",
+  "careers",
+  "jobs",
+  "hr",
+  "billing",
+  "noreply",
+  "no-reply",
+  "donotreply",
+  "do-not-reply",
+  "postmaster",
+  "webmaster",
 ]);
 
 const FREE_EMAIL_DOMAINS = new Set([
@@ -184,27 +204,42 @@ export function isPlaceholderEmail(email: string): boolean {
   return false;
 }
 
-export function scoreEmailForRanking(email: string): number {
+export function isNonOutreachLocalPart(email: string): boolean {
+  const local = email.split("@")[0]?.toLowerCase() ?? "";
+  const base = (local.split("+")[0] ?? local).replace(/[^a-z0-9.-]/g, "");
+  if (NON_OUTREACH_LOCALPARTS.has(base)) return true;
+  if (base.includes("noreply") || base.includes("no-reply") || base.startsWith("donotreply")) {
+    return true;
+  }
+  return false;
+}
+
+export function scoreEmailForRanking(email: string, websiteUrl?: string | null): number {
   const [local, domain] = email.split("@");
   if (!local || !domain) return -1000;
   let score = 10;
   const base = local.split("+")[0] ?? local;
   if (ROLE_LOCALPARTS.has(base)) score += 40;
   if (FREE_EMAIL_DOMAINS.has(domain)) score -= 25;
-  if (local.includes("noreply") || local.includes("no-reply") || local.startsWith("donotreply"))
-    score -= 50;
+  if (websiteUrl && emailMatchesWebsiteDomain(email, websiteUrl)) score += 80;
+  else if (websiteUrl) score -= 15;
   return score;
 }
 
 export type ScoredEmail = { email: string; source: EmailSource };
 
-export function pickBestEmail(candidates: ScoredEmail[]): {
+export function pickBestEmail(
+  candidates: ScoredEmail[],
+  websiteUrl?: string | null
+): {
   best: ScoredEmail | null;
   alternates: string[];
   rejectionReason: string | null;
+  domainMismatchWarning: boolean;
 } {
   const seen = new Set<string>();
   const valid: ScoredEmail[] = [];
+  const nonOutreach: string[] = [];
   let rejectionReason: string | null = null;
   for (const c of candidates) {
     const n = normalizeEmailCandidate(c.email);
@@ -222,13 +257,30 @@ export function pickBestEmail(candidates: ScoredEmail[]): {
     const clean = strict.normalized;
     if (seen.has(clean)) continue;
     seen.add(clean);
+    if (isNonOutreachLocalPart(clean)) {
+      nonOutreach.push(clean);
+      continue;
+    }
     valid.push({ email: clean, source: c.source });
   }
-  if (valid.length === 0) return { best: null, alternates: [], rejectionReason };
-  valid.sort((a, b) => scoreEmailForRanking(b.email) - scoreEmailForRanking(a.email));
-  const best = valid[0] ?? null;
-  const alternates = valid.slice(1, 5).map((v) => v.email);
-  return { best, alternates, rejectionReason: null };
+  if (valid.length === 0) {
+    return { best: null, alternates: nonOutreach.slice(0, 5), rejectionReason, domainMismatchWarning: false };
+  }
+  valid.sort(
+    (a, b) => scoreEmailForRanking(b.email, websiteUrl) - scoreEmailForRanking(a.email, websiteUrl)
+  );
+
+  const onDomain = valid.filter((v) => emailMatchesWebsiteDomain(v.email, websiteUrl));
+  const offDomain = valid.filter((v) => !emailMatchesWebsiteDomain(v.email, websiteUrl));
+  const best = (onDomain[0] ?? offDomain[0] ?? null) as ScoredEmail | null;
+  const domainMismatchWarning = Boolean(
+    best && websiteUrl?.trim() && !emailMatchesWebsiteDomain(best.email, websiteUrl)
+  );
+
+  const outreachRest = valid.filter((v) => v.email !== best?.email).map((v) => v.email);
+  const alternates = [...outreachRest, ...nonOutreach].slice(0, 8);
+
+  return { best, alternates, rejectionReason: null, domainMismatchWarning };
 }
 
 function pathScore(pathname: string): number {
@@ -343,12 +395,17 @@ export function mergePageEmails(
   const mailto = scored.filter((s) => s.source === "mailto");
   const nonFooterNonMailto = scored.filter((s) => s.source !== "mailto" && s.source !== "footer");
   const ordered: ScoredEmail[] = [...mailto, ...nonFooterNonMailto, ...footerEmails];
-  const contactFormUrl = detectContactFormPageUrl(html, pageUrl);
+  const contactFormUrl = detectContactFormPageUrl(html, pageUrl, pageUrl.toString());
   return { orderedCandidates: ordered, contactFormUrl };
 }
 
-export function detectContactFormPageUrl(html: string, pageUrl: URL): string | null {
+export function detectContactFormPageUrl(
+  html: string,
+  pageUrl: URL,
+  websiteUrl?: string | null
+): string | null {
   const $ = cheerio.load(html);
+  const siteForValidation = websiteUrl ?? pageUrl.toString();
 
   for (const el of $("a[href]").toArray()) {
     const $a = $(el);
@@ -359,8 +416,8 @@ export function detectContactFormPageUrl(html: string, pageUrl: URL): string | n
     if (abs) {
       try {
         const u = new URL(abs);
-        if (pathScore(u.pathname) >= 50 || CONTACT_KEYWORD_LINK.test(text)) {
-          return abs;
+        if (isContactLikePath(u.pathname) || pathScore(u.pathname) >= 90) {
+          if (isValidContactFormUrl(abs, siteForValidation)) return abs;
         }
       } catch {
         /* skip */
@@ -390,7 +447,7 @@ export function detectContactFormPageUrl(html: string, pageUrl: URL): string | n
     }
   });
 
-  if (bestAction) return bestAction;
+  if (bestAction && isValidContactFormUrl(bestAction, siteForValidation)) return bestAction;
 
   const substantive = forms.toArray().some((form) => {
     const $f = $(form);
@@ -399,7 +456,10 @@ export function detectContactFormPageUrl(html: string, pageUrl: URL): string | n
       $f.find('textarea, input[type="email"]').length > 0
     );
   });
-  if (substantive) return pageUrl.toString();
+  if (substantive && isContactLikePath(pageUrl.pathname)) {
+    const self = pageUrl.toString();
+    if (isValidContactFormUrl(self, siteForValidation)) return self;
+  }
 
   return null;
 }

@@ -24,7 +24,7 @@ export function makeFixtureExportRow(
     priority: p.priority ?? "medium",
     opportunity_type: p.opportunity_type ?? null,
     primary_type: p.primary_type ?? "dentist",
-    maps_url: p.maps_url ?? null,
+    maps_url: p.maps_url ?? "https://maps.google.com/?cid=970065204628566152",
     created_at: p.created_at ?? null,
   };
 }

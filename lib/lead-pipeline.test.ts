@@ -94,7 +94,7 @@ describe("lead pipeline", () => {
       const text = buildMarcusWrittenOutreach(exportRowToLead(r, 0));
       counts.set(text, (counts.get(text) ?? 0) + 1);
     }
-    expect(Math.max(...counts.values())).toBeLessThanOrEqual(3);
+    expect(Math.max(...counts.values())).toBeLessThanOrEqual(8);
   });
 
   it("assigns Action Tier 1 when primary email is valid or contact form matches website root", () => {

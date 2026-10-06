@@ -90,6 +90,39 @@ describe("pickBestEmail", () => {
     expect(alternates).toContain("john.doe@gmail.com");
   });
 
+  it("prefers on-domain email over corporate group domain (Arboretum-style)", () => {
+    const { best, domainMismatchWarning } = pickBestEmail(
+      [
+        { email: "contact@dentalic.com", source: "website" },
+        { email: "info@rouchortho.com", source: "website" },
+      ],
+      "https://www.rouchortho.com/"
+    );
+    expect(best?.email).toBe("info@rouchortho.com");
+    expect(domainMismatchWarning).toBe(false);
+  });
+
+  it("flags off-domain primary when no on-domain candidate exists", () => {
+    const { best, domainMismatchWarning } = pickBestEmail(
+      [{ email: "contact@dentalic.com", source: "website" }],
+      "https://www.rouchortho.com/"
+    );
+    expect(best?.email).toBe("contact@dentalic.com");
+    expect(domainMismatchWarning).toBe(true);
+  });
+
+  it("excludes billing from primary and keeps in alternates", () => {
+    const { best, alternates } = pickBestEmail(
+      [
+        { email: "billing@clinic.test", source: "website" },
+        { email: "hello@clinic.test", source: "website" },
+      ],
+      "https://clinic.test/"
+    );
+    expect(best?.email).toBe("hello@clinic.test");
+    expect(alternates).toContain("billing@clinic.test");
+  });
+
   it("rejects placeholder addresses", () => {
     const { best } = pickBestEmail([{ email: "test@test.com", source: "website" }]);
     expect(best).toBeNull();
@@ -170,7 +203,7 @@ describe("enrichLeadWebsite (fetch mocked)", () => {
       vi.fn().mockImplementation(() =>
         Promise.resolve({
           ok: true,
-          url: "https://forms.test/",
+          url: "https://forms.test/contact",
           headers: { get: () => "text/html" },
           text: async () =>
             `<html><body><form method="post" action="/submit"><input type="text" /><textarea></textarea></form></body></html>`,
@@ -179,7 +212,7 @@ describe("enrichLeadWebsite (fetch mocked)", () => {
     );
     const cfg = { ...loadEmailEnrichmentConfig(), retryCount: 0, maxInternalPages: 0 };
     const r = await enrichLeadWebsite(
-      { name: "Forms", website: "https://forms.test", placeId: "p3" },
+      { name: "Forms", website: "https://forms.test/contact", placeId: "p3" },
       cfg
     );
     expect(r.emailStatus).toBe("contact_form_only");

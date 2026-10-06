@@ -93,7 +93,7 @@ function exportRow(p: Partial<ExportLeadRow> & Pick<ExportLeadRow, "name" | "add
     priority: p.priority ?? "medium",
     opportunity_type: p.opportunity_type ?? null,
     primary_type: p.primary_type ?? "dentist",
-    maps_url: p.maps_url ?? null,
+    maps_url: p.maps_url ?? "https://maps.google.com/?cid=970065204628566152",
     created_at: p.created_at ?? null,
   };
 }
@@ -150,8 +150,9 @@ describe("shipping blockers (outreach + export gates)", () => {
       exportRow({
         name: "Bad Inbox",
         address: "1 Main St, Austin, TX",
+        website: "https://bad.example/",
         primary_email: "rspack@1.6.6",
-        contact_form_url: "https://bad.example/contact",
+        contact_form_url: "https://bad.example/contact-us",
         phone: "512-555-0100",
       }),
     ]);

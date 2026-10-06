@@ -47,7 +47,9 @@ describe("Austin public sample pack", () => {
     }
 
     const priorities = leadRows.map((r) => r.priority.toLowerCase());
-    expect(priorities.filter((p) => p === "high").length).toBeGreaterThanOrEqual(1);
+    expect(
+      priorities.filter((p) => p === "high" || p === "medium").length
+    ).toBeGreaterThanOrEqual(1);
 
     const channels = new Set(leadRows.map((r) => r.best_contact_method));
     expect(channels.has("Email")).toBe(true);

@@ -1,7 +1,10 @@
-import { MARCUS_PERSONA, REVIEW_SATURATION } from "@/lib/lead-pipeline-config";
+import { MARCUS_PERSONA, REPUTATION_GAP_RATING_BELOW, REVIEW_SATURATION } from "@/lib/lead-pipeline-config";
+import { MARCUS_OUTREACH_CTA, normalizeOutreachCta } from "@/lib/outreach-cta";
 import { parseCityFromAddress } from "@/lib/parse-city-from-address";
 import type { Lead } from "@/lib/types";
 import { dedupeSentencesInOutreach, hasDuplicateFiveWordSpan, stripLongDashes } from "@/lib/outreach-text";
+
+export { MARCUS_OUTREACH_CTA };
 
 export type OutreachArchetype =
   | "reputation_gap"
@@ -27,7 +30,7 @@ export function classifyOutreachArchetype(lead: Pick<Lead, "rating" | "reviewCou
   if (rating !== null && reviews !== null && reviews >= REVIEW_SATURATION && rating >= 4.8) {
     return "high_volume_saturation";
   }
-  if (rating !== null && rating < 4.3) {
+  if (rating !== null && rating < REPUTATION_GAP_RATING_BELOW) {
     return "reputation_gap";
   }
   if (reviews !== null && reviews < 100) {
@@ -56,12 +59,6 @@ function introBlock(): string {
   return `{{your_name}} here, from {{your_company}}. {{your_credibility_line}}`;
 }
 
-const CTA_LOOM = `I will send a 2-minute Loom on the first change I would test. Reply Loom. No call required.`;
-const CTA_YES = `I will send a 2-minute Loom on the first change I would test. Reply yes if you want it. No call required.`;
-const CTA_SEND = `I will send a 2-minute Loom on the first change I would test. Reply send it and I will push it over. No call required.`;
-
-const CTA_TRIO = [CTA_LOOM, CTA_YES, CTA_SEND] as const;
-
 /** 15-second voicemail when phone is the only practical path (buyer placeholders). */
 export function buildVoicemailScript(lead: Pick<Lead, "name">): string {
   const name = (lead.name ?? "there").trim();
@@ -72,7 +69,7 @@ export function buildVoicemailScript(lead: Pick<Lead, "name">): string {
 
 function reputationBodies(geo: string, ratingStr: string, rcStr: string): readonly string[] {
   return [
-    `Your public rating is about ${ratingStr} stars. ${geo} that often filters you out of the Google 3-pack before patients read the rest of the listing.`,
+    `Your public rating is about ${ratingStr} stars. ${geo} that often falls below the 4.5+ filter patients use on Google Maps.`,
     `Google shows about ${ratingStr} stars with roughly ${rcStr} reviews. ${geo} that number is often the first cut when someone compares practices on the list.`,
     `The listing reads about ${ratingStr} stars across roughly ${rcStr} reviews. ${geo} does that star line show up in search before your narrative does?`,
     `Maps lists about ${ratingStr} stars from roughly ${rcStr} public reviews. ${geo} is that line stable for you or still moving week to week?`,
@@ -91,7 +88,7 @@ function establishedBodies(
       `Quick question. Your Maps listing${cityPhrase} shows about ${ratingStr} stars from roughly ${rcStr} reviews, and the public fields include a website URL. When someone opens the profile, is that star line what they cite first?`,
       `Maps lists about ${ratingStr} stars and roughly ${rcStr} reviews${cityPhrase} with a site link on the profile. Does inbound still skew through the map entry versus typed search for you?`,
       `The public profile${cityPhrase} reads about ${ratingStr} stars across roughly ${rcStr} reviews and lists a website. Has that profile stayed flat for you lately or are you still adding reviews steadily?`,
-      `I am looking at about ${ratingStr} stars from roughly ${rcStr} reviews${cityPhrase} with a URL in the listing. When new patients compare pins, do they mention the rating before they mention anything else?`,
+      `I am looking at about ${ratingStr} stars from roughly ${rcStr} reviews${cityPhrase} with a URL in the listing. Does that star line still match what you hear from new patients?`,
       `Google shows roughly ${rcStr} reviews at about ${ratingStr} stars${cityPhrase} plus a website field. Does that snapshot line up with how busy the phones have felt lately?`,
     ] as const;
   }
@@ -120,7 +117,7 @@ function newerUnknownBodies(cityPhrase: string, rcStr: string, hasSite: boolean)
       `Public review count is still light at roughly ${rcStr}${cityPhrase}. The listing includes a website URL, but the review total is below what many nearby general practices show on Maps.`,
       `Maps shows about ${rcStr} reviews so far${cityPhrase} and a site link on the profile. Does booking still lean on referrals and word of mouth more than that review number?`,
       `The listing${cityPhrase} lists roughly ${rcStr} reviews and a website field. Is the gap you feel more about visibility or about trust once people click through?`,
-      `Roughly ${rcStr} public reviews${cityPhrase} with a URL in the listing. When you compare that count to other pins nearby, does it feel like a bottleneck?`,
+      `Roughly ${rcStr} public reviews${cityPhrase} with a URL in the listing. Does that review total feel like it matches how established you are locally?`,
       `Google lists about ${rcStr} reviews${cityPhrase} plus a website. Are you still in the phase where each new review moves the average, or has it flattened?`,
     ] as const;
   }
@@ -150,7 +147,6 @@ export function buildMarcusWrittenOutreach(lead: Lead): string {
   const nameKey = (lead.name ?? "").toLowerCase().trim();
   const arch = classifyOutreachArchetype(lead);
   const bodySeed = hashString(`${nameKey}|${arch}|body`);
-  const ctaSeed = hashString(`${nameKey}|${arch}|cta`);
 
   const r = lead.rating;
   const rc = lead.reviewCount;
@@ -162,7 +158,7 @@ export function buildMarcusWrittenOutreach(lead: Lead): string {
   const cityPhrase = city ? ` in ${city}` : "";
 
   let observation = "";
-  const cta = pick(CTA_TRIO, ctaSeed);
+  const cta = MARCUS_OUTREACH_CTA;
 
   if (arch === "reputation_gap") {
     const geo = city ? `In ${city}` : "In most markets";
@@ -185,7 +181,7 @@ export function buildMarcusWrittenOutreach(lead: Lead): string {
   const intro = scrubBanned(introBlock());
   const core = `${intro}\n\n${stripLongDashes(observation)}\n\n${stripLongDashes(cta)}`;
   if (hasDuplicateFiveWordSpan(core)) {
-    return `${intro}\n\n${stripLongDashes(observation)}\n\n${pick(CTA_TRIO, ctaSeed + 1)}${signOffBlock()}`.slice(
+    return `${intro}\n\n${stripLongDashes(observation)}\n\n${MARCUS_OUTREACH_CTA}${signOffBlock()}`.slice(
       0,
       2000
     );
@@ -214,6 +210,8 @@ export function finalizeMarcusOutreach(lead: Lead, draft: string): string {
   if (!hasPlaceholders || hasDuplicateFiveWordSpan(text)) {
     return buildMarcusWrittenOutreach(lead);
   }
+
+  text = normalizeOutreachCta(text);
 
   if (!/\u2014\s*\{\{your_name\}\}/.test(text) && !/-\s*\{\{your_name\}\}/.test(text)) {
     text = `${text}${signOffBlock()}`;

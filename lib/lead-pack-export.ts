@@ -1,4 +1,5 @@
 import { buildCsv } from "@/lib/csv";
+import { sanitizeContactFormUrlForExport } from "@/lib/contact-form-url";
 import {
   classifyOpportunityType,
   classifyPriorityFromScore,
@@ -10,8 +11,22 @@ import { enrichWithApollo } from "@/lib/apollo-stub";
 import { buildMarcusWrittenOutreach, buildVoicemailScript } from "@/lib/marcus-outreach";
 import { computePlaceholdersRemaining } from "@/lib/outreach-placeholders";
 import { parseCityFromAddress } from "@/lib/parse-city-from-address";
+import {
+  classifyPracticeOwnership,
+  demotePriorityOneLevel,
+  DSO_WHY_THIS_LEAD_SUFFIX,
+  OFF_DOMAIN_EMAIL_NOTE,
+  type PracticeOwnership,
+} from "@/lib/practice-ownership";
 import { validateMarketingEmail } from "@/lib/marketing-email-validate";
 import { outreachReadinessFromContactSignals } from "@/lib/outreach-readiness";
+import { normalizePracticeDisplayName } from "@/lib/practice-name";
+import {
+  emailMatchesWebsiteDomain,
+  googleMapsUrlHasCid,
+  normalizeMapsUrlForCsv,
+  stripAllQueryParams,
+} from "@/lib/url-normalize";
 import type { EmailStatus, ExportLeadRow } from "@/lib/types";
 
 function coerceEmailStatus(raw: string | null | undefined): EmailStatus | null {
@@ -88,8 +103,8 @@ export function computeWhyNow(input: {
   }
   const rating = input.rating;
   const rc = input.review_count;
-  if (rating !== null && rating !== undefined && Number(rating) < 4.0) {
-    return "Public rating is under 4.0. That signal usually shows up before clinical quality in search.";
+  if (rating !== null && rating !== undefined && Number(rating) < 4.5) {
+    return "Public rating is under 4.5. That signal usually shows up before clinical quality in search.";
   }
   if (rc !== null && rc !== undefined && Number(rc) < 15) {
     return "Very few public reviews. Trust on maps is still thin versus nearby peers.";
@@ -143,6 +158,7 @@ type PipelineRow = ExportLeadRow & {
   why_now: string;
   cluster_notes: string;
   cluster_demoted: boolean;
+  ownership: PracticeOwnership;
 };
 
 function parseUrlHostname(raw: string | null | undefined): string | null {
@@ -181,6 +197,8 @@ export function sanitizeContactFormUrlAgainstWebsite(
   website: string | null | undefined,
   contactFormUrl: string | null | undefined
 ): string | null {
+  const gated = sanitizeContactFormUrlForExport(website, contactFormUrl);
+  if (gated) return gated;
   const formRaw = (contactFormUrl ?? "").trim();
   if (!formRaw) return null;
   const fHost = parseUrlHostname(formRaw);
@@ -188,13 +206,78 @@ export function sanitizeContactFormUrlAgainstWebsite(
   const fRoot = registrableHost(fHost);
   const wHost = parseUrlHostname(website);
   const wRoot = wHost ? registrableHost(wHost) : "";
-  if (wRoot && wRoot === fRoot) return formRaw;
+  if (wRoot && wRoot === fRoot) return sanitizeContactFormUrlForExport(website, formRaw);
   const tokens = practiceNameTokens(practiceName);
   for (const t of tokens) {
-    if (fHost.includes(t) || fRoot.includes(t)) return formRaw;
+    if (fHost.includes(t) || fRoot.includes(t)) {
+      return sanitizeContactFormUrlForExport(website, formRaw);
+    }
   }
-  if (!wRoot) return null;
   return null;
+}
+
+function preferOnDomainPrimaryEmail(row: ExportLeadRow): ExportLeadRow {
+  const website = row.website;
+  const primary = csvCell(row.primary_email);
+  if (!primary || !website) return row;
+
+  if (emailMatchesWebsiteDomain(primary, website)) return row;
+
+  const fromNotes = extractAlternateEmailsFromNotes(row.enrichment_notes);
+  const pool = [
+    ...(row.other_emails ?? "").split(",").map((e) => e.trim()),
+    ...fromNotes.otherEmails.split(",").map((e) => e.trim()),
+  ].filter(Boolean);
+
+  const onDomain = pool.find((e) => emailMatchesWebsiteDomain(e, website));
+  let primary_email = row.primary_email;
+  let enrichment_notes = row.enrichment_notes;
+  let other_emails = row.other_emails;
+
+  if (onDomain) {
+    const rest = [primary, ...pool.filter((e) => e.toLowerCase() !== onDomain.toLowerCase())];
+    primary_email = onDomain;
+    other_emails = rest.slice(0, 6).join(", ");
+    enrichment_notes = fromNotes.cleanedNotes || enrichment_notes;
+  } else {
+    const note = OFF_DOMAIN_EMAIL_NOTE;
+    enrichment_notes = [fromNotes.cleanedNotes || (row.enrichment_notes ?? "").trim(), note]
+      .filter(Boolean)
+      .join(" ");
+  }
+
+  return dropOffDomainOtherEmails({ ...row, primary_email, enrichment_notes, other_emails });
+}
+
+/** When primary is on-domain, Other Emails should not list off-domain alternates. */
+export function dropOffDomainOtherEmails(row: ExportLeadRow): ExportLeadRow {
+  const primary = csvCell(row.primary_email);
+  const website = row.website;
+  if (!primary || !website || !emailMatchesWebsiteDomain(primary, website)) {
+    return row;
+  }
+
+  const fromNotes = extractAlternateEmailsFromNotes(row.enrichment_notes);
+  const pool = [
+    ...(row.other_emails ?? "").split(",").map((e) => e.trim()),
+    ...fromNotes.otherEmails.split(",").map((e) => e.trim()),
+  ].filter(Boolean);
+
+  const seen = new Set<string>([primary.toLowerCase()]);
+  const onDomain: string[] = [];
+  for (const e of pool) {
+    const lower = e.toLowerCase();
+    if (seen.has(lower)) continue;
+    if (!emailMatchesWebsiteDomain(e, website)) continue;
+    seen.add(lower);
+    onDomain.push(e);
+  }
+
+  return {
+    ...row,
+    other_emails: onDomain.slice(0, 8).join(", ") || null,
+    enrichment_notes: fromNotes.cleanedNotes || row.enrichment_notes,
+  };
 }
 
 export const ACTION_TIER_READY = "Tier 1: Ready to Contact";
@@ -223,6 +306,7 @@ function capWords(s: string, maxWords: number): string {
 
 function computeWhyThisLead(r: PipelineRow): string {
   const key = opportunityTypeKey(r.opportunity_type);
+  const dsoSuffix = r.ownership === "Likely DSO" ? ` ${DSO_WHY_THIS_LEAD_SUFFIX}` : "";
   const ratingStr =
     r.rating !== null && r.rating !== undefined && Number.isFinite(Number(r.rating))
       ? String(r.rating)
@@ -248,7 +332,7 @@ function computeWhyThisLead(r: PipelineRow): string {
     core = `Solid fundamentals (${ratingStr} stars, ${rcStr} reviews) with room to convert local visibility into more bookings.`;
   }
   const tail = pri ? ` (${pri} priority.)` : "";
-  return capWords(`${core}${tail}`, 25);
+  return capWords(`${core}${tail}${dsoSuffix}`, 28);
 }
 
 /** First CSV row: buyer instructions (not a lead). */
@@ -345,6 +429,7 @@ function buildInstructionPackRow() {
     review_count: "",
     score: "",
     opportunity_type: "",
+    ownership: "",
     why_now: "",
     reason: "",
     outreach_draft: LEAD_PACK_INSTRUCTION_OUTREACH,
@@ -412,12 +497,13 @@ export function csvCell(value: string | null | undefined): string {
   return s;
 }
 
-/** Make URLs clickable in Excel/Sheets (https prefix when missing). */
+/** Make URLs clickable in Excel/Sheets (https prefix when missing). Strips all query params. */
 export function normalizeUrlForCsv(url: string | null | undefined): string {
   const t = csvCell(url);
   if (!t) return "";
-  if (/^https?:\/\//i.test(t)) return t;
-  return `https://${t}`;
+  const stripped = stripAllQueryParams(t);
+  if (/^https?:\/\//i.test(stripped)) return stripped;
+  return stripAllQueryParams(`https://${stripped}`);
 }
 
 /** Title case for status columns, e.g. not_found → Not Found */
@@ -497,6 +583,7 @@ export type TopLeadEligibilityInput = {
   contact_form_url: string | null | undefined;
   phone: string | null | undefined;
   email_status: string | null | undefined;
+  ownership?: PracticeOwnership;
 };
 
 /** Top Lead = contactable via email, form, or phone (Maps-backed paths count). */
@@ -513,6 +600,7 @@ export function selectTopLeadIndices(rows: TopLeadEligibilityInput[], maxTop = 1
   let n = 0;
   for (let i = 0; i < rows.length; i += 1) {
     if (n >= maxTop) break;
+    if (rows[i]?.ownership === "Likely DSO") continue;
     if (isEligibleForTopLead(rows[i])) {
       chosen.add(i);
       n += 1;
@@ -627,6 +715,7 @@ export type LeadPackCsvRow = {
   review_count: string;
   score: string;
   opportunity_type: string;
+  ownership: string;
   why_now: string;
   reason: string;
   outreach_draft: string;
@@ -636,15 +725,53 @@ export type LeadPackCsvRow = {
   apollo_enrichment: string;
 };
 
+function stripWebsiteForExport(row: ExportLeadRow): ExportLeadRow {
+  const website = row.website ? stripAllQueryParams(row.website) : row.website;
+  const contact_form_url = row.contact_form_url
+    ? stripAllQueryParams(row.contact_form_url)
+    : row.contact_form_url;
+  const maps_url = row.maps_url ? normalizeMapsUrlForCsv(row.maps_url) : row.maps_url;
+  return { ...row, website, contact_form_url, maps_url };
+}
+
+/** Fail export when a lead row Maps URL is missing Google `cid`. */
+export function validateLeadPackMapsUrls(rows: LeadPackCsvRow[]): void {
+  for (const r of rows) {
+    if (isLeadPackInstructionRow(r)) continue;
+    const maps = (r.maps_url ?? "").trim();
+    if (!googleMapsUrlHasCid(maps)) {
+      throw new Error(`Maps URL missing cid for ${r.name ?? "unknown practice"}`);
+    }
+  }
+}
+
 export function buildLeadPackRowsFromExport(rows: ExportLeadRow[]): LeadPackCsvRow[] {
   const sourceRows = rows;
-  const rowsIn = rows.map(sanitizeExportRowForEmailGate).map(applyContactFormDomainGate);
+  const rowsIn = rows
+    .map((r) => ({ ...r, name: normalizePracticeDisplayName(r.name) || r.name }))
+    .map(stripWebsiteForExport)
+    .map(sanitizeExportRowForEmailGate)
+    .map(preferOnDomainPrimaryEmail)
+    .map(dropOffDomainOtherEmails)
+    .map(applyContactFormDomainGate);
   const batchCtx = { allNamesLower: rowsIn.map((r) => (r.name ?? "").toLowerCase()) };
 
   let pipeline: PipelineRow[] = rowsIn.map((r, i) => {
     const lead = exportRowToLead(r, i);
     const score = computeBaseScore(lead, batchCtx);
-    const priority = classifyPriorityFromScore(score);
+    let priority = classifyPriorityFromScore(score);
+    const rawListingWebsite = sourceRows[i]?.website ?? null;
+    const ownership = classifyPracticeOwnership({
+      name: r.name,
+      website: r.website,
+      googleListingWebsite: rawListingWebsite,
+      primaryEmail: r.primary_email,
+      contactFormUrl: r.contact_form_url,
+      homepageMentionsSmileGeneration: Boolean(r.homepage_dso_smile_generation),
+    });
+    if (ownership === "Likely DSO") {
+      priority = demotePriorityOneLevel(priority);
+    }
     const why =
       r.why_now?.trim() ||
       computeWhyNow({
@@ -660,6 +787,7 @@ export function buildLeadPackRowsFromExport(rows: ExportLeadRow[]): LeadPackCsvR
       why_now: why,
       cluster_notes: r.cluster_notes?.trim() ?? "",
       cluster_demoted: false,
+      ownership,
     };
   });
 
@@ -671,6 +799,7 @@ export function buildLeadPackRowsFromExport(rows: ExportLeadRow[]): LeadPackCsvR
     contact_form_url: r.contact_form_url,
     phone: r.phone,
     email_status: r.email_status,
+    ownership: r.ownership,
   }));
   const topIdx = selectTopLeadIndices(eligibility, 10);
 
@@ -682,7 +811,7 @@ export function buildLeadPackRowsFromExport(rows: ExportLeadRow[]): LeadPackCsvR
     const cleanedNotes = fromNotes.cleanedNotes;
     const website = normalizeUrlForCsv(r.website);
     const contactForm = normalizeUrlForCsv(r.contact_form_url);
-    const mapsUrl = normalizeUrlForCsv(r.maps_url);
+    const mapsUrl = normalizeMapsUrlForCsv(r.maps_url);
     const best = bestContactForPack({
       primary_email: r.primary_email,
       contact_form_url: r.contact_form_url,
@@ -744,6 +873,12 @@ export function buildLeadPackRowsFromExport(rows: ExportLeadRow[]): LeadPackCsvR
       review_count: csvNumber(r.review_count),
       score: csvNumber(r.score),
       opportunity_type: formatStatusLabel(r.opportunity_type),
+      ownership:
+        r.ownership === "Likely DSO"
+          ? "Likely DSO"
+          : r.ownership === "Independent"
+            ? "Independent"
+            : "Unknown",
       why_now: csvCell(r.why_now),
       reason: csvCell(computeExportReasonLine(lead, { clusterDemoted: r.cluster_demoted })),
       outreach_draft: csvCell(outreachBody),
@@ -756,7 +891,9 @@ export function buildLeadPackRowsFromExport(rows: ExportLeadRow[]): LeadPackCsvR
 
   logPipelineRunComplete(sourceRows, rowsIn, sorted, dataRows.length);
 
-  return [buildInstructionPackRow(), ...dataRows];
+  const pack = [buildInstructionPackRow(), ...dataRows];
+  validateLeadPackMapsUrls(pack);
+  return pack;
 }
 
 const CSV_COLUMN_ORDER: Array<{ key: keyof LeadPackCsvRow; label: string }> = [
@@ -785,6 +922,7 @@ const CSV_COLUMN_ORDER: Array<{ key: keyof LeadPackCsvRow; label: string }> = [
   { key: "review_count", label: "Review Count" },
   { key: "score", label: "Score" },
   { key: "opportunity_type", label: "Opportunity Type" },
+  { key: "ownership", label: "Ownership" },
   { key: "why_now", label: "Why Now" },
   { key: "reason", label: "Reason" },
   { key: "outreach_draft", label: "Outreach Draft (customize before sending)" },

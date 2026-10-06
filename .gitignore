@@ -32,6 +32,9 @@ yarn-error.log*
 # local env files
 .env*.local
 
+# pipeline cache for sample CSV generation
+scripts/.cache/
+
 # vercel
 .vercel
 

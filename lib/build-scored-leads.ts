@@ -1,4 +1,5 @@
 import { getPlaceDetails, MAX_RAW_RESULTS, searchBusinesses } from "@/lib/google-places";
+import { normalizePracticeDisplayName } from "@/lib/practice-name";
 import { dedupeLeads } from "@/lib/dedupe-leads";
 import { type DentistScoringBatchContext } from "@/lib/dentist-scoring";
 import { logSearchPrioritySummary, sortByPriorityThenScore } from "@/lib/lead-pack-export";

@@ -41,3 +41,6 @@ export const RATING_STRONG = 4.75;
 
 /** Review counts at or above this use the saturation / non-growth-pitch archetype. */
 export const REVIEW_SATURATION = 1000;
+
+/** Ratings below this (with a website) classify as Reputation Gap opportunity type. */
+export const REPUTATION_GAP_RATING_BELOW = 4.5;

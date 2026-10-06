@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { normalizePracticeDisplayName } from "@/lib/practice-name";
 import { Lead } from "@/lib/types";
 
 const googlePlaceSearchResponseSchema = z.object({
@@ -119,7 +120,7 @@ function toLead(place: unknown): NormalizedPlaceLead {
 
   return {
     placeId: cleanString(first.id) ?? "",
-    name: cleanString(first.displayName?.text) ?? "",
+    name: normalizePracticeDisplayName(cleanString(first.displayName?.text) ?? ""),
     address: cleanString(first.formattedAddress),
     website: cleanString(first.websiteUri),
     phone: cleanString(first.nationalPhoneNumber),
