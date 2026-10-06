@@ -93,7 +93,9 @@ export function classifyPracticeOwnership(input: {
   return "Unknown";
 }
 
-export function demotePriorityOneLevel(priority: string | null | undefined): string {
+export function demotePriorityOneLevel(
+  priority: string | null | undefined
+): "high" | "medium" | "low" {
   const p = (priority ?? "").toLowerCase();
   if (p === "high") return "medium";
   if (p === "medium") return "low";

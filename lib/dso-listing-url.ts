@@ -19,7 +19,7 @@ export function googleListingUrlHasDsoTrackingSignals(url: string | null | undef
     if (qLower.includes("y_source=")) return true;
     if (/location\.website/i.test(qLower)) return true;
 
-    for (const [key, value] of u.searchParams.entries()) {
+    for (const [key, value] of Array.from(u.searchParams.entries())) {
       const k = key.toLowerCase();
       const v = value.toLowerCase();
       if (k === "sc_cid" && v.includes("gbp")) return true;
