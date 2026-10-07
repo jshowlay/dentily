@@ -3,6 +3,11 @@ import {
   looksLikeIndividualProviderName,
 } from "@/lib/lead-quality-filters";
 import {
+  isKnownMultiLocationChainListing,
+  leadMatchesMultiLocationBrandKey,
+  normalizeChainBrandKey,
+} from "@/lib/admin-sample-chain-probe";
+import {
   buildMultiLocationContext,
   hasExplicitLocationSuffix,
   isMultiLocationGroupLead,
@@ -11,6 +16,10 @@ import {
 } from "@/lib/multi-location-group";
 import { registrableHostFromUrl } from "@/lib/url-normalize";
 import type { Lead } from "@/lib/types";
+
+export type AdminSampleFilterOptions = {
+  multiLocationBrandKeys?: Set<string>;
+};
 
 const GENERIC_DENTAL_WORDS = new Set([
   "dentist",
@@ -78,10 +87,12 @@ export function isGenericKeywordPracticeName(
 /** Place IDs to drop from /admin/sample (chains, shared domains, generic names, etc.). */
 export function computeAdminSampleExcludedPlaceIds(
   leads: Lead[],
-  marketCity?: string | null
+  marketCity?: string | null,
+  options?: AdminSampleFilterOptions
 ): Set<string> {
   const excluded = new Set<string>();
   const multiCtx = buildMultiLocationContext(leads);
+  const chainBrandKeys = options?.multiLocationBrandKeys ?? new Set<string>();
 
   for (const lead of leads) {
     if (isExcludedCommunityClinic(lead)) excluded.add(lead.placeId);
@@ -89,6 +100,8 @@ export function computeAdminSampleExcludedPlaceIds(
     if (isGenericKeywordPracticeName(lead.name, marketCity)) excluded.add(lead.placeId);
     if (hasExplicitLocationSuffix(lead.name)) excluded.add(lead.placeId);
     if (isMultiLocationGroupLead(lead, multiCtx)) excluded.add(lead.placeId);
+    if (isKnownMultiLocationChainListing(lead)) excluded.add(lead.placeId);
+    if (leadMatchesMultiLocationBrandKey(lead, chainBrandKeys)) excluded.add(lead.placeId);
   }
 
   const byDomain = new Map<string, Lead[]>();
@@ -120,10 +133,28 @@ export function computeAdminSampleExcludedPlaceIds(
     }
   }
 
+  const byChainBrand = new Map<string, Lead[]>();
+  for (const lead of leads) {
+    const ck = normalizeChainBrandKey(lead.name);
+    if (!ck || ck.length < 4) continue;
+    const list = byChainBrand.get(ck) ?? [];
+    list.push(lead);
+    byChainBrand.set(ck, list);
+  }
+  for (const list of Array.from(byChainBrand.values())) {
+    if (list.length >= 2) {
+      for (const l of list) excluded.add(l.placeId);
+    }
+  }
+
   return excluded;
 }
 
-export function filterLeadsForAdminSample(leads: Lead[], marketCity?: string | null): Lead[] {
-  const excluded = computeAdminSampleExcludedPlaceIds(leads, marketCity);
+export function filterLeadsForAdminSample(
+  leads: Lead[],
+  marketCity?: string | null,
+  options?: AdminSampleFilterOptions
+): Lead[] {
+  const excluded = computeAdminSampleExcludedPlaceIds(leads, marketCity, options);
   return leads.filter((l) => !excluded.has(l.placeId));
 }

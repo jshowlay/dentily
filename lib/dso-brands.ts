@@ -36,6 +36,7 @@ export const DSO_BRAND_NAME_FRAGMENTS = [
   "gentle dental",
   "affordable dentures",
   "mydental",
+  "access dental",
 ] as const;
 
 /** Website path fragments that suggest a location page on a corporate site. */

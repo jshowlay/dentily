@@ -1,4 +1,5 @@
 import { ADMIN_SAMPLE_RESULT_LIMIT } from "@/lib/admin-sample-config";
+import { discoverMultiLocationBrandKeys } from "@/lib/admin-sample-chain-probe";
 import { filterLeadsForAdminSample } from "@/lib/admin-sample-eligibility";
 import { buildAdminSampleEmailReason, buildDistinctAdminSampleEmailReasons } from "@/lib/admin-sample-email-copy";
 import { leadToExportRow } from "@/lib/austin-homepage-sample";
@@ -105,7 +106,6 @@ export async function runAdminSampleMarket(
 ): Promise<AdminSampleLead[]> {
   const nicheConfig = getNicheConfig("dentists");
   const location = `${city.trim()}, ${state.trim().toUpperCase()}`;
-
   const scored = await buildScoredLeads({
     niche: nicheConfig.name,
     location,
@@ -113,8 +113,8 @@ export async function runAdminSampleMarket(
     subscriptionUserId: null,
     searchId: 0,
   });
-
-  const eligible = filterLeadsForAdminSample(scored, city.trim());
+  const chainBrandKeys = await discoverMultiLocationBrandKeys(scored, location);
+  const eligible = filterLeadsForAdminSample(scored, city.trim(), { multiLocationBrandKeys: chainBrandKeys });
   const top = eligible.slice(0, limit);
   const enriched = await batchEnrichLeads(top, undefined, { hunterFallback: false });
 

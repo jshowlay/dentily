@@ -68,4 +68,9 @@ describe("admin-sample-eligibility", () => {
     ];
     expect(computeAdminSampleExcludedPlaceIds(rows, "Austin").has("c1")).toBe(true);
   });
+
+  it("excludes known chain brands like Access Dental even with one listing in pack", () => {
+    const rows = [lead({ placeId: "ad1", name: "Access Dental", website: "https://www.theaccessdental.com" })];
+    expect(computeAdminSampleExcludedPlaceIds(rows, "Austin").has("ad1")).toBe(true);
+  });
 });
