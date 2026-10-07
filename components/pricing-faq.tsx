@@ -44,7 +44,7 @@ function buildFaqItems(leadCount: number): { q: string; a: string }[] {
     },
     {
       q: "Do I get the same leads twice?",
-      a: "No. Dentily tracks every practice you've seen and filters them out of future searches on your account.",
+      a: "Within one pack, we dedupe by Google place ID and drop repeat name-and-phone rows. Listings that share the same address are grouped in the CSV with cluster notes, and extras are scored lower so you are not steered to double-contact the same location. Each purchase is tied to that search run — buying again for the same market is a fresh build, not a cross-purchase blocklist.",
     },
   ];
 }

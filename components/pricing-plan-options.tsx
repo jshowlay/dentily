@@ -1,9 +1,4 @@
-"use client";
-
 import Link from "next/link";
-import { useSession } from "next-auth/react";
-import { useCallback, useState } from "react";
-import { Loader2 } from "lucide-react";
 import { HowToUsePack } from "@/components/how-to-use-pack";
 import { buttonVariants } from "@/lib/button-variants";
 import { QUALITY_REPLACEMENT_NOTE, SITE } from "@/lib/site-config";
@@ -12,36 +7,7 @@ import { cn } from "@/lib/utils";
 
 type Plan = "starter" | "pro";
 
-export function PricingPlanOptions() {
-  const { data: session } = useSession();
-  const [plan, setPlan] = useState<Plan>("starter");
-  const [loading, setLoading] = useState<Plan | null>(null);
-
-  const startCheckout = useCallback(
-    async (selected: Plan) => {
-      if (!session?.user) {
-        window.location.href = `/login?next=/pricing&plan=${selected}`;
-        return;
-      }
-      setLoading(selected);
-      try {
-        const res = await fetch("/api/stripe/checkout", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ plan: selected }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error ?? "Checkout failed");
-        if (data.url) window.location.href = data.url;
-      } catch (e) {
-        alert(e instanceof Error ? e.message : "Checkout failed");
-      } finally {
-        setLoading(null);
-      }
-    },
-    [session]
-  );
-
+export function PricingPlanOptions({ plan = "starter" }: { plan?: Plan }) {
   return (
     <div className="w-full">
       <div className="mx-auto max-w-2xl text-center">
@@ -49,37 +15,6 @@ export function PricingPlanOptions() {
         <p className="mt-3 text-sm leading-relaxed text-slate-600">
           Close one client and your subscription pays for itself 30×. Most members close within their first pack.
         </p>
-      </div>
-
-      <div
-        className="mx-auto mt-8 flex max-w-md flex-col gap-2 rounded-full border border-slate-200 bg-white p-1 shadow-sm sm:flex-row"
-        role="tablist"
-        aria-label="Pricing plan"
-      >
-        <button
-          type="button"
-          role="tab"
-          aria-selected={plan === "starter"}
-          className={cn(
-            "min-h-[44px] flex-1 rounded-full px-4 text-sm font-semibold transition-all",
-            plan === "starter" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-50"
-          )}
-          onClick={() => setPlan("starter")}
-        >
-          Starter Pack
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={plan === "pro"}
-          className={cn(
-            "min-h-[44px] flex-1 rounded-full px-4 text-sm font-semibold transition-all",
-            plan === "pro" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-50"
-          )}
-          onClick={() => setPlan("pro")}
-        >
-          Pro — $99/mo
-        </button>
       </div>
 
       <div className="mt-8 grid gap-6 md:grid-cols-2 md:items-stretch">
@@ -105,16 +40,8 @@ export function PricingPlanOptions() {
             <p className="text-xs text-slate-500">{QUALITY_REPLACEMENT_NOTE}</p>
             <HowToUsePack className="rounded-lg border border-slate-100 bg-slate-50/80 p-4" />
             <div className="mt-auto pt-2">
-              <button
-                type="button"
-                className={cn(buttonVariants({ size: "lg" }), "w-full")}
-                onClick={() => startCheckout("starter")}
-                disabled={loading !== null}
-              >
-                {loading === "starter" ? <Loader2 className="mx-auto h-5 w-5 animate-spin" /> : "Buy one pack"}
-              </button>
-              <Link href="/search" className="mt-2 block text-center text-xs text-slate-600 underline">
-                Or preview a market first
+              <Link href="/search" className={cn(buttonVariants({ size: "lg" }), "w-full")}>
+                Preview a market →
               </Link>
             </div>
           </CardContent>
@@ -148,23 +75,14 @@ export function PricingPlanOptions() {
               <li>✓ Dashboard + CSV exports</li>
             </ul>
             <div className="mt-auto pt-2">
-              <button
-                type="button"
+              <Link
+                href="/search"
                 className={cn(
                   buttonVariants({ size: "lg" }),
                   "w-full border-blue-700 bg-blue-700 hover:bg-blue-800"
                 )}
-                onClick={() => startCheckout("pro")}
-                disabled={loading !== null}
               >
-                {loading === "pro" ? (
-                  <Loader2 className="mx-auto h-5 w-5 animate-spin" />
-                ) : (
-                  "Start Pro — $99/mo"
-                )}
-              </button>
-              <Link href="/dashboard" className="mt-2 block text-center text-xs text-slate-600 underline">
-                Go to dashboard
+                Preview a market →
               </Link>
             </div>
           </CardContent>

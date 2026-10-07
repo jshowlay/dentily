@@ -138,7 +138,7 @@ export function DashboardClient({ user, subscription, searches: initialSearches 
 
   return (
     <main className="min-h-screen bg-slate-50">
-      <AppNav creditsRemaining={isActive ? credits : null} />
+      <AppNav />
 
       <div className="container-page space-y-8 py-8">
         <div className="flex flex-wrap items-start justify-between gap-4">

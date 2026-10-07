@@ -1,9 +1,4 @@
-"use client";
-
 import Link from "next/link";
-import { Loader2 } from "lucide-react";
-import { useSession } from "next-auth/react";
-import { useCallback, useState } from "react";
 import { SITE } from "@/lib/site-config";
 import "@/app/pricing-page.css";
 
@@ -18,9 +13,16 @@ function FeatureCheck({ text }: { text: string }) {
   );
 }
 
+/** CTA from /pricing — return to an in-progress preview when searchId is present. */
+export function pricingGetStartedHref(searchId: string | null | undefined): string {
+  const raw = (searchId ?? "").trim();
+  if (/^\d+$/.test(raw)) {
+    return `/results?searchId=${encodeURIComponent(raw)}`;
+  }
+  return "/search";
+}
+
 type PricingSectionProps = {
-  /** On /pricing — run Stripe one-time checkout after sign-in. */
-  enableCheckout?: boolean;
   /** Hide section intro (page supplies its own hero). */
   hideIntro?: boolean;
   /** Show bottom tip — landing only. */
@@ -29,47 +31,25 @@ type PricingSectionProps = {
   priceLabel?: string;
   /** Override lead count in feature list (e.g. from landing constants). */
   leadCount?: number;
+  /** When set (e.g. from /pricing?searchId=), "Get started" returns to results checkout. */
+  searchId?: string | null;
 };
 
 export function PricingSection({
-  enableCheckout = false,
   hideIntro = false,
   showFooterTip = false,
   priceLabel = SITE.leadPackPriceLabel,
   leadCount = SITE.leadPackCount,
+  searchId = null,
 }: PricingSectionProps) {
-  const { data: session } = useSession();
-  const [loading, setLoading] = useState(false);
-
-  const startCheckout = useCallback(async () => {
-    if (!session?.user) {
-      window.location.href = "/login?next=/pricing&plan=starter";
-      return;
-    }
-    setLoading(true);
-    try {
-      const res = await fetch("/api/stripe/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: "starter" }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Checkout failed");
-      if (data.url) window.location.href = data.url;
-    } catch (e) {
-      alert(e instanceof Error ? e.message : "Checkout failed");
-    } finally {
-      setLoading(false);
-    }
-  }, [session]);
-
+  const ctaHref = pricingGetStartedHref(searchId);
   const starterPlan = {
     tierLabel: "STARTER",
     price: priceLabel,
     billing: "One-time · no subscription",
     tagline: "Test one market before committing to a pipeline.",
     cta: "Get started",
-    ctaHref: "/search",
+    ctaHref,
     features: [
       `${leadCount} scored dental practices`,
       "Priority tiers + numeric scores",
@@ -79,12 +59,6 @@ export function PricingSection({
       "CSV download, instant access",
     ],
   } as const;
-
-  const useStripeCheckout = enableCheckout;
-  const CtaTag = useStripeCheckout ? "button" : "a";
-  const ctaProps = useStripeCheckout
-    ? { type: "button" as const, onClick: startCheckout, disabled: loading }
-    : { href: starterPlan.ctaHref };
 
   return (
     <section id="pricing" className={hideIntro ? undefined : "dp-pricing-embed"}>
@@ -119,13 +93,9 @@ export function PricingSection({
             ))}
           </div>
 
-          <CtaTag {...ctaProps} className="dp-cta is-ghost">
-            {loading ? (
-              <Loader2 size={18} className="mx-auto animate-spin" aria-label="Loading" />
-            ) : (
-              `${starterPlan.cta} →`
-            )}
-          </CtaTag>
+          <Link href={starterPlan.ctaHref} className="dp-cta is-ghost">
+            {starterPlan.cta} →
+          </Link>
         </article>
       </div>
 

@@ -11,7 +11,12 @@ export const metadata: Metadata = {
     "Get 150 scored dental practice leads for $99 one-time. Instant CSV download. Built for agencies and freelancers.",
 };
 
-export default function PricingPage() {
+type PricingPageProps = {
+  searchParams?: { searchId?: string };
+};
+
+export default function PricingPage({ searchParams }: PricingPageProps) {
+  const searchId = searchParams?.searchId ?? null;
   return (
     <div className="dentily-pricing">
       <SiteHeader homeStyle />
@@ -30,7 +35,7 @@ export default function PricingPage() {
         </p>
       </header>
 
-      <PricingSection hideIntro />
+      <PricingSection hideIntro searchId={searchId} />
 
       <PricingHowToUse />
 
