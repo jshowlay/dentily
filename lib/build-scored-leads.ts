@@ -1,8 +1,10 @@
 import { getPlaceDetails, MAX_RAW_RESULTS, searchBusinesses } from "@/lib/google-places";
 import { normalizePracticeDisplayName } from "@/lib/practice-name";
 import { dedupeLeads } from "@/lib/dedupe-leads";
+import { prepareLeadsForScoring } from "@/lib/lead-quality-filters";
 import { type DentistScoringBatchContext } from "@/lib/dentist-scoring";
-import { logSearchPrioritySummary, sortByPriorityThenScore } from "@/lib/lead-pack-export";
+import { logSearchPrioritySummary } from "@/lib/lead-pack-export";
+import { applyMultiLocationGroupRankAdjustments } from "@/lib/multi-location-group";
 import { scoreDentistLeadsBatched, scoreLead } from "@/lib/score-lead";
 import { logDentistScoringBatch } from "@/lib/scoring-log";
 import { getExistingPracticeIdsForUser } from "@/lib/subscription-db";
@@ -205,7 +207,12 @@ export async function buildScoredLeads(params: BuildScoredLeadsParams): Promise<
     }
   }
 
-  const dedupedForScoring = dedupeLeads(filteredLeads).slice(0, INTERMEDIATE_LEAD_CAP);
+  let dedupedForScoring = dedupeLeads(filteredLeads).slice(0, INTERMEDIATE_LEAD_CAP);
+  const beforeQuality = dedupedForScoring.length;
+  dedupedForScoring = prepareLeadsForScoring(dedupedForScoring);
+  console.log(
+    `[build-scored-leads] searchId=${searchId} leadQualityFilter removed=${beforeQuality - dedupedForScoring.length}`
+  );
 
   const dentistBatch: DentistScoringBatchContext | undefined =
     nicheConfig.id === "dentists"
@@ -271,5 +278,5 @@ export async function buildScoredLeads(params: BuildScoredLeadsParams): Promise<
     logDentistScoringBatch(dentistScoringLog);
   }
 
-  return sortByPriorityThenScore(scoredLeadsRaw);
+  return applyMultiLocationGroupRankAdjustments(scoredLeadsRaw);
 }

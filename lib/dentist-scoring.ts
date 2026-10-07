@@ -1,4 +1,5 @@
 import type { Lead } from "@/lib/types";
+import { MIN_REVIEWS_FOR_RATING_SIGNALS } from "@/lib/lead-quality-filters";
 import {
   PRIORITY_SCORE_HIGH_MIN,
   PRIORITY_SCORE_MEDIUM_MIN,
@@ -104,7 +105,8 @@ function fitSignal(lead: Lead): number {
   let s = 52;
   const r = lead.rating;
   const rc = lead.reviewCount ?? 0;
-  if (r !== null && r !== undefined) {
+  const ratingCounts = rc >= MIN_REVIEWS_FOR_RATING_SIGNALS;
+  if (r !== null && r !== undefined && ratingCounts) {
     if (r < 4.0) s += 28;
     else if (r < 4.3) s += 22;
     else if (r <= 4.6) s += 12;
@@ -117,6 +119,9 @@ function fitSignal(lead: Lead): number {
     s -= 12;
   }
   if (!lead.website?.trim()) s += 10;
+  if (!ratingCounts && rc > 0 && rc < MIN_REVIEWS_FOR_RATING_SIGNALS) {
+    s -= 8;
+  }
   return Math.max(0, Math.min(100, s));
 }
 
@@ -131,8 +136,9 @@ function opportunitySignal(lead: Lead): number {
   const rN = r !== null && Number.isFinite(Number(r)) ? Number(r) : null;
 
   if (!lead.website?.trim()) s += 22;
-  if (rN !== null && rN < 4.3) s += 24;
-  else if (rN !== null && rN < 4.6) s += 12;
+  const ratingCounts = (rcN ?? 0) >= MIN_REVIEWS_FOR_RATING_SIGNALS;
+  if (ratingCounts && rN !== null && rN < 4.3) s += 24;
+  else if (ratingCounts && rN !== null && rN < 4.6) s += 12;
 
   if (rcN !== null) {
     if (rcN < 25) s += 18;
@@ -194,7 +200,14 @@ export function computeExportReasonLine(lead: Lead, opts?: { clusterDemoted?: bo
   if (!lead.website?.trim()) parts.push("No standalone website on file.");
   const r = lead.rating;
   const rc = lead.reviewCount;
-  if (r !== null && r !== undefined && r < 4.3) parts.push(`Public rating ${r} is a visible bottleneck.`);
+  if (
+    r !== null &&
+    r !== undefined &&
+    r < 4.3 &&
+    (lead.reviewCount ?? 0) >= MIN_REVIEWS_FOR_RATING_SIGNALS
+  ) {
+    parts.push(`Public rating ${r} is a visible bottleneck.`);
+  }
   if (rc !== null && rc !== undefined && rc < 30) parts.push("Review count is still thin versus nearby peers.");
   if (rc !== null && rc !== undefined && rc >= REVIEW_SATURATION && (r ?? 0) >= 4.8) {
     parts.push("Very high review volume. Growth cold outreach is a poor fit. Use hiring or referral angle only.");

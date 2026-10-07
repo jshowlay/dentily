@@ -304,7 +304,7 @@ function capWords(s: string, maxWords: number): string {
   return `${w.slice(0, maxWords).join(" ")}.`;
 }
 
-function computeWhyThisLead(r: PipelineRow): string {
+export function computeWhyThisLead(r: PipelineRow): string {
   const key = opportunityTypeKey(r.opportunity_type);
   const dsoSuffix = r.ownership === "Likely DSO" ? ` ${DSO_WHY_THIS_LEAD_SUFFIX}` : "";
   const ratingStr =

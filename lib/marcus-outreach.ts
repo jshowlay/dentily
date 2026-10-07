@@ -1,3 +1,4 @@
+import { MIN_REVIEWS_FOR_RATING_SIGNALS } from "@/lib/lead-quality-filters";
 import { MARCUS_PERSONA, REPUTATION_GAP_RATING_BELOW, REVIEW_SATURATION } from "@/lib/lead-pipeline-config";
 import {
   MARCUS_OUTREACH_CTA,
@@ -34,7 +35,12 @@ export function classifyOutreachArchetype(lead: Pick<Lead, "rating" | "reviewCou
   if (rating !== null && reviews !== null && reviews >= REVIEW_SATURATION && rating >= 4.8) {
     return "high_volume_saturation";
   }
-  if (rating !== null && rating < REPUTATION_GAP_RATING_BELOW) {
+  if (
+    rating !== null &&
+    reviews !== null &&
+    reviews >= MIN_REVIEWS_FOR_RATING_SIGNALS &&
+    rating < REPUTATION_GAP_RATING_BELOW
+  ) {
     return "reputation_gap";
   }
   if (reviews !== null && reviews < 100) {
