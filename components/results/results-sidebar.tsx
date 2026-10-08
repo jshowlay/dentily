@@ -12,6 +12,7 @@ type Props = {
   averageScore: number | null;
   canExport: boolean;
   isPaid: boolean;
+  hasBuyerAccess: boolean;
   exportCsvHref: string | null;
 };
 
@@ -25,6 +26,7 @@ export function ResultsSidebar({
   averageScore,
   canExport,
   isPaid,
+  hasBuyerAccess,
   exportCsvHref,
 }: Props) {
   const statusLabel = status.replace(/_/g, " ");
@@ -63,10 +65,14 @@ export function ResultsSidebar({
         </div>
       </div>
 
-      {canExport && isPaid && exportCsvHref ? (
+      {canExport && isPaid && hasBuyerAccess && exportCsvHref ? (
         <a href={exportCsvHref} download className="dr-download-cta">
           Download CSV
         </a>
+      ) : canExport && isPaid && !hasBuyerAccess ? (
+        <p className="dr-unlock-billing text-sm">
+          Full contacts and CSV download require the secure link from your payment confirmation or delivery email.
+        </p>
       ) : canExport && isPaid && !exportCsvHref ? (
         <p className="dr-unlock-billing text-sm">
           Download CSV from your payment confirmation or delivery email (link includes your secure session).

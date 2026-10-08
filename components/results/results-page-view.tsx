@@ -38,6 +38,8 @@ export type ResultsPageViewProps = {
   averageScore: number | null;
   canExport: boolean;
   isPaid: boolean;
+  /** Paid + buyer proof (or pre-purchase browse). When false on a paid search, contacts stay in preview mode. */
+  hasBuyerAccess: boolean;
   /** Set when URL includes session_id or token from checkout; null hides unsigned export links. */
   exportCsvHref: string | null;
   leads: Lead[];
@@ -71,6 +73,7 @@ export function ResultsPageView(props: ResultsPageViewProps) {
     averageScore,
     canExport,
     isPaid,
+    hasBuyerAccess,
     exportCsvHref,
     leads,
   } = props;
@@ -120,10 +123,12 @@ export function ResultsPageView(props: ResultsPageViewProps) {
               nativeButton
               className="dr-nav-cta"
             />
-          ) : canExport && isPaid && exportCsvHref ? (
+          ) : canExport && isPaid && hasBuyerAccess && exportCsvHref ? (
             <a href={exportCsvHref} download className="dr-nav-cta">
               Download CSV
             </a>
+          ) : canExport && isPaid && !hasBuyerAccess ? (
+            <span className="dr-nav-link text-sm">Unlock link from payment email</span>
           ) : canExport && isPaid && !exportCsvHref ? (
             <span className="dr-nav-link text-sm">CSV via payment confirmation link</span>
           ) : null}
@@ -169,6 +174,12 @@ export function ResultsPageView(props: ResultsPageViewProps) {
 
           {!isPaid && leads.length > 0 && canExport ? (
             <PreviewEmailCapture searchId={searchId} market={location} />
+          ) : null}
+          {isPaid && !hasBuyerAccess && canExport ? (
+            <div className="dr-alert" role="status">
+              This pack is paid. Open the link from your payment confirmation or delivery email (it includes a secure{" "}
+              <code className="text-xs">session_id</code>) to view full contacts and download the CSV here.
+            </div>
           ) : null}
 
           {leads.length === 0 ? (
@@ -392,6 +403,7 @@ export function ResultsPageView(props: ResultsPageViewProps) {
           averageScore={averageScore}
           canExport={canExport}
           isPaid={isPaid}
+          hasBuyerAccess={hasBuyerAccess}
           exportCsvHref={exportCsvHref}
         />
       </div>

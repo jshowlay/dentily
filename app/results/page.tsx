@@ -5,7 +5,12 @@ import { ResultsPageView } from "@/components/results/results-page-view";
 import { ServerDbError } from "@/components/server-db-error";
 import { sanitizeLeadsForClient } from "@/lib/client-leads";
 import { getSearchWithLeads, isDatabaseConfigured } from "@/lib/db";
+import { verifyPackAccessForResultsPage } from "@/lib/pack-export-access";
 import { buildPackExportHref, hasPackExportAuthQuery } from "@/lib/pack-export-url";
+import {
+  canViewFullLeadPackOnResults,
+  redactLeadsForPublicPreview,
+} from "@/lib/results-lead-preview";
 import { getNicheConfig } from "@/lib/niches";
 import { canExportLeadPack } from "@/lib/search-status";
 
@@ -88,6 +93,11 @@ export default async function ResultsPage({
         ? Math.round(scoredLeads.reduce((sum, lead) => sum + Number(lead.score), 0) / scoredLeads.length)
         : null;
     const canExport = canExportLeadPack(parsed.status, parsed.leads.length);
+    const packAccess = await verifyPackAccessForResultsPage(parsed.id, {
+      sessionId: checkoutSessionId,
+      token: packDownloadToken,
+    });
+    const hasBuyerAccess = canViewFullLeadPackOnResults(parsed.isPaid, packAccess);
     const exportCsvHref =
       parsed.isPaid && hasPackExportAuthQuery({ sessionId: checkoutSessionId, token: packDownloadToken })
         ? buildPackExportHref(parsed.id, {
@@ -95,13 +105,18 @@ export default async function ResultsPage({
             token: packDownloadToken,
           })
         : null;
+    const leadsForClient = hasBuyerAccess
+      ? parsed.leads
+      : redactLeadsForPublicPreview(parsed.leads);
     const highPriorityCount = parsed.leads.filter((l) => (l.priority ?? "").toLowerCase() === "high").length;
     // Kick off the background website + Hunter enrichment pass while results are shown.
     const hasPendingEnrichment = parsed.leads.some((l) => l.emailStatus === "pending");
 
     return (
       <>
-        {hasPendingEnrichment ? <DeferredEnrichment searchId={parsed.id} /> : null}
+        {hasPendingEnrichment && hasBuyerAccess ? (
+          <DeferredEnrichment searchId={parsed.id} />
+        ) : null}
         <ResultsPageView
           searchId={parsed.id}
           nicheLabel={nicheLabel}
@@ -113,8 +128,9 @@ export default async function ResultsPage({
           averageScore={averageScore}
           canExport={canExport}
           isPaid={parsed.isPaid}
+          hasBuyerAccess={hasBuyerAccess}
           exportCsvHref={exportCsvHref}
-          leads={sanitizeLeadsForClient(parsed.leads)}
+          leads={sanitizeLeadsForClient(leadsForClient)}
         />
       </>
     );

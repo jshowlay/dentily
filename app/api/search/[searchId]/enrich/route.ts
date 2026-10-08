@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import {
@@ -5,6 +6,8 @@ import {
   markPendingLeadsEnrichmentSkipped,
   updateLeadsEnrichmentForSearch,
 } from "@/lib/db";
+import { verifyPackExportAccess } from "@/lib/pack-export-access";
+import { canViewFullLeadPackOnResults } from "@/lib/results-lead-preview";
 import { ensureDentistPackChainFinalized } from "@/lib/ensure-pack-chain-finalized";
 import { batchEnrichLeads, runDeepEnrichment, runHunterFallback } from "@/lib/email-enrichment";
 import { backgroundEnrichmentOverrides, isEmailEnrichmentDisabled } from "@/lib/email-enrichment-config";
@@ -33,7 +36,7 @@ function parseCityState(location: string): { city: string; state: string } {
 }
 
 export async function POST(
-  _request: Request,
+  request: Request,
   context: { params: { searchId: string } | Promise<{ searchId: string }> }
 ) {
   try {
@@ -53,6 +56,20 @@ export async function POST(
     const search = await getSearchWithLeads(searchId);
     if (!search) {
       return NextResponse.json({ error: { message: "Search not found." } }, { status: 404 });
+    }
+
+    if (search.isPaid) {
+      const access = await verifyPackExportAccess({
+        searchId,
+        request,
+        cookies: await cookies(),
+      });
+      if (!canViewFullLeadPackOnResults(search.isPaid, access)) {
+        return NextResponse.json(
+          { error: { message: "Unauthorized to enrich a paid pack without buyer proof." } },
+          { status: 403 }
+        );
+      }
     }
 
     const pendingAll = search.leads.filter((l) => l.emailStatus === "pending");

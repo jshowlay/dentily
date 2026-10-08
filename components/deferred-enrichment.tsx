@@ -15,7 +15,14 @@ export function DeferredEnrichment({ searchId }: { searchId: number }) {
     if (ran.current) return;
     ran.current = true;
 
-    const url = `${window.location.origin}/api/search/${searchId}/enrich`;
+    const pageParams = new URLSearchParams(window.location.search);
+    const authParams = new URLSearchParams();
+    const sessionId = pageParams.get("session_id")?.trim();
+    const token = pageParams.get("token")?.trim();
+    if (sessionId) authParams.set("session_id", sessionId);
+    if (token) authParams.set("token", token);
+    const qs = authParams.toString();
+    const url = `${window.location.origin}/api/search/${searchId}/enrich${qs ? `?${qs}` : ""}`;
     fetch(url, { method: "POST", credentials: "same-origin" })
       .then((res) => {
         if (res.ok) router.refresh();

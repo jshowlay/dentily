@@ -1,3 +1,4 @@
+import { cookies, headers } from "next/headers";
 import type Stripe from "stripe";
 import { readAdminAuthorized, type CookieReader } from "@/lib/admin-sample-auth";
 import { auth } from "@/lib/auth";
@@ -66,4 +67,31 @@ export async function verifyPackExportAccess(input: PackExportAccessInput): Prom
     allowed: false,
     message: "Unauthorized. Use the download link from your payment confirmation or sign in if this pack is on your account.",
   };
+}
+
+/** Build a Request whose query string carries session_id / token (for server components). */
+export async function packAccessRequestFromPageQuery(
+  searchId: number,
+  query: { sessionId?: string | null; token?: string | null }
+): Promise<Request> {
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost";
+  const proto = h.get("x-forwarded-proto") ?? "http";
+  const params = new URLSearchParams({ searchId: String(searchId) });
+  const sessionId = query.sessionId?.trim();
+  const token = query.token?.trim();
+  if (sessionId) params.set("session_id", sessionId);
+  if (token) params.set("token", token);
+  return new Request(`${proto}://${host}/results?${params.toString()}`);
+}
+
+export async function verifyPackAccessForResultsPage(
+  searchId: number,
+  query: { sessionId?: string | null; token?: string | null }
+): Promise<PackExportAccessResult> {
+  return verifyPackExportAccess({
+    searchId,
+    request: await packAccessRequestFromPageQuery(searchId, query),
+    cookies: await cookies(),
+  });
 }
