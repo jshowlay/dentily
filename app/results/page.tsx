@@ -114,7 +114,7 @@ export default async function ResultsPage({
 
     return (
       <>
-        {hasPendingEnrichment && hasBuyerAccess ? (
+        {hasPendingEnrichment && (!parsed.isPaid || hasBuyerAccess) ? (
           <DeferredEnrichment searchId={parsed.id} />
         ) : null}
         <ResultsPageView

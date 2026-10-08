@@ -7,7 +7,7 @@ function outreachPreviewExcerpt(outreach: string | null | undefined, max = 220):
   return text.length > max ? `${text.slice(0, max)}…` : text;
 }
 
-/** Hide contact paths and full outreach until the buyer proves purchase (or pack is not paid yet). */
+/** Hide contact paths and full outreach until checkout + buyer proof (admin bypass on server). */
 export function redactLeadsForPublicPreview(leads: Lead[]): Lead[] {
   return leads.map((lead) => ({
     ...lead,
@@ -21,15 +21,14 @@ export function redactLeadsForPublicPreview(leads: Lead[]): Lead[] {
 }
 
 /**
- * Full lead detail on /results when the search is paid and the viewer has buyer proof,
- * or the search is still pre-purchase (same preview the runner sees before checkout).
- * Admin always sees full rows for support.
+ * Full lead detail on /results only when the pack is paid and the viewer has buyer proof.
+ * Unpaid and paid-without-proof get {@link redactLeadsForPublicPreview}. Admin sees all.
  */
 export function canViewFullLeadPackOnResults(
   isPaid: boolean,
   access: PackExportAccessResult
 ): boolean {
   if (access.allowed && access.via === "admin") return true;
-  if (!isPaid) return true;
+  if (!isPaid) return false;
   return access.allowed;
 }

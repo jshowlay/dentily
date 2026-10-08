@@ -23,8 +23,9 @@ describe("results lead preview", () => {
     expect(row.outreach!.length).toBeLessThan(sampleLead.outreach!.length);
   });
 
-  it("requires buyer proof when search is paid", () => {
-    expect(canViewFullLeadPackOnResults(false, { allowed: false, message: "n" })).toBe(true);
+  it("requires payment and buyer proof for full detail", () => {
+    expect(canViewFullLeadPackOnResults(false, { allowed: false, message: "n" })).toBe(false);
+    expect(canViewFullLeadPackOnResults(false, { allowed: true, via: "session" })).toBe(false);
     expect(canViewFullLeadPackOnResults(true, { allowed: false, message: "n" })).toBe(false);
     expect(
       canViewFullLeadPackOnResults(true, { allowed: true, via: "session" })

@@ -11,6 +11,7 @@ import {
   markSearchPaidForUser,
 } from "@/lib/subscription-db";
 import { PUBLIC_SEARCH_MAX_DURATION_SEC } from "@/lib/public-search-runtime-config";
+import { redactLeadsForPublicPreview } from "@/lib/results-lead-preview";
 import { PENDING_ENRICHMENT } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -150,14 +151,16 @@ export async function POST(request: Request) {
         `[api/search] searchId=${searchId} total ms=${totalMs} limitSec=${PUBLIC_SEARCH_MAX_DURATION_SEC} headroomMs=${PUBLIC_SEARCH_MAX_DURATION_SEC * 1000 - totalMs}`
       );
 
+      const isPaidOut = Boolean(subscriptionUserId) || Boolean(savedSearch?.isPaid);
+      const rawLeads = savedSearch?.leads ?? [];
       return NextResponse.json({
         searchId,
         niche,
         location,
         status: "completed",
         resultCount: inserted,
-        leads: savedSearch?.leads ?? [],
-        isPaid: Boolean(subscriptionUserId) || savedSearch?.isPaid,
+        leads: isPaidOut && subscriptionUserId ? rawLeads : redactLeadsForPublicPreview(rawLeads),
+        isPaid: isPaidOut,
       });
     } catch (innerError) {
       console.error("[api/search] processing failed:", innerError);
