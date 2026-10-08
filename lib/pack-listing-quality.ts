@@ -1,8 +1,13 @@
 import {
+  discoverMultiLocationBrandKeys,
   isKnownMultiLocationChainListing,
   leadMatchesMultiLocationBrandKey,
   normalizeChainBrandKey,
 } from "@/lib/admin-sample-chain-probe";
+import {
+  PUBLIC_SEARCH_CHAIN_PROBE_MAX,
+  PUBLIC_SEARCH_CHAIN_PROBE_TOP_SCORED,
+} from "@/lib/public-search-runtime-config";
 import { isGenericKeywordPracticeName } from "@/lib/admin-sample-eligibility";
 import {
   isExcludedCommunityClinic,
@@ -28,6 +33,10 @@ import { registrableHostFromUrl } from "@/lib/url-normalize";
 import type { Lead } from "@/lib/types";
 
 export const PACK_LISTING_LABEL_METADATA_KEY = "packListingLabel";
+
+/** Set on `searches.metadata` after deferred Places chain probe + pack re-rank. */
+export const SEARCH_PACK_CHAIN_FINALIZED_AT_KEY = "packChainProbeFinalizedAt";
+export const SEARCH_PACK_CHAIN_KEY_COUNT_KEY = "packChainProbeKeyCount";
 
 export const PACK_LISTING_LABELS = {
   provider: "Provider listing",
@@ -166,6 +175,36 @@ export function applyPackListingQualityRankAdjustments(
 
 export function marketCityFromSearchLocation(location: string): string {
   return location.split(",")[0]?.trim() || location.trim();
+}
+
+/** In-pack heuristics only (no Places chain probes) — used on the blocking search request. */
+export function applyInitialDentistPackListingRank(leads: Lead[], location: string): Lead[] {
+  const marketCity = marketCityFromSearchLocation(location);
+  return applyPackListingQualityRankAdjustments(leads, marketCity, { chainBrandKeys: new Set() });
+}
+
+/**
+ * Places chain probes + full pack labels — run during background enrich so
+ * POST /api/search returns sooner.
+ */
+export async function finalizeDentistPackListingWithChainProbe(
+  leads: Lead[],
+  location: string
+): Promise<{ leads: Lead[]; chainProbeMs: number; chainKeyCount: number }> {
+  const marketCity = marketCityFromSearchLocation(location);
+  const tChain = Date.now();
+  let chainBrandKeys = new Set<string>();
+  try {
+    chainBrandKeys = await discoverMultiLocationBrandKeys(leads, location, {
+      maxProbes: PUBLIC_SEARCH_CHAIN_PROBE_MAX,
+      probeFromTopScored: PUBLIC_SEARCH_CHAIN_PROBE_TOP_SCORED,
+    });
+  } catch (e) {
+    console.warn("[pack-listing-quality] chain probe failed", e);
+  }
+  const chainProbeMs = Date.now() - tChain;
+  const ranked = applyPackListingQualityRankAdjustments(leads, marketCity, { chainBrandKeys });
+  return { leads: ranked, chainProbeMs, chainKeyCount: chainBrandKeys.size };
 }
 
 /** For expensive evidence: prefer independent listings by prelim score. */

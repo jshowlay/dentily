@@ -2,18 +2,13 @@ import { getPlaceDetails, MAX_RAW_RESULTS, searchBusinesses } from "@/lib/google
 import { normalizePracticeDisplayName } from "@/lib/practice-name";
 import { dedupeLeads } from "@/lib/dedupe-leads";
 import { applyColocatedPracticeWebsites } from "@/lib/lead-quality-filters";
-import { discoverMultiLocationBrandKeys } from "@/lib/admin-sample-chain-probe";
 import {
-  applyPackListingQualityRankAdjustments,
+  applyInitialDentistPackListingRank,
   buildPackListingContext,
   marketCityFromSearchLocation,
   selectIndependentPlaceIdsForExpensiveEvidence,
 } from "@/lib/pack-listing-quality";
-import {
-  PUBLIC_SEARCH_CHAIN_PROBE_MAX,
-  PUBLIC_SEARCH_CHAIN_PROBE_TOP_SCORED,
-  PUBLIC_SEARCH_EVIDENCE_INDEPENDENT_LIMIT,
-} from "@/lib/public-search-runtime-config";
+import { PUBLIC_SEARCH_EVIDENCE_INDEPENDENT_LIMIT } from "@/lib/public-search-runtime-config";
 import { type DentistScoringBatchContext } from "@/lib/dentist-scoring";
 import {
   attachScoringEvidenceToDentistLeads,
@@ -336,26 +331,10 @@ export async function buildScoredLeads(params: BuildScoredLeadsParams): Promise<
     return scoredLeadsRaw;
   }
 
-  let chainBrandKeys = new Set<string>();
-  const tChain = Date.now();
-  try {
-    chainBrandKeys = await discoverMultiLocationBrandKeys(scoredLeadsRaw, location, {
-      maxProbes: PUBLIC_SEARCH_CHAIN_PROBE_MAX,
-      probeFromTopScored: PUBLIC_SEARCH_CHAIN_PROBE_TOP_SCORED,
-    });
-  } catch (e) {
-    console.warn("[build-scored-leads] chain probe skipped", e);
-  }
-  console.log(
-    `[build-scored-leads] searchId=${searchId} chainProbe ms=${Date.now() - tChain} keys=${chainBrandKeys.size}`
-  );
-
   const tPackQuality = Date.now();
-  const ranked = applyPackListingQualityRankAdjustments(scoredLeadsRaw, marketCity, {
-    chainBrandKeys,
-  });
+  const ranked = applyInitialDentistPackListingRank(scoredLeadsRaw, location);
   console.log(
-    `[build-scored-leads] searchId=${searchId} packQuality ms=${Date.now() - tPackQuality} total ms=${Date.now() - tPipeline}`
+    `[build-scored-leads] searchId=${searchId} packQuality (in-pack only, chain probe deferred) ms=${Date.now() - tPackQuality} total ms=${Date.now() - tPipeline}`
   );
   return ranked;
 }

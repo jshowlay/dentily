@@ -186,6 +186,9 @@ export async function ensureSchema() {
     await client.query(`ALTER TABLE searches ADD COLUMN IF NOT EXISTS is_paid BOOLEAN DEFAULT false;`);
     await client.query(`ALTER TABLE searches ADD COLUMN IF NOT EXISTS csv_url TEXT;`);
     await client.query(`ALTER TABLE searches ADD COLUMN IF NOT EXISTS csv_path TEXT;`);
+    await client.query(
+      `ALTER TABLE searches ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}'::jsonb;`
+    );
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS payments (
@@ -492,6 +495,49 @@ export async function updateLeadsEnrichmentForSearch(searchId: number, leads: Le
   }
 }
 
+async function writeLeadPackQualityBatch(searchId: number, leads: Lead[]): Promise<void> {
+  const client = await getPool().connect();
+  try {
+    await client.query("BEGIN");
+    for (const lead of leads) {
+      await client.query(
+        `UPDATE leads SET score = $1, priority = $2, metadata = $3
+         WHERE search_id = $4 AND place_id = $5`,
+        [
+          lead.score ?? null,
+          lead.priority ?? null,
+          lead.metadata ?? {},
+          searchId,
+          lead.placeId,
+        ]
+      );
+    }
+    await client.query("COMMIT");
+  } catch (error) {
+    try {
+      await client.query("ROLLBACK");
+    } catch {
+      /* ignore */
+    }
+    throw error;
+  } finally {
+    safeReleaseClient(client);
+  }
+}
+
+/** Persist deferred chain-probe demotion (score, priority, listing labels in metadata). */
+export async function updateLeadsPackQualityForSearch(searchId: number, leads: Lead[]): Promise<void> {
+  if (leads.length === 0) return;
+  try {
+    await writeLeadPackQualityBatch(searchId, leads);
+  } catch (error) {
+    if (!isTransientConnectionError(error)) throw error;
+    console.warn("[db] pack quality write hit a transient connection error; retrying once");
+    await new Promise((r) => setTimeout(r, 500));
+    await writeLeadPackQualityBatch(searchId, leads);
+  }
+}
+
 /** When enrichment is disabled, clear pending so exports are not stuck in "pending". */
 export async function markPendingLeadsEnrichmentSkipped(
   searchId: number,
@@ -520,6 +566,35 @@ export async function markPendingLeadsEnrichmentSkipped(
       /* ignore */
     }
     throw error;
+  } finally {
+    safeReleaseClient(client);
+  }
+}
+
+export async function getSearchMetadata(searchId: number): Promise<Record<string, unknown>> {
+  await ensureSchema();
+  const client = await getPool().connect();
+  try {
+    const res = await client.query(`SELECT metadata FROM searches WHERE id = $1`, [searchId]);
+    const row = res.rows[0];
+    if (!row) return {};
+    return (row.metadata ?? {}) as Record<string, unknown>;
+  } finally {
+    safeReleaseClient(client);
+  }
+}
+
+export async function mergeSearchMetadata(
+  searchId: number,
+  patch: Record<string, unknown>
+): Promise<void> {
+  await ensureSchema();
+  const client = await getPool().connect();
+  try {
+    await client.query(
+      `UPDATE searches SET metadata = COALESCE(metadata, '{}'::jsonb) || $1::jsonb WHERE id = $2`,
+      [JSON.stringify(patch), searchId]
+    );
   } finally {
     safeReleaseClient(client);
   }

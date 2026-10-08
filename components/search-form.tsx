@@ -1,10 +1,12 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { SearchSubmitProgress } from "@/components/search/search-submit-progress";
+import { useSearchSubmitProgress } from "@/hooks/useSearchSubmitProgress";
 import { capturePostHogEvent, parseMarketCityState, POSTHOG_EVENTS } from "@/lib/posthog-events";
 import { SITE } from "@/lib/site-config";
 import { cn } from "@/lib/utils";
@@ -46,16 +48,7 @@ export function SearchForm({
   }
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showLongWaitHint, setShowLongWaitHint] = useState(false);
-
-  useEffect(() => {
-    if (!loading) {
-      setShowLongWaitHint(false);
-      return;
-    }
-    const t = window.setTimeout(() => setShowLongWaitHint(true), 12_000);
-    return () => window.clearTimeout(t);
-  }, [loading]);
+  const progress = useSearchSubmitProgress(loading, location);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -210,9 +203,11 @@ export function SearchForm({
       )}
 
       {loading ? (
-        <p className={variant === "territory" ? "ds-form-hint" : "text-center text-xs leading-relaxed text-slate-500"}>
-          {showLongWaitHint ? SITE.searchSubmitWaitHint : "This step can take up to a minute on a full pack."}
-        </p>
+        <SearchSubmitProgress
+          steps={progress.steps}
+          activeIndex={progress.stepIndex}
+          variant={variant === "territory" ? "territory" : "default"}
+        />
       ) : null}
       {error ? <p className={variant === "territory" ? "ds-form-error" : "text-sm text-red-600"}>{error}</p> : null}
     </form>

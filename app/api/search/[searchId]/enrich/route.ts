@@ -5,6 +5,7 @@ import {
   markPendingLeadsEnrichmentSkipped,
   updateLeadsEnrichmentForSearch,
 } from "@/lib/db";
+import { ensureDentistPackChainFinalized } from "@/lib/ensure-pack-chain-finalized";
 import { batchEnrichLeads, runDeepEnrichment, runHunterFallback } from "@/lib/email-enrichment";
 import { backgroundEnrichmentOverrides, isEmailEnrichmentDisabled } from "@/lib/email-enrichment-config";
 import type { Lead } from "@/lib/types";
@@ -47,6 +48,8 @@ export async function POST(
     }
 
     const { searchId } = parsedParams.data;
+    await ensureDentistPackChainFinalized(searchId);
+
     const search = await getSearchWithLeads(searchId);
     if (!search) {
       return NextResponse.json({ error: { message: "Search not found." } }, { status: 404 });

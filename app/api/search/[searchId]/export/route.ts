@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { toSlugPart } from "@/lib/csv";
 import { getSearchForExport } from "@/lib/db";
+import { ensureDentistPackChainFinalized } from "@/lib/ensure-pack-chain-finalized";
 import {
   buildLeadPackCsv,
   buildLeadPackRowsFromExport,
@@ -28,6 +29,7 @@ export async function GET(
     }
 
     const { searchId } = parsedParams.data;
+    await ensureDentistPackChainFinalized(searchId);
     const { search, rows } = await getSearchForExport(searchId);
 
     if (!search) {

@@ -171,6 +171,61 @@
   opacity: 0.92;
 }
 
+.dentily-search .ds-search-progress {
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 0.5px solid var(--color-border);
+  background: var(--color-green-bg);
+}
+
+.dentily-search .ds-search-progress-title {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-green);
+}
+
+.dentily-search .ds-search-progress-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dentily-search .ds-search-progress-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--color-hint);
+}
+
+.dentily-search .ds-search-progress-step.is-active {
+  color: var(--color-ink);
+  font-weight: 600;
+}
+
+.dentily-search .ds-search-progress-step.is-done {
+  color: var(--color-muted);
+}
+
+.dentily-search .ds-search-progress-dot {
+  margin-top: 5px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.dentily-search .ds-search-progress-step.is-active .ds-search-progress-dot {
+  background: var(--color-green);
+  box-shadow: 0 0 0 3px rgba(46, 125, 82, 0.2);
+}
+
 .dentily-search .ds-submit:disabled {
   opacity: 0.65;
   cursor: not-allowed;

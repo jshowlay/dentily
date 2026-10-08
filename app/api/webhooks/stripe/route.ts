@@ -15,6 +15,8 @@ import { sendPackDeliveryEmail } from "@/lib/sendPackDeliveryEmail";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+/** Chain finalize + CSV attach can take ~25s on cold paths; stay under Pro limit. */
+export const maxDuration = 120;
 
 // Public route — no session auth. Stripe verifies via stripe-signature header below.
 // Endpoint URL in Stripe Dashboard must be https://www.dentily.co/api/webhooks/stripe
@@ -57,7 +59,11 @@ async function deliverPackEmail(session: Stripe.Checkout.Session): Promise<void>
 
     if (!csvPath && !csvUrl) {
       try {
+        const tCsv = Date.now();
         const built = await buildPackCsvAttachment(searchId);
+        console.log("[webhooks/stripe] buildPackCsvAttachment ms=", Date.now() - tCsv, {
+          searchId,
+        });
         if (built) {
           csvBuffer = built.buffer;
           csvFilename = built.filename;
