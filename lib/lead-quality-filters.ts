@@ -28,6 +28,7 @@ const UNIVERSITY_DENTAL =
 export function isExcludedCommunityClinic(lead: Pick<Lead, "name" | "primaryType">): boolean {
   const name = (lead.name ?? "").trim();
   if (!name) return false;
+  if (/\bterry\s+reilly\b/i.test(name)) return true;
   if (EXCLUDED_CLINIC_NAME.test(name)) return true;
   if (UNIVERSITY_DENTAL.test(name)) return true;
   const pt = (lead.primaryType ?? "").toLowerCase();

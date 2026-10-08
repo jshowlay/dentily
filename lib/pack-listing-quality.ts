@@ -1,6 +1,5 @@
 import {
   discoverMultiLocationBrandKeys,
-  isKnownMultiLocationChainListing,
   leadMatchesMultiLocationBrandKey,
   normalizeChainBrandKey,
 } from "@/lib/admin-sample-chain-probe";
@@ -9,6 +8,11 @@ import {
   PUBLIC_SEARCH_CHAIN_PROBE_TOP_SCORED,
 } from "@/lib/public-search-runtime-config";
 import { isGenericKeywordPracticeName } from "@/lib/admin-sample-eligibility";
+import {
+  DSO_BRAND_NAME_FRAGMENTS,
+  isCorporateDentalBrandDomain,
+  websiteIndicatesCorporateLocationsNetwork,
+} from "@/lib/dso-brands";
 import {
   isExcludedCommunityClinic,
   looksLikeEntityRegistrationName,
@@ -19,12 +23,6 @@ import {
   getLeadScoringEvidence,
   hasEvidenceBackedGap,
 } from "@/lib/lead-scoring-evidence";
-function priorityRank(priority: string | null | undefined): number {
-  const v = (priority ?? "").toLowerCase();
-  if (v === "high") return 3;
-  if (v === "medium") return 2;
-  return 1;
-}
 import {
   buildMultiLocationContext,
   isMultiLocationGroupLead,
@@ -33,7 +31,15 @@ import {
 import { registrableHostFromUrl } from "@/lib/url-normalize";
 import type { Lead } from "@/lib/types";
 
+function priorityRank(priority: string | null | undefined): number {
+  const v = (priority ?? "").toLowerCase();
+  if (v === "high") return 3;
+  if (v === "medium") return 2;
+  return 1;
+}
+
 export const PACK_LISTING_LABEL_METADATA_KEY = "packListingLabel";
+export const PACK_OFFICE_COUNT_METADATA_KEY = "packOfficeCount";
 
 /** Set on `searches.metadata` after deferred Places chain probe + pack re-rank. */
 export const SEARCH_PACK_CHAIN_FINALIZED_AT_KEY = "packChainProbeFinalizedAt";
@@ -42,13 +48,18 @@ export const SEARCH_PACK_CHAIN_KEY_COUNT_KEY = "packChainProbeKeyCount";
 export const PACK_LISTING_LABELS = {
   provider: "Provider listing",
   generic: "Generic listing",
-  chain: "Chain location",
+  corporateChain: "Corporate chain",
+  multiOffice: "Multi-office practice",
   community: "Community clinic",
+  /** Legacy label from earlier exports — treated as {@link PACK_LISTING_LABELS.corporateChain}. */
+  chain: "Chain location",
 } as const;
 
 export type PackListingLabel = (typeof PACK_LISTING_LABELS)[keyof typeof PACK_LISTING_LABELS];
 
 export const PACK_LISTING_SCORE_PENALTY = 22;
+
+const LOCAL_MULTI_OFFICE_MAX = 4;
 
 export type PackListingContext = {
   marketCity: string | null;
@@ -57,21 +68,41 @@ export type PackListingContext = {
   sharedDomainPlaceIds: Set<string>;
   sharedBrandPlaceIds: Set<string>;
   sharedChainBrandPlaceIds: Set<string>;
+  domainGroupSizeByPlaceId: Map<string, number>;
+  brandGroupSizeByPlaceId: Map<string, number>;
 };
+
+export function normalizeStoredPackListingLabel(
+  raw: string | null | undefined
+): PackListingLabel | null {
+  if (!raw?.trim()) return null;
+  if (raw === PACK_LISTING_LABELS.chain) return PACK_LISTING_LABELS.corporateChain;
+  return raw as PackListingLabel;
+}
 
 export function getPackListingLabelFromLead(
   lead: Pick<Lead, "metadata">
 ): PackListingLabel | null {
   const raw = lead.metadata?.[PACK_LISTING_LABEL_METADATA_KEY];
-  if (typeof raw !== "string" || !raw.trim()) return null;
-  return raw as PackListingLabel;
+  return normalizeStoredPackListingLabel(typeof raw === "string" ? raw : null);
+}
+
+export function packListingLabelAppliesScorePenalty(label: PackListingLabel | null): boolean {
+  if (!label) return false;
+  if (label === PACK_LISTING_LABELS.multiOffice) return false;
+  return true;
 }
 
 export function isIndependentPackListing(lead: Pick<Lead, "metadata">): boolean {
-  return getPackListingLabelFromLead(lead) == null;
+  const label = getPackListingLabelFromLead(lead);
+  if (!label) return true;
+  return label === PACK_LISTING_LABELS.multiOffice;
 }
 
-function markSharedGroupPlaceIds(leads: Lead[], keyFn: (l: Lead) => string): Set<string> {
+function buildGroupSizeByPlaceId(leads: Lead[], keyFn: (l: Lead) => string): {
+  members: Set<string>;
+  sizeByPlaceId: Map<string, number>;
+} {
   const groups = new Map<string, Lead[]>();
   for (const lead of leads) {
     const key = keyFn(lead);
@@ -80,12 +111,20 @@ function markSharedGroupPlaceIds(leads: Lead[], keyFn: (l: Lead) => string): Set
     list.push(lead);
     groups.set(key, list);
   }
-  const out = new Set<string>();
+  const members = new Set<string>();
+  const sizeByPlaceId = new Map<string, number>();
   for (const list of Array.from(groups.values())) {
     if (list.length < 2) continue;
-    for (const l of list) out.add(l.placeId);
+    for (const l of list) {
+      members.add(l.placeId);
+      sizeByPlaceId.set(l.placeId, list.length);
+    }
   }
-  return out;
+  return { members, sizeByPlaceId };
+}
+
+function markSharedGroupPlaceIds(leads: Lead[], keyFn: (l: Lead) => string): Set<string> {
+  return buildGroupSizeByPlaceId(leads, keyFn).members;
 }
 
 function marketCitySlug(marketCity: string | null | undefined): string {
@@ -112,13 +151,117 @@ export function websiteDomainMentionsMarketCity(
   return parts.some((p) => host.includes(p));
 }
 
-function looksLikeNationalBrandChainLocation(lead: Lead, ctx: PackListingContext): boolean {
-  if (websiteDomainMentionsMarketCity(lead.website, ctx.marketCity)) return false;
+function packOfficeCountFromLead(lead: Lead): number | null {
+  const raw = lead.metadata?.[PACK_OFFICE_COUNT_METADATA_KEY];
+  if (typeof raw === "number" && Number.isFinite(raw) && raw >= 2) return Math.trunc(raw);
+  return null;
+}
+
+function groupSizeForLead(
+  lead: Lead,
+  ctx: PackListingContext,
+  kind: "domain" | "brand"
+): number {
+  const map = kind === "domain" ? ctx.domainGroupSizeByPlaceId : ctx.brandGroupSizeByPlaceId;
+  return map.get(lead.placeId) ?? 0;
+}
+
+function isLocalMarketLocationPage(
+  website: string | null | undefined,
+  marketCity: string | null | undefined
+): boolean {
+  const slug = marketCitySlug(marketCity);
+  if (!slug || !website?.trim()) return false;
+  try {
+    const u = new URL(/^https?:\/\//i.test(website) ? website : `https://${website}`);
+    const path = u.pathname.toLowerCase();
+    if (path.includes(slug)) return true;
+    const stateSlug = (marketCity ?? "").split(",")[1]?.trim().toLowerCase();
+    if (stateSlug && stateSlug.length === 2 && path.includes(stateSlug)) return true;
+  } catch {
+    return false;
+  }
+  return false;
+}
+
+function hasExplicitCorporateChainSignals(lead: Lead, ctx: PackListingContext): boolean {
+  const n = (lead.name ?? "").toLowerCase();
+  if (DSO_BRAND_NAME_FRAGMENTS.some((frag) => n.includes(frag))) return true;
+  const domain = registrableHostFromUrl(lead.website);
+  if (domain && isCorporateDentalBrandDomain(domain)) return true;
+  if (websiteIndicatesCorporateLocationsNetwork(lead.website)) {
+    if (isLocalMarketLocationPage(lead.website, ctx.marketCity)) return false;
+    return true;
+  }
+  return false;
+}
+
+function isCorporateChainLead(lead: Lead, ctx: PackListingContext): boolean {
+  if (hasExplicitCorporateChainSignals(lead, ctx)) return true;
+
+  const domainSize = groupSizeForLead(lead, ctx, "domain");
+  if (
+    domainSize >= 5 &&
+    !websiteDomainMentionsMarketCity(lead.website, ctx.marketCity) &&
+    ctx.sharedDomainPlaceIds.has(lead.placeId)
+  ) {
+    return true;
+  }
+
+  if (
+    leadMatchesMultiLocationBrandKey(lead, ctx.chainBrandKeys) &&
+    hasExplicitCorporateChainSignals(lead, ctx)
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+function isLocalMultiOfficeLead(lead: Lead, ctx: PackListingContext): boolean {
+  if (isCorporateChainLead(lead, ctx)) return false;
+
+  const officeCount = packOfficeCountFromLead(lead);
+  if (officeCount != null && officeCount >= 2 && officeCount <= LOCAL_MULTI_OFFICE_MAX) {
+    return true;
+  }
+
+  const brandSize = groupSizeForLead(lead, ctx, "brand");
+  const domainSize = groupSizeForLead(lead, ctx, "domain");
+
+  if (
+    brandSize >= 2 &&
+    brandSize <= LOCAL_MULTI_OFFICE_MAX &&
+    ctx.sharedBrandPlaceIds.has(lead.placeId)
+  ) {
+    return true;
+  }
+
+  if (
+    domainSize >= 2 &&
+    domainSize <= LOCAL_MULTI_OFFICE_MAX &&
+    ctx.sharedDomainPlaceIds.has(lead.placeId)
+  ) {
+    const domain = registrableHostFromUrl(lead.website);
+    if (domain && isCorporateDentalBrandDomain(domain)) return false;
+    if (websiteIndicatesCorporateLocationsNetwork(lead.website)) {
+      if (isLocalMarketLocationPage(lead.website, ctx.marketCity)) return true;
+      return false;
+    }
+    return true;
+  }
+
   if (isMultiLocationGroupLead(lead, ctx.multiCtx)) return true;
-  if (ctx.sharedDomainPlaceIds.has(lead.placeId)) return true;
-  if (ctx.sharedBrandPlaceIds.has(lead.placeId)) return true;
-  if (ctx.sharedChainBrandPlaceIds.has(lead.placeId)) return true;
+
   if (leadMatchesMultiLocationBrandKey(lead, ctx.chainBrandKeys)) return true;
+
+  if (
+    websiteIndicatesCorporateLocationsNetwork(lead.website) &&
+    isLocalMarketLocationPage(lead.website, ctx.marketCity)
+  ) {
+    return true;
+  }
+
   return false;
 }
 
@@ -127,22 +270,23 @@ export function buildPackListingContext(
   marketCity?: string | null,
   chainBrandKeys: Set<string> = new Set()
 ): PackListingContext {
-  const sharedDomainPlaceIds = markSharedGroupPlaceIds(leads, (lead) => {
+  const domainGroups = buildGroupSizeByPlaceId(leads, (lead) => {
     const domain = registrableHostFromUrl(lead.website);
     return domain && domain.length >= 4 ? domain : "";
   });
-  const sharedBrandPlaceIds = markSharedGroupPlaceIds(leads, (lead) => normalizeBrandKey(lead.name));
-  const sharedChainBrandPlaceIds = markSharedGroupPlaceIds(leads, (lead) =>
-    normalizeChainBrandKey(lead.name)
-  );
+  const brandGroups = buildGroupSizeByPlaceId(leads, (lead) => normalizeBrandKey(lead.name));
 
   return {
     marketCity: marketCity ?? null,
     multiCtx: buildMultiLocationContext(leads),
     chainBrandKeys,
-    sharedDomainPlaceIds,
-    sharedBrandPlaceIds,
-    sharedChainBrandPlaceIds,
+    sharedDomainPlaceIds: domainGroups.members,
+    sharedBrandPlaceIds: brandGroups.members,
+    sharedChainBrandPlaceIds: markSharedGroupPlaceIds(leads, (lead) =>
+      normalizeChainBrandKey(lead.name)
+    ),
+    domainGroupSizeByPlaceId: domainGroups.sizeByPlaceId,
+    brandGroupSizeByPlaceId: brandGroups.sizeByPlaceId,
   };
 }
 
@@ -155,13 +299,8 @@ export function resolvePackListingLabel(
   if (looksLikeIndividualProviderName(lead.name)) return PACK_LISTING_LABELS.provider;
   if (looksLikeEntityRegistrationName(lead.name)) return PACK_LISTING_LABELS.generic;
   if (isGenericKeywordPracticeName(lead.name, ctx.marketCity)) return PACK_LISTING_LABELS.generic;
-  if (isMultiLocationGroupLead(lead, ctx.multiCtx)) return PACK_LISTING_LABELS.chain;
-  if (isKnownMultiLocationChainListing(lead)) return PACK_LISTING_LABELS.chain;
-  if (leadMatchesMultiLocationBrandKey(lead, ctx.chainBrandKeys)) return PACK_LISTING_LABELS.chain;
-  if (ctx.sharedDomainPlaceIds.has(lead.placeId)) return PACK_LISTING_LABELS.chain;
-  if (ctx.sharedBrandPlaceIds.has(lead.placeId)) return PACK_LISTING_LABELS.chain;
-  if (ctx.sharedChainBrandPlaceIds.has(lead.placeId)) return PACK_LISTING_LABELS.chain;
-  if (looksLikeNationalBrandChainLocation(lead, ctx)) return PACK_LISTING_LABELS.chain;
+  if (isCorporateChainLead(lead, ctx)) return PACK_LISTING_LABELS.corporateChain;
+  if (isLocalMultiOfficeLead(lead, ctx)) return PACK_LISTING_LABELS.multiOffice;
   return null;
 }
 
@@ -195,7 +334,10 @@ export function applyPackListingQualityRankAdjustments(
   const adjusted = leads.map((lead) => {
     const label = resolvePackListingLabel(lead, ctx);
     if (!label) return lead;
-    const score = Math.max(1, (lead.score ?? 50) - PACK_LISTING_SCORE_PENALTY);
+    const penalize = packListingLabelAppliesScorePenalty(label);
+    const score = penalize
+      ? Math.max(1, (lead.score ?? 50) - PACK_LISTING_SCORE_PENALTY)
+      : lead.score ?? 50;
     return {
       ...lead,
       score,
@@ -203,7 +345,12 @@ export function applyPackListingQualityRankAdjustments(
       metadata: {
         ...lead.metadata,
         [PACK_LISTING_LABEL_METADATA_KEY]: label,
-        multiLocationGroup: label === PACK_LISTING_LABELS.chain ? true : lead.metadata?.multiLocationGroup,
+        multiLocationGroup:
+          label === PACK_LISTING_LABELS.corporateChain ||
+          label === PACK_LISTING_LABELS.multiOffice ||
+          label === PACK_LISTING_LABELS.chain
+            ? true
+            : lead.metadata?.multiLocationGroup,
       },
     };
   });
@@ -258,7 +405,7 @@ export function selectIndependentPlaceIdsForExpensiveEvidence(
   const ids = new Set<string>();
   for (const { lead } of prelim) {
     if (ids.size >= limit) break;
-    if (resolvePackListingLabel(lead, ctx) != null) continue;
+    if (!isIndependentPackListing(lead)) continue;
     if (lead.placeId) ids.add(lead.placeId);
   }
   return ids;

@@ -128,6 +128,8 @@ export type ExportLeadRow = {
   phone: string | null;
   primary_email: string | null;
   other_emails?: string | null;
+  /** Additional office addresses after same-name collapse (export pipeline). */
+  other_locations?: string | null;
   contact_form_url: string | null;
   email_status: string | null;
   email_source: string | null;

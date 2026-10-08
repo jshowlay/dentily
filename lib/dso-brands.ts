@@ -18,6 +18,8 @@ export const DSO_GROUP_EMAIL_DOMAINS = new Set(
     "brightnow.com",
     "gentledental.com",
     "affordabledentures.com",
+    "smallsmiles.com",
+    "willamettedental.com",
   ].map((d) => d.toLowerCase())
 );
 
@@ -37,8 +39,33 @@ export const DSO_BRAND_NAME_FRAGMENTS = [
   "affordable dentures",
   "mydental",
   "access dental",
+  "small smiles",
+  "willamette dental",
 ] as const;
 
 /** Website path fragments that suggest a location page on a corporate site. */
 export const DSO_MULTI_LOCATION_PATH_RE =
   /\/(?:find-a-location|locations?|location\/|our-locations|office-locations)(?:\/|$)/i;
+
+/** Corporate network sites (locations subdomain or multi-location path). */
+export function websiteIndicatesCorporateLocationsNetwork(
+  website: string | null | undefined
+): boolean {
+  const site = (website ?? "").trim();
+  if (!site) return false;
+  if (DSO_MULTI_LOCATION_PATH_RE.test(site)) return true;
+  try {
+    const host = new URL(/^https?:\/\//i.test(site) ? site : `https://${site}`).hostname.toLowerCase();
+    if (host.startsWith("locations.")) return true;
+  } catch {
+    /* ignore */
+  }
+  return false;
+}
+
+export function isCorporateDentalBrandDomain(domain: string | null | undefined): boolean {
+  const d = (domain ?? "").trim().toLowerCase().replace(/^www\./, "");
+  if (!d) return false;
+  if (DSO_GROUP_EMAIL_DOMAINS.has(d)) return true;
+  return false;
+}

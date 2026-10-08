@@ -9,7 +9,7 @@ import {
   rejectOffDomainOrganizationEmail,
   sanitizeExportRowForEmailGate,
 } from "@/lib/lead-pack-export";
-import { dedupeExportLeadRows, type LeadPackDedupeMerge } from "@/lib/lead-pack-dedupe";
+import { collapseSamePracticeNameRows, dedupeExportLeadRows, type LeadPackDedupeMerge } from "@/lib/lead-pack-dedupe";
 import { marketCityFromSearchLocation } from "@/lib/pack-listing-quality";
 import { emailMailboxMatchesPracticeIdentity } from "@/lib/practice-email-gate";
 
@@ -31,7 +31,9 @@ async function main() {
 
   const marketCity = marketCityFromSearchLocation(search.location);
   const merges: LeadPackDedupeMerge[] = [];
-  const deduped = dedupeExportLeadRows(rows, { mergeLog: merges, marketCity });
+  let staged = dedupeExportLeadRows(rows, { mergeLog: merges, marketCity });
+  staged = collapseSamePracticeNameRows(staged, { mergeLog: merges, marketCity });
+  const deduped = staged;
 
   const perioRow = rows.find((r) => (r.name ?? "").includes("Periodontal Health Specialists"));
   if (perioRow) {
@@ -50,7 +52,7 @@ async function main() {
       console.log(`  • [${m.reason}] kept "${m.kept}" ← dropped "${m.dropped}"`);
     }
   }
-  console.log(`\nAfter dedupe: ${deduped.length} rows`);
+  console.log(`\nAfter dedupe + same-name collapse: ${deduped.length} rows`);
 
   const gated = deduped.map(sanitizeExportRowForEmailGate).map(rejectOffDomainOrganizationEmail);
   const rejectSamples: string[] = [];
@@ -75,6 +77,25 @@ async function main() {
   console.log(`  Valid primary emails: ${validEmails}`);
   console.log(`  Instruction rows: ${pack.filter((r) => isLeadPackInstructionRow(r)).length} (expect 0)`);
   console.log(`  email_status Found without primary: ${badFound.length} (expect 0)`);
+
+  const labelCounts = new Map<string, number>();
+  for (const r of pack) {
+    const lab = r.listing_label.trim() || "(none)";
+    labelCounts.set(lab, (labelCounts.get(lab) ?? 0) + 1);
+  }
+  console.log("\n--- Listing labels ---");
+  for (const [lab, n] of Array.from(labelCounts.entries()).sort((a, b) => b[1] - a[1])) {
+    console.log(`  ${lab}: ${n}`);
+  }
+
+  const watch = ["Small Smiles", "Tingey", "Rocky Mountain", "Terry Reilly", "Aspen"];
+  console.log("\n--- Watched practices ---");
+  for (const r of pack) {
+    if (!watch.some((w) => r.name.includes(w))) continue;
+    console.log(
+      `  • ${r.name} | ${r.listing_label || "(none)"} | other_locations=${r.other_locations ? "yes" : "—"}`
+    );
+  }
 
   console.log("\nDone.\n");
 }

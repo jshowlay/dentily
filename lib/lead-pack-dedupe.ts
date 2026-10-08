@@ -1,6 +1,8 @@
 import { looksLikeIndividualProviderName, normalizeAddressKey } from "@/lib/lead-quality-filters";
 import { practiceNameTokens } from "@/lib/practice-email-gate";
 import { parseCityFromAddress } from "@/lib/parse-city-from-address";
+import { PACK_OFFICE_COUNT_METADATA_KEY } from "@/lib/pack-listing-quality";
+import { normalizeBrandKey } from "@/lib/multi-location-group";
 import { normalizePracticeDisplayName } from "@/lib/practice-name";
 import type { ExportLeadRow } from "@/lib/types";
 
@@ -107,10 +109,14 @@ function shouldMergeByAddressSuiteAndName(a: ExportLeadRow, b: ExportLeadRow): b
 }
 
 export type LeadPackDedupeMerge = {
-  reason: "shared_phone" | "dba_name" | "address_suite_name";
+  reason: "shared_phone" | "dba_name" | "address_suite_name" | "same_practice_name";
   kept: string;
   dropped: string;
 };
+
+function practiceNameCollapseKey(name: string | null | undefined): string {
+  return normalizeBrandKey(name) || (name ?? "").trim().toLowerCase();
+}
 
 function rowQualityScore(row: ExportLeadRow): number {
   let s = Number(row.score ?? 0);
@@ -224,4 +230,78 @@ export function dedupeExportLeadRows(
     }
   }
   return list;
+}
+
+function joinUniqueAddresses(addresses: string[]): string {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const a of addresses) {
+    const t = a.trim();
+    if (!t) continue;
+    const k = t.toLowerCase();
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(t);
+  }
+  return out.join(" | ");
+}
+
+/**
+ * One row per practice brand; extra offices listed in {@link ExportLeadRow.other_locations}.
+ */
+export function collapseSamePracticeNameRows(
+  rows: ExportLeadRow[],
+  options?: { mergeLog?: LeadPackDedupeMerge[]; marketCity?: string | null }
+): ExportLeadRow[] {
+  const mergeLog = options?.mergeLog;
+  const marketCity = options?.marketCity ?? null;
+  const byKey = new Map<string, ExportLeadRow[]>();
+  const solo: ExportLeadRow[] = [];
+
+  for (const row of rows) {
+    const key = practiceNameCollapseKey(row.name);
+    if (key.length < 3) {
+      solo.push(row);
+      continue;
+    }
+    const list = byKey.get(key) ?? [];
+    list.push(row);
+    byKey.set(key, list);
+  }
+
+  const out: ExportLeadRow[] = [...solo];
+  for (const list of Array.from(byKey.values())) {
+    if (list.length === 1) {
+      out.push(list[0]!);
+      continue;
+    }
+    let keeper = list[0]!;
+    for (let i = 1; i < list.length; i += 1) {
+      const next = list[i]!;
+      mergeLog?.push({
+        reason: "same_practice_name",
+        kept: keeper.name ?? "unknown",
+        dropped: next.name ?? "unknown",
+      });
+      keeper = pickKeeper(keeper, next, marketCity);
+    }
+    const otherRows = list.filter((r) => r !== keeper);
+    const otherAddresses = otherRows.map((r) => csvCell(r.address)).filter(Boolean);
+    const priorOther = csvCell(keeper.other_locations);
+    const other_locations = joinUniqueAddresses([
+      ...(priorOther ? priorOther.split("|").map((s) => s.trim()) : []),
+      ...otherAddresses,
+    ]);
+    const note = `[collapsed ${list.length} same-name listings]`;
+    out.push({
+      ...keeper,
+      other_locations: other_locations || keeper.other_locations,
+      enrichment_notes: [keeper.enrichment_notes, note].filter(Boolean).join(" "),
+      metadata: {
+        ...(keeper.metadata ?? {}),
+        [PACK_OFFICE_COUNT_METADATA_KEY]: list.length,
+      },
+    });
+  }
+  return out;
 }

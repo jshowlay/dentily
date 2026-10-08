@@ -2,7 +2,8 @@ import { searchBusinesses } from "@/lib/google-places";
 import {
   DSO_BRAND_NAME_FRAGMENTS,
   DSO_GROUP_EMAIL_DOMAINS,
-  DSO_MULTI_LOCATION_PATH_RE,
+  isCorporateDentalBrandDomain,
+  websiteIndicatesCorporateLocationsNetwork,
 } from "@/lib/dso-brands";
 import { normalizeBrandKey, stripLocationSuffixFromName } from "@/lib/multi-location-group";
 import { registrableHostFromUrl } from "@/lib/url-normalize";
@@ -23,9 +24,10 @@ export function isKnownMultiLocationChainListing(
   const n = (lead.name ?? "").toLowerCase();
   if (DSO_BRAND_NAME_FRAGMENTS.some((frag) => n.includes(frag))) return true;
   const domain = registrableHostFromUrl(lead.website);
-  if (domain && DSO_GROUP_EMAIL_DOMAINS.has(domain)) return true;
-  const site = lead.website ?? "";
-  if (site && DSO_MULTI_LOCATION_PATH_RE.test(site)) return true;
+  if (domain && (DSO_GROUP_EMAIL_DOMAINS.has(domain) || isCorporateDentalBrandDomain(domain))) {
+    return true;
+  }
+  if (websiteIndicatesCorporateLocationsNetwork(lead.website)) return true;
   return false;
 }
 

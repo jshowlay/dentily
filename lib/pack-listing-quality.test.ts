@@ -3,6 +3,7 @@ import {
   PACK_LISTING_LABELS,
   buildPackListingContext,
   resolvePackListingLabel,
+  packListingLabelAppliesScorePenalty,
   sortLeadsForPaidPack,
 } from "@/lib/pack-listing-quality";
 import { SCORING_EVIDENCE_METADATA_KEY } from "@/lib/lead-scoring-evidence";
@@ -40,7 +41,7 @@ describe("pack listing quality", () => {
         name: "Bright Now Dental - Austin",
         score: 73,
         metadata: {
-          [PACK_LISTING_LABEL_METADATA_KEY]: PACK_LISTING_LABELS.chain,
+          [PACK_LISTING_LABEL_METADATA_KEY]: PACK_LISTING_LABELS.corporateChain,
           [SCORING_EVIDENCE_METADATA_KEY]: { gaps: ["x"], reviewRecencyEnabled: true, reviewRecencyConfirmed: true, noReviewIn90Days: false, marketMedianRating: null, marketMedianReviewCount: null, daysSinceLastReview: null, ratingVsMarket: null, reviewsVsMarket: null, website: null },
         },
       }),
@@ -60,5 +61,26 @@ describe("pack listing quality", () => {
     const sorted = sortLeadsForPaidPack(rows);
     expect(sorted[0]?.placeId).toBe("ind-gap");
     expect(sorted.map((l) => l.placeId).slice(-1)[0]).toBe("chain");
+  });
+
+  it("labels Small Smiles and Terry Reilly correctly", () => {
+    const ctx = buildPackListingContext([], "Boise");
+    expect(
+      resolvePackListingLabel(
+        lead({ placeId: "ss", name: "Small Smiles Dental Center", website: "https://www.smallsmiles.com/" }),
+        ctx
+      )
+    ).toBe(PACK_LISTING_LABELS.corporateChain);
+    expect(
+      resolvePackListingLabel(
+        lead({ placeId: "tr", name: "Terry Reilly Health Services", website: "http://www.trhs.org/" }),
+        ctx
+      )
+    ).toBe(PACK_LISTING_LABELS.community);
+  });
+
+  it("does not penalize multi-office practice label", () => {
+    expect(packListingLabelAppliesScorePenalty(PACK_LISTING_LABELS.multiOffice)).toBe(false);
+    expect(packListingLabelAppliesScorePenalty(PACK_LISTING_LABELS.corporateChain)).toBe(true);
   });
 });

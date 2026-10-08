@@ -11,7 +11,6 @@ import { computeWhyThisLeadFromLead } from "@/lib/lead-scoring-evidence";
 import {
   buildPackListingContext,
   compareLeadsForPaidPack,
-  getPackListingLabelFromLead,
   resolvePackListingLabel,
 } from "@/lib/pack-listing-quality";
 import { enrichWithApollo } from "@/lib/apollo-stub";
@@ -25,7 +24,7 @@ import {
   OFF_DOMAIN_EMAIL_NOTE,
   type PracticeOwnership,
 } from "@/lib/practice-ownership";
-import { dedupeExportLeadRows } from "@/lib/lead-pack-dedupe";
+import { collapseSamePracticeNameRows, dedupeExportLeadRows } from "@/lib/lead-pack-dedupe";
 import { emailMailboxMatchesPracticeIdentity } from "@/lib/practice-email-gate";
 import { validateMarketingEmail } from "@/lib/marketing-email-validate";
 import { outreachReadinessFromContactSignals } from "@/lib/outreach-readiness";
@@ -799,6 +798,7 @@ export type LeadPackCsvRow = {
   top_lead: "Yes" | "No";
   placeholders_remaining: string;
   apollo_enrichment: string;
+  other_locations: string;
 };
 
 function stripWebsiteForExport(row: ExportLeadRow): ExportLeadRow {
@@ -823,7 +823,10 @@ export function validateLeadPackMapsUrls(rows: LeadPackCsvRow[]): void {
 
 export function buildLeadPackRowsFromExport(rows: ExportLeadRow[]): LeadPackCsvRow[] {
   const marketCityForDedupe = inferMarketCityFromExportRows(rows);
-  const sourceRows = dedupeExportLeadRows(rows, { marketCity: marketCityForDedupe });
+  const sourceRows = collapseSamePracticeNameRows(
+    dedupeExportLeadRows(rows, { marketCity: marketCityForDedupe }),
+    { marketCity: marketCityForDedupe }
+  );
   const rowsIn = sourceRows
     .map((r) => ({ ...r, name: normalizePracticeDisplayName(r.name) || r.name }))
     .map(stripWebsiteForExport)
@@ -936,8 +939,7 @@ export function buildLeadPackRowsFromExport(rows: ExportLeadRow[]): LeadPackCsvR
         })
       : computeWhyThisLead(r);
 
-    const listingLabel =
-      resolvePackListingLabel(lead, listingCtx) ?? getPackListingLabelFromLead(lead);
+    const listingLabel = resolvePackListingLabel(lead, listingCtx);
 
     return {
       name: csvCell(r.name),
@@ -946,6 +948,7 @@ export function buildLeadPackRowsFromExport(rows: ExportLeadRow[]): LeadPackCsvR
       action_tier: actionTier,
       why_this_lead: whyThisLead,
       address: csvCell(r.address),
+      other_locations: csvCell(r.other_locations),
       website,
       phone: csvCell(r.phone),
       primary_email: csvCell(r.primary_email),
@@ -1014,6 +1017,7 @@ const CSV_COLUMN_ORDER: Array<{ key: keyof LeadPackCsvRow; label: string }> = [
   { key: "action_tier", label: "Action Tier" },
   { key: "why_this_lead", label: "Why This Lead" },
   { key: "address", label: "Address" },
+  { key: "other_locations", label: "Other Locations" },
   { key: "website", label: "Website" },
   { key: "phone", label: "Phone" },
   { key: "primary_email", label: "Primary Email" },
