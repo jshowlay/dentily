@@ -161,7 +161,8 @@ describe("lead pipeline", () => {
     expect(pack[0]?.name).toBe("Treaty Oak Dental");
     const chain = pack.find((p) => p.name.includes("Small Smiles"));
     expect(chain?.listing_label).toBe("Corporate chain");
-    expect(Number(chain?.score)).toBeLessThan(100);
+    expect(chain?.priority.toLowerCase()).toBe("low");
+    expect(Number(chain?.score)).toBeLessThan(Number(pack[0]?.score));
     expect(pack.indexOf(chain!)).toBeGreaterThan(0);
   });
 
@@ -202,6 +203,7 @@ describe("lead pipeline", () => {
     expect(persisted.score).toBe("77");
     expect(persisted.reason).toBe(persistedReason);
     expect(persisted.priority.toLowerCase()).toBe("high");
+    expect(Number(persisted.score)).toBe(77);
     const recomputed = pack.find((p) => p.name === withoutEvidence.name)!;
     expect(recomputed.reason).not.toBe(persistedReason);
   });

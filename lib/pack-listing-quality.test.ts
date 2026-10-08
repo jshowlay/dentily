@@ -83,4 +83,18 @@ describe("pack listing quality", () => {
     expect(packListingLabelAppliesScorePenalty(PACK_LISTING_LABELS.multiOffice)).toBe(false);
     expect(packListingLabelAppliesScorePenalty(PACK_LISTING_LABELS.corporateChain)).toBe(true);
   });
+
+  it("labels Rocky Mountain Endodontics Boise as multi-office", () => {
+    const ctx = buildPackListingContext([], "Boise, ID");
+    expect(
+      resolvePackListingLabel(
+        lead({
+          placeId: "rm",
+          name: "Rocky Mountain Endodontics Boise",
+          website: "https://www.rockymtendo.com/",
+        }),
+        ctx
+      )
+    ).toBe(PACK_LISTING_LABELS.multiOffice);
+  });
 });

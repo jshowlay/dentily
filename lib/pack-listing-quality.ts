@@ -218,8 +218,22 @@ function isCorporateChainLead(lead: Lead, ctx: PackListingContext): boolean {
   return false;
 }
 
+/** Maps listing named “… Endodontics Boise” with a group site — local office, not corporate DSO. */
+function isCitySuffixedSpecialtyLocationListing(lead: Lead, ctx: PackListingContext): boolean {
+  if (isCorporateChainLead(lead, ctx)) return false;
+  const city = (ctx.marketCity ?? "").split(",")[0]?.trim();
+  if (!city || city.length < 3) return false;
+  const name = (lead.name ?? "").trim();
+  if (!/\b(endodontics|orthodontics|periodontics)\b/i.test(name)) return false;
+  const escaped = city.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  if (!new RegExp(`\\b${escaped}\\s*$`, "i").test(name)) return false;
+  return Boolean(lead.website?.trim());
+}
+
 function isLocalMultiOfficeLead(lead: Lead, ctx: PackListingContext): boolean {
   if (isCorporateChainLead(lead, ctx)) return false;
+
+  if (isCitySuffixedSpecialtyLocationListing(lead, ctx)) return true;
 
   const officeCount = packOfficeCountFromLead(lead);
   if (officeCount != null && officeCount >= 2 && officeCount <= LOCAL_MULTI_OFFICE_MAX) {
@@ -324,6 +338,27 @@ export function sortLeadsForPaidPack<T extends Lead>(rows: T[]): T[] {
   return [...rows].sort(compareLeadsForPaidPack);
 }
 
+function listingMetadataPatch(
+  lead: Lead,
+  label: PackListingLabel | null
+): Record<string, unknown> {
+  if (!label) return { ...lead.metadata };
+  return {
+    ...lead.metadata,
+    [PACK_LISTING_LABEL_METADATA_KEY]: label,
+    multiLocationGroup:
+      label === PACK_LISTING_LABELS.corporateChain ||
+      label === PACK_LISTING_LABELS.multiOffice ||
+      label === PACK_LISTING_LABELS.chain
+        ? true
+        : lead.metadata?.multiLocationGroup,
+  };
+}
+
+function isUnpenalizedListingLabel(label: PackListingLabel | null): boolean {
+  return label == null || label === PACK_LISTING_LABELS.multiOffice;
+}
+
 /** Score demotion + metadata label; independents (with evidence gaps first) sort above labeled rows. */
 export function applyPackListingQualityRankAdjustments(
   leads: Lead[],
@@ -331,29 +366,53 @@ export function applyPackListingQualityRankAdjustments(
   options?: { chainBrandKeys?: Set<string> }
 ): Lead[] {
   const ctx = buildPackListingContext(leads, marketCity, options?.chainBrandKeys ?? new Set());
-  const adjusted = leads.map((lead) => {
-    const label = resolvePackListingLabel(lead, ctx);
-    if (!label) return lead;
-    const penalize = packListingLabelAppliesScorePenalty(label);
-    const score = penalize
-      ? Math.max(1, (lead.score ?? 50) - PACK_LISTING_SCORE_PENALTY)
-      : lead.score ?? 50;
+
+  const tagged = leads.map((lead) => ({
+    lead,
+    label: resolvePackListingLabel(lead, ctx),
+  }));
+
+  const ranked = tagged.map(({ lead, label }) => {
+    const score = lead.score ?? 50;
+    if (isUnpenalizedListingLabel(label)) {
+      return {
+        lead,
+        label,
+        score,
+        priority: classifyPriorityForLead(lead, score),
+      };
+    }
+    return { lead, label, score, priority: "low" as const };
+  });
+
+  const minHighAmongUnpenalized = ranked
+    .filter((r) => isUnpenalizedListingLabel(r.label) && r.priority === "high")
+    .reduce((min, r) => Math.min(min, r.score ?? Infinity), Infinity);
+
+  const penalizedScoreCap =
+    Number.isFinite(minHighAmongUnpenalized) && minHighAmongUnpenalized > 1
+      ? minHighAmongUnpenalized - 1
+      : 1;
+
+  const adjusted = ranked.map(({ lead, label, score, priority }) => {
+    if (isUnpenalizedListingLabel(label)) {
+      return {
+        ...lead,
+        score,
+        priority,
+        metadata: listingMetadataPatch(lead, label),
+      };
+    }
+    const penalized = Math.max(1, score - PACK_LISTING_SCORE_PENALTY);
+    const finalScore = Math.min(penalized, penalizedScoreCap);
     return {
       ...lead,
-      score,
-      priority: classifyPriorityForLead(lead, score),
-      metadata: {
-        ...lead.metadata,
-        [PACK_LISTING_LABEL_METADATA_KEY]: label,
-        multiLocationGroup:
-          label === PACK_LISTING_LABELS.corporateChain ||
-          label === PACK_LISTING_LABELS.multiOffice ||
-          label === PACK_LISTING_LABELS.chain
-            ? true
-            : lead.metadata?.multiLocationGroup,
-      },
+      score: finalScore,
+      priority: "low" as const,
+      metadata: listingMetadataPatch(lead, label),
     };
   });
+
   return sortLeadsForPaidPack(adjusted);
 }
 
