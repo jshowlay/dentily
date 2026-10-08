@@ -9,7 +9,8 @@ import {
 import { formatAdminSampleEmailBullets, runAdminSampleMarket } from "@/lib/admin-sample-run";
 
 export const runtime = "nodejs";
-export const maxDuration = 120;
+/** Match long-running enrich/search routes (Vercel Pro ceiling). */
+export const maxDuration = 300;
 
 const bodySchema = z.object({
   city: z.string().trim().min(2).max(80),

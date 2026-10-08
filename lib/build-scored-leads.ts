@@ -3,7 +3,10 @@ import { normalizePracticeDisplayName } from "@/lib/practice-name";
 import { dedupeLeads } from "@/lib/dedupe-leads";
 import { prepareLeadsForScoring } from "@/lib/lead-quality-filters";
 import { type DentistScoringBatchContext } from "@/lib/dentist-scoring";
-import { attachScoringEvidenceToDentistLeads } from "@/lib/lead-scoring-evidence";
+import {
+  attachScoringEvidenceToDentistLeads,
+  type ScoringEvidenceAttachOptions,
+} from "@/lib/lead-scoring-evidence";
 import { logSearchPrioritySummary } from "@/lib/lead-pack-export";
 import { applyMultiLocationGroupRankAdjustments } from "@/lib/multi-location-group";
 import { scoreDentistLeadsBatched, scoreLead } from "@/lib/score-lead";
@@ -90,6 +93,7 @@ export type BuildScoredLeadsParams = {
   nicheConfig: NicheConfig;
   subscriptionUserId: number | null;
   searchId: number;
+  scoringEvidenceOptions?: ScoringEvidenceAttachOptions;
 };
 
 export async function buildScoredLeads(params: BuildScoredLeadsParams): Promise<Lead[]> {
@@ -221,10 +225,14 @@ export async function buildScoredLeads(params: BuildScoredLeadsParams): Promise<
       : undefined;
 
   if (nicheConfig.id === "dentists") {
+    const tEvidence = Date.now();
     console.log(
       `[build-scored-leads] searchId=${searchId} attaching scoring evidence for ${dedupedForScoring.length} leads`
     );
-    await attachScoringEvidenceToDentistLeads(dedupedForScoring);
+    await attachScoringEvidenceToDentistLeads(dedupedForScoring, params.scoringEvidenceOptions);
+    console.log(
+      `[build-scored-leads] searchId=${searchId} scoring evidence ms=${Date.now() - tEvidence}`
+    );
   }
 
   let failedAIScores = 0;

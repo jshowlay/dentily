@@ -151,4 +151,7 @@ export type ExportLeadRow = {
   created_at: string | null;
   /** Set when website crawl saw Smile Generation (Pacific Dental Services). */
   homepage_dso_smile_generation?: boolean | null;
+  place_id?: string | null;
+  /** Includes scoringEvidence from search-time scoring (for export parity). */
+  metadata?: Record<string, unknown> | null;
 };

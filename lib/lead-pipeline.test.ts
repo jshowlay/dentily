@@ -112,6 +112,47 @@ describe("lead pipeline", () => {
     expect(classifyPriorityFromScore(30)).toBe("low");
   });
 
+  it("CSV export keeps persisted score and reason when scoringEvidence is stored", () => {
+    const persistedReason = "Stored at search time — do not recompute.";
+    const row = makeFixtureExportRow({
+      name: "Persisted Score Dental",
+      address: "99 Test Blvd, Austin, TX",
+      score: 77,
+      priority: "high",
+      reason: persistedReason,
+      opportunity_type: "visibility",
+      metadata: {
+        scoringEvidence: {
+          marketMedianRating: 4.8,
+          marketMedianReviewCount: 100,
+          daysSinceLastReview: 120,
+          reviewRecencyEnabled: true,
+          reviewRecencyConfirmed: true,
+          noReviewIn90Days: true,
+          ratingVsMarket: null,
+          reviewsVsMarket: null,
+          website: null,
+          gaps: ["No Google review in 90+ days"],
+        },
+      },
+    });
+    const withoutEvidence = makeFixtureExportRow({
+      name: "Recompute Dental",
+      address: "100 Test Blvd, Austin, TX",
+      score: 77,
+      reason: persistedReason,
+    });
+    const pack = buildLeadPackRowsFromExport([row, withoutEvidence]).filter(
+      (p) => !isLeadPackInstructionRow(p)
+    );
+    const persisted = pack.find((p) => p.name === row.name)!;
+    expect(persisted.score).toBe("77");
+    expect(persisted.reason).toBe(persistedReason);
+    expect(persisted.priority.toLowerCase()).toBe("high");
+    const recomputed = pack.find((p) => p.name === withoutEvidence.name)!;
+    expect(recomputed.reason).not.toBe(persistedReason);
+  });
+
   it("flags Frontier Trail co-tenants: one keeper, one demoted with cluster notes", () => {
     const pack = buildLeadPackRowsFromExport(SAMPLE_EXPORT.slice(0, 2));
     const data = pack.filter((p) => !isLeadPackInstructionRow(p));

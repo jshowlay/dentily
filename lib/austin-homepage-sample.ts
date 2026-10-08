@@ -49,6 +49,8 @@ export function leadToExportRow(lead: Lead): ExportLeadRow {
     maps_url: lead.mapsUrl ?? null,
     created_at: null,
     homepage_dso_smile_generation: intel.homepageMentionsSmileGeneration ?? null,
+    place_id: lead.placeId ?? null,
+    metadata: lead.metadata ?? {},
   };
 }
 

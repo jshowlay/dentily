@@ -48,9 +48,16 @@ function groupByBrandKey(leads: Lead[]): Map<string, Lead[]> {
 export async function discoverMultiLocationBrandKeys(
   leads: Lead[],
   location: string,
-  opts?: { maxProbes?: number }
+  opts?: { maxProbes?: number; /** Only Places-probe brands represented in the top N scored leads. */ probeFromTopScored?: number }
 ): Promise<Set<string>> {
   const maxProbes = opts?.maxProbes ?? 24;
+  const probeFromTopScored = opts?.probeFromTopScored ?? leads.length;
+  const topScoredIds = new Set(
+    [...leads]
+      .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+      .slice(0, Math.max(1, probeFromTopScored))
+      .map((l) => l.placeId)
+  );
   const chainKeys = new Set<string>();
 
   const byBrand = groupByBrandKey(leads);
@@ -85,7 +92,10 @@ export async function discoverMultiLocationBrandKeys(
   const probeCandidates: Array<{ key: string; sample: Lead; score: number }> = [];
   for (const [key, list] of Array.from(byBrand.entries())) {
     if (list.length >= 2 || chainKeys.has(key)) continue;
-    const sample = list[0]!;
+    const sample = list.reduce((best, l) =>
+      (l.score ?? 0) > (best.score ?? 0) ? l : best
+    );
+    if (probeFromTopScored < leads.length && !topScoredIds.has(sample.placeId)) continue;
     probeCandidates.push({ key, sample, score: sample.score ?? 0 });
   }
   probeCandidates.sort((a, b) => b.score - a.score);

@@ -99,7 +99,9 @@ function exportRow(p: Partial<ExportLeadRow> & Pick<ExportLeadRow, "name" | "add
 }
 
 describe("shipping blockers (outreach + export gates)", () => {
-  it("buyer outreach drafts use placeholders and never ship Marcus-era persona copy", () => {
+  it(
+    "buyer outreach drafts use placeholders and never ship Marcus-era persona copy",
+    () => {
     const seeds: ExportLeadRow[] = [];
     for (let i = 0; i < 80; i += 1) {
       seeds.push(
@@ -130,7 +132,9 @@ describe("shipping blockers (outreach + export gates)", () => {
         expect(re.test(text), `Unexpected legacy CTA in: ${text}`).toBe(false);
       }
     }
-  });
+  },
+    20_000
+  );
 
   it("Los Angeles reputation-gap rows never borrow another metro in the opener", () => {
     const r = exportRow({

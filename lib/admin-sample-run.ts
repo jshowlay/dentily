@@ -10,6 +10,7 @@ import { leadToExportRow } from "@/lib/austin-homepage-sample";
 import { buildScoredLeads } from "@/lib/build-scored-leads";
 import { computeBestContactMethod } from "@/lib/contact-labels";
 import { batchEnrichLeads } from "@/lib/email-enrichment";
+import { backgroundEnrichmentOverrides } from "@/lib/email-enrichment-config";
 import { computeWhyThisLeadFromLead } from "@/lib/lead-scoring-evidence";
 import { buildMarcusWrittenOutreach } from "@/lib/marcus-outreach";
 import { isMultiLocationGroupLead, MULTI_LOCATION_GROUP_LABEL } from "@/lib/multi-location-group";
@@ -64,19 +65,39 @@ export async function runAdminSampleMarket(
   state: string,
   limit = ADMIN_SAMPLE_RESULT_LIMIT
 ): Promise<AdminSampleLead[]> {
+  const tStart = Date.now();
   const nicheConfig = getNicheConfig("dentists");
   const location = `${city.trim()}, ${state.trim().toUpperCase()}`;
+  console.log(`[admin-sample] start market=${location}`);
+
+  const tScore = Date.now();
   const scored = await buildScoredLeads({
     niche: nicheConfig.name,
     location,
     nicheConfig,
     subscriptionUserId: null,
     searchId: 0,
+    scoringEvidenceOptions: { expensiveCandidateLimit: 20 },
   });
-  const chainBrandKeys = await discoverMultiLocationBrandKeys(scored, location);
+  console.log(`[admin-sample] buildScoredLeads count=${scored.length} ms=${Date.now() - tScore}`);
+
+  const tChain = Date.now();
+  const chainBrandKeys = await discoverMultiLocationBrandKeys(scored, location, {
+    maxProbes: 8,
+    probeFromTopScored: 20,
+  });
+  console.log(`[admin-sample] chainProbe ms=${Date.now() - tChain}`);
+
+  const tFilter = Date.now();
   const eligible = filterLeadsForAdminSample(scored, city.trim(), { multiLocationBrandKeys: chainBrandKeys });
   const top = eligible.slice(0, limit);
-  const enriched = await batchEnrichLeads(top, undefined, { hunterFallback: false });
+  console.log(`[admin-sample] filter eligible=${eligible.length} top=${top.length} ms=${Date.now() - tFilter}`);
+
+  const tEnrich = Date.now();
+  const enriched = await batchEnrichLeads(top, backgroundEnrichmentOverrides(), {
+    hunterFallback: false,
+  });
+  console.log(`[admin-sample] enrich ms=${Date.now() - tEnrich} total ms=${Date.now() - tStart}`);
 
   const emailReasons = buildDistinctAdminSampleEmailReasons(enriched);
   return enriched.map((lead, i) => leadToAdminSampleRow(lead, emailReasons[i] ?? buildAdminSampleEmailReason(lead, i)));

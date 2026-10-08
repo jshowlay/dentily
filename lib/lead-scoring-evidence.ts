@@ -234,11 +234,22 @@ export function computeWhyThisLeadFromLead(lead: Lead): string {
   return `Strong fundamentals (${ratingStr} stars, ${rcStr} reviews) but no clear evidence-backed gap in this run.${priLabel ? ` (${priLabel} priority.)` : ""}`;
 }
 
-const PAGE_SPEED_CAP = 28;
 const WEBSITE_FETCH_CONCURRENCY = 6;
+const DEFAULT_EXPENSIVE_CANDIDATE_LIMIT = 20;
 
-export async function attachScoringEvidenceToDentistLeads(leads: Lead[]): Promise<void> {
+export type ScoringEvidenceAttachOptions = {
+  /** Review recency, homepage crawl, and PageSpeed run only for this many top prelim-score leads. */
+  expensiveCandidateLimit?: number;
+};
+
+export async function attachScoringEvidenceToDentistLeads(
+  leads: Lead[],
+  opts?: ScoringEvidenceAttachOptions
+): Promise<void> {
   if (leads.length === 0) return;
+
+  const expensiveLimit = opts?.expensiveCandidateLimit ?? DEFAULT_EXPENSIVE_CANDIDATE_LIMIT;
+  const t0 = Date.now();
 
   const bySpecialty = computeMarketBenchmarksBySpecialty(leads);
   const fallback = bySpecialty.get("general") ?? {
@@ -247,8 +258,6 @@ export async function attachScoringEvidenceToDentistLeads(leads: Lead[]): Promis
     ratingSampleSize: 0,
     reviewSampleSize: 0,
   };
-  const placeIds = leads.map((l) => l.placeId).filter(Boolean);
-  const recencyBatch = await fetchReviewRecencyMap(placeIds, { concurrency: 8 });
 
   const prelim = leads.map((lead) => ({
     lead,
@@ -256,22 +265,36 @@ export async function attachScoringEvidenceToDentistLeads(leads: Lead[]): Promis
   }));
   prelim.sort((a, b) => b.prelimScore - a.prelimScore);
 
+  const expensivePlaceIds = new Set(
+    prelim.slice(0, expensiveLimit).map(({ lead }) => lead.placeId).filter(Boolean)
+  );
   const pageSpeedPlaceIds = new Set(
     prelim
-      .filter(({ lead }) => Boolean(lead.website?.trim()))
-      .slice(0, PAGE_SPEED_CAP)
+      .filter(({ lead }) => expensivePlaceIds.has(lead.placeId) && Boolean(lead.website?.trim()))
+      .slice(0, expensiveLimit)
       .map(({ lead }) => lead.placeId)
   );
 
+  const recencyBatch = await fetchReviewRecencyMap(Array.from(expensivePlaceIds), { concurrency: 8 });
+  console.log(
+    `[lead-scoring-evidence] recency enabled=${recencyBatch.enabled} expensiveN=${expensivePlaceIds.size} ms=${Date.now() - t0}`
+  );
+
   const auditByPlaceId = new Map<string, WebsiteAudit | null>();
-  const withSite = leads.filter((l) => l.website?.trim());
-  await mapPool(withSite, WEBSITE_FETCH_CONCURRENCY, async (lead) => {
+  const auditTargets = prelim
+    .filter(({ lead }) => expensivePlaceIds.has(lead.placeId) && lead.website?.trim())
+    .map(({ lead }) => lead);
+  const tAudit = Date.now();
+  await mapPool(auditTargets, WEBSITE_FETCH_CONCURRENCY, async (lead) => {
     const audit = await auditWebsite(lead.website, {
       runPageSpeed: pageSpeedPlaceIds.has(lead.placeId),
     });
     auditByPlaceId.set(lead.placeId, audit);
     return audit;
   });
+  console.log(
+    `[lead-scoring-evidence] website audits=${auditTargets.length} pageSpeed=${pageSpeedPlaceIds.size} ms=${Date.now() - tAudit}`
+  );
 
   for (const lead of leads) {
     const ctx = marketContextForLead(lead, bySpecialty, fallback);
@@ -295,4 +318,5 @@ export async function attachScoringEvidenceToDentistLeads(leads: Lead[]): Promis
       [SCORING_EVIDENCE_METADATA_KEY]: evidence,
     };
   }
+  console.log(`[lead-scoring-evidence] attach complete leads=${leads.length} ms=${Date.now() - t0}`);
 }

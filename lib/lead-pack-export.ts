@@ -6,7 +6,8 @@ import {
   computeBaseScore,
   computeExportReasonLine,
 } from "@/lib/dentist-scoring";
-import { exportRowToLead } from "@/lib/export-lead-adapter";
+import { exportRowToLead, exportRowUsesPersistedScoring } from "@/lib/export-lead-adapter";
+import { computeWhyThisLeadFromLead } from "@/lib/lead-scoring-evidence";
 import { enrichWithApollo } from "@/lib/apollo-stub";
 import { buildMarcusWrittenOutreach, buildVoicemailScript } from "@/lib/marcus-outreach";
 import { computePlaceholdersRemaining } from "@/lib/outreach-placeholders";
@@ -440,7 +441,7 @@ function buildInstructionPackRow() {
   };
 }
 
-function applyAddressClusters(rows: PipelineRow[]): PipelineRow[] {
+function applyAddressClusters(rows: PipelineRow[], opts?: { preservePersistedScores?: boolean }): PipelineRow[] {
   const keys = rows.map((r) => normalizeAddressKey(r.address));
   const groups = new Map<string, number[]>();
   keys.forEach((k, i) => {
@@ -477,6 +478,9 @@ function applyAddressClusters(rows: PipelineRow[]): PipelineRow[] {
     const existing = r.cluster_notes?.trim() ?? "";
     const cn = [existing, shared].filter(Boolean).join(existing && shared ? " " : "");
     if (!demote.has(i)) {
+      return { ...r, cluster_notes: cn, cluster_demoted: false };
+    }
+    if (opts?.preservePersistedScores && exportRowUsesPersistedScoring(r)) {
       return { ...r, cluster_notes: cn, cluster_demoted: false };
     }
     const capped = Math.min(Number(r.score ?? 40), 40);
@@ -758,8 +762,15 @@ export function buildLeadPackRowsFromExport(rows: ExportLeadRow[]): LeadPackCsvR
 
   let pipeline: PipelineRow[] = rowsIn.map((r, i) => {
     const lead = exportRowToLead(r, i);
-    const score = computeBaseScore(lead, batchCtx);
-    let priority = classifyPriorityFromScore(score);
+    const persisted = exportRowUsesPersistedScoring(r);
+    const score =
+      persisted && r.score !== null && r.score !== undefined
+        ? Number(r.score)
+        : computeBaseScore(lead, batchCtx);
+    let priority =
+      persisted && r.priority
+        ? r.priority
+        : classifyPriorityFromScore(score);
     const rawListingWebsite = sourceRows[i]?.website ?? null;
     const ownership = classifyPracticeOwnership({
       name: r.name,
@@ -769,7 +780,7 @@ export function buildLeadPackRowsFromExport(rows: ExportLeadRow[]): LeadPackCsvR
       contactFormUrl: r.contact_form_url,
       homepageMentionsSmileGeneration: Boolean(r.homepage_dso_smile_generation),
     });
-    if (ownership === "Likely DSO") {
+    if (ownership === "Likely DSO" && !persisted) {
       priority = demotePriorityOneLevel(priority);
     }
     const why =
@@ -783,7 +794,10 @@ export function buildLeadPackRowsFromExport(rows: ExportLeadRow[]): LeadPackCsvR
       ...r,
       score,
       priority,
-      opportunity_type: classifyOpportunityType(lead),
+      opportunity_type:
+        persisted && r.opportunity_type
+          ? r.opportunity_type
+          : classifyOpportunityType(lead),
       why_now: why,
       cluster_notes: r.cluster_notes?.trim() ?? "",
       cluster_demoted: false,
@@ -791,7 +805,8 @@ export function buildLeadPackRowsFromExport(rows: ExportLeadRow[]): LeadPackCsvR
     };
   });
 
-  pipeline = applyAddressClusters(pipeline);
+  const preservePersistedScores = pipeline.some((r) => exportRowUsesPersistedScoring(r));
+  pipeline = applyAddressClusters(pipeline, { preservePersistedScores });
   const sorted = sortByPriorityThenScore(pipeline);
 
   const eligibility = sorted.map((r) => ({
@@ -822,7 +837,9 @@ export function buildLeadPackRowsFromExport(rows: ExportLeadRow[]): LeadPackCsvR
       contact_form_url: r.contact_form_url,
       phone: r.phone,
     });
-    const outreachBody = buildMarcusWrittenOutreach(lead);
+    const persisted = exportRowUsesPersistedScoring(r);
+    const outreachBody =
+      persisted && r.outreach?.trim() ? r.outreach.trim() : buildMarcusWrittenOutreach(lead);
     const placeholders = computePlaceholdersRemaining(outreachBody);
     const voicemail = best.phoneOnly ? buildVoicemailScript(lead) : "";
     const actionTier = computeActionTier({
@@ -830,7 +847,14 @@ export function buildLeadPackRowsFromExport(rows: ExportLeadRow[]): LeadPackCsvR
       contact_form_url: r.contact_form_url,
       phone: r.phone,
     });
-    const whyThisLead = computeWhyThisLead(r);
+    const whyThisLead = persisted
+      ? computeWhyThisLeadFromLead({
+          ...lead,
+          score: typeof r.score === "number" ? r.score : lead.score,
+          priority: r.priority ?? lead.priority,
+          opportunityType: r.opportunity_type ?? lead.opportunityType,
+        })
+      : computeWhyThisLead(r);
 
     return {
       name: csvCell(r.name),
@@ -880,7 +904,11 @@ export function buildLeadPackRowsFromExport(rows: ExportLeadRow[]): LeadPackCsvR
             ? "Independent"
             : "Unknown",
       why_now: csvCell(r.why_now),
-      reason: csvCell(computeExportReasonLine(lead, { clusterDemoted: r.cluster_demoted })),
+      reason: csvCell(
+        persisted && r.reason?.trim()
+          ? r.reason.trim()
+          : computeExportReasonLine(lead, { clusterDemoted: r.cluster_demoted })
+      ),
       outreach_draft: csvCell(outreachBody),
       maps_url: mapsUrl,
       top_lead: topIdx.has(i) ? ("Yes" as const) : ("No" as const),

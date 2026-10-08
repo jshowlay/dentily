@@ -630,7 +630,7 @@ export async function getSearchForExport(searchId: number): Promise<{
 
     const leadsRes = await client.query(
       `SELECT
-         name, address, website, phone, email, primary_email, contact_form_url, email_status, email_source, enrichment_notes, email_rejection_reason, rating, review_count, score, reason, outreach, priority, opportunity_type, primary_type, maps_url, metadata, created_at
+         place_id, name, address, website, phone, email, primary_email, contact_form_url, email_status, email_source, enrichment_notes, email_rejection_reason, rating, review_count, score, reason, outreach, priority, opportunity_type, primary_type, maps_url, metadata, created_at
        FROM leads
        WHERE search_id = $1
        ORDER BY score DESC NULLS LAST, created_at DESC`,
@@ -679,6 +679,8 @@ export async function getSearchForExport(searchId: number): Promise<{
         primary_type: r.primary_type ?? null,
         maps_url: r.maps_url ?? null,
         created_at: r.created_at ? new Date(r.created_at).toISOString() : null,
+        place_id: r.place_id ?? null,
+        metadata: (r.metadata ?? {}) as Record<string, unknown>,
       };
     });
 
