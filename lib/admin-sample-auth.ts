@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-type CookieReader = {
+export type CookieReader = {
   get(name: string): { value: string } | undefined;
 };
 

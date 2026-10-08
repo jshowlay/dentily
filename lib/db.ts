@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import { Pool, PoolClient } from "pg";
 import {
   isLeadContactable,
@@ -184,6 +185,12 @@ export async function ensureSchema() {
     );
     await client.query(
       `ALTER TABLE payments ADD COLUMN IF NOT EXISTS pack_delivery_in_progress_at TIMESTAMPTZ;`
+    );
+    await client.query(
+      `ALTER TABLE payments ADD COLUMN IF NOT EXISTS pack_download_token TEXT;`
+    );
+    await client.query(
+      `CREATE UNIQUE INDEX IF NOT EXISTS payments_pack_download_token_key ON payments (pack_download_token) WHERE pack_download_token IS NOT NULL;`
     );
 
     await client.query(`ALTER TABLE searches ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending';`);
@@ -956,6 +963,10 @@ export async function getSearchDeliveryInfo(searchId: number): Promise<{
   }
 }
 
+function newPackDownloadToken(): string {
+  return randomBytes(32).toString("base64url");
+}
+
 export async function markSearchPaidFromStripe(params: {
   searchId: number;
   stripeSessionId: string;
@@ -964,6 +975,7 @@ export async function markSearchPaidFromStripe(params: {
   email: string | null;
 }): Promise<void> {
   await ensureSchema();
+  const downloadToken = newPackDownloadToken();
   for (let attempt = 1; attempt <= 2; attempt += 1) {
     const client = await getPool().connect();
     let releasedHard = false;
@@ -971,10 +983,22 @@ export async function markSearchPaidFromStripe(params: {
       await client.query("BEGIN");
       await client.query("UPDATE searches SET is_paid = true WHERE id = $1", [params.searchId]);
       await client.query(
-        `INSERT INTO payments (search_id, stripe_session_id, amount, status, email)
-         VALUES ($1, $2, $3, $4, $5)
+        `INSERT INTO payments (search_id, stripe_session_id, amount, status, email, pack_download_token)
+         VALUES ($1, $2, $3, $4, $5, $6)
          ON CONFLICT (stripe_session_id) DO NOTHING`,
-        [params.searchId, params.stripeSessionId, params.amount, params.status, params.email]
+        [
+          params.searchId,
+          params.stripeSessionId,
+          params.amount,
+          params.status,
+          params.email,
+          downloadToken,
+        ]
+      );
+      await client.query(
+        `UPDATE payments SET pack_download_token = $2
+         WHERE stripe_session_id = $1 AND pack_download_token IS NULL`,
+        [params.stripeSessionId, newPackDownloadToken()]
       );
       await client.query("COMMIT");
       return;
@@ -1011,6 +1035,65 @@ export async function markSearchPaidFromStripe(params: {
     }
   }
   throw new Error("Failed to mark search paid after retries.");
+}
+
+export async function getPackDownloadTokenForStripeSession(stripeSessionId: string): Promise<string | null> {
+  await ensureSchema();
+  const client = await getPool().connect();
+  try {
+    const res = await client.query<{ pack_download_token: string | null }>(
+      `SELECT pack_download_token FROM payments WHERE stripe_session_id = $1 LIMIT 1`,
+      [stripeSessionId]
+    );
+    const existing = res.rows[0]?.pack_download_token?.trim();
+    if (existing) return existing;
+
+    const token = newPackDownloadToken();
+    const updated = await client.query<{ pack_download_token: string }>(
+      `UPDATE payments SET pack_download_token = $2
+       WHERE stripe_session_id = $1 AND pack_download_token IS NULL
+       RETURNING pack_download_token`,
+      [stripeSessionId, token]
+    );
+    return updated.rows[0]?.pack_download_token ?? null;
+  } finally {
+    safeReleaseClient(client);
+  }
+}
+
+export async function verifyPackDownloadTokenForSearch(searchId: number, token: string): Promise<boolean> {
+  if (!token || token.length < 16) return false;
+  await ensureSchema();
+  const client = await getPool().connect();
+  try {
+    const res = await client.query(
+      `SELECT 1 FROM payments p
+       INNER JOIN searches s ON s.id = p.search_id
+       WHERE p.search_id = $1
+         AND p.pack_download_token = $2
+         AND p.status = 'paid'
+         AND s.is_paid = true
+       LIMIT 1`,
+      [searchId, token]
+    );
+    return (res.rowCount ?? 0) > 0;
+  } finally {
+    safeReleaseClient(client);
+  }
+}
+
+export async function isSearchOwnedByUser(searchId: number, userId: number): Promise<boolean> {
+  await ensureSchema();
+  const client = await getPool().connect();
+  try {
+    const res = await client.query(
+      `SELECT 1 FROM searches WHERE id = $1 AND user_id = $2 AND is_paid = true LIMIT 1`,
+      [searchId, userId]
+    );
+    return (res.rowCount ?? 0) > 0;
+  } finally {
+    safeReleaseClient(client);
+  }
 }
 
 export type EnrichmentJobStatus = "pending" | "done" | "failed";

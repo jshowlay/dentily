@@ -60,6 +60,7 @@ export async function runPackDeliveryJob(session: Stripe.Checkout.Session): Prom
   await sendPackDeliveryEmail({
     toEmail: email,
     sessionId: session.id,
+    searchId: Number.isFinite(searchId) && searchId > 0 ? searchId : undefined,
     market,
     csvPath,
     csvUrl,

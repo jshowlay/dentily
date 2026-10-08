@@ -38,6 +38,8 @@ export type ResultsPageViewProps = {
   averageScore: number | null;
   canExport: boolean;
   isPaid: boolean;
+  /** Set when URL includes session_id or token from checkout; null hides unsigned export links. */
+  exportCsvHref: string | null;
   leads: Lead[];
 };
 
@@ -69,6 +71,7 @@ export function ResultsPageView(props: ResultsPageViewProps) {
     averageScore,
     canExport,
     isPaid,
+    exportCsvHref,
     leads,
   } = props;
 
@@ -117,10 +120,12 @@ export function ResultsPageView(props: ResultsPageViewProps) {
               nativeButton
               className="dr-nav-cta"
             />
-          ) : canExport && isPaid ? (
-            <a href={`/api/search/${searchId}/export`} download className="dr-nav-cta">
+          ) : canExport && isPaid && exportCsvHref ? (
+            <a href={exportCsvHref} download className="dr-nav-cta">
               Download CSV
             </a>
+          ) : canExport && isPaid && !exportCsvHref ? (
+            <span className="dr-nav-link text-sm">CSV via payment confirmation link</span>
           ) : null}
         </div>
       </header>
@@ -387,6 +392,7 @@ export function ResultsPageView(props: ResultsPageViewProps) {
           averageScore={averageScore}
           canExport={canExport}
           isPaid={isPaid}
+          exportCsvHref={exportCsvHref}
         />
       </div>
     </div>

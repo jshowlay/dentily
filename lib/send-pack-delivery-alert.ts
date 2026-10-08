@@ -48,7 +48,7 @@ export async function sendPackDeliveryFailureAlert(input: PackDeliveryFailureAle
     "Error:",
     errText,
     "",
-    "Customer can still download from /success and /api/search/{id}/export if the search was marked paid.",
+    "Customer can still download from /success or email links (session_id) if the search was marked paid.",
     "Use POST /api/admin/resend-pack to retry delivery when fixed.",
   ].join("\n");
 

@@ -6,6 +6,8 @@ export interface SendPackDeliveryEmailOptions {
   toEmail: string;
   /** Stripe Checkout Session id — used to build the verified download link. */
   sessionId: string;
+  /** Search id for the verified CSV export link (from session metadata). */
+  searchId?: number;
   /** e.g. "Dallas", "Austin", "Houston" */
   market?: string;
   /** Local filesystem path to the CSV (optional). */
@@ -63,6 +65,7 @@ async function loadCsvAttachment(options: {
 export async function sendPackDeliveryEmail({
   toEmail,
   sessionId,
+  searchId,
   market,
   csvPath,
   csvUrl,
@@ -77,6 +80,10 @@ export async function sendPackDeliveryEmail({
   const from = process.env.RESEND_FROM_EMAIL?.trim() ?? "Dentily <hello@dentily.co>";
   const baseUrl = getAppBaseUrl().replace(/\/$/, "");
   const downloadUrl = `${baseUrl}/api/download?session_id=${encodeURIComponent(sessionId)}`;
+  const csvExportUrl =
+    Number.isFinite(searchId) && searchId! > 0
+      ? `${baseUrl}/api/search/${searchId}/export?session_id=${encodeURIComponent(sessionId)}`
+      : null;
   const resend = new Resend(apiKey);
   const marketLabel = market?.trim() || "your market";
   const subject = `Your ${marketLabel} dental leads from Dentily`;
@@ -99,6 +106,7 @@ export async function sendPackDeliveryEmail({
     `Your ${marketLabel} dental leads pack from Dentily.`,
     "",
     ...(csvAttachedLine ? [csvAttachedLine, ""] : []),
+    ...(csvExportUrl ? [`Download CSV (web): ${csvExportUrl}`, ""] : []),
     `Quick start guide: ${downloadUrl}`,
     "",
     "The guide walks you through sorting your leads, filling in your outreach templates, and getting your first emails out today.",
@@ -129,12 +137,22 @@ export async function sendPackDeliveryEmail({
             ? `<p style="font-size: 14px; color: #475569; line-height: 1.6; margin: 0 0 16px;">${csvAttachedLine}</p>`
             : ""
         }
-        <p style="margin: 0 0 28px;">
+        <p style="margin: 0 0 16px;">
           <a href="${downloadUrl}"
              style="display: inline-block; background: #0ea5e9; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 15px; padding: 13px 22px; border-radius: 8px;">
-            Access Your Pack &rarr;
+            Quick start guide &rarr;
           </a>
         </p>
+        ${
+          csvExportUrl
+            ? `<p style="margin: 0 0 28px;">
+          <a href="${csvExportUrl}"
+             style="display: inline-block; background: #0f172a; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 15px; padding: 13px 22px; border-radius: 8px;">
+            Download CSV &rarr;
+          </a>
+        </p>`
+            : `<p style="margin: 0 0 28px;"></p>`
+        }
         <p style="font-size: 14px; color: #475569; line-height: 1.6; margin: 0 0 16px;">
           The guide walks you through sorting your leads, filling in your outreach templates, and getting your first emails out today.
         </p>

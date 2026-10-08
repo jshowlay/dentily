@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { buildPackExportHref } from "@/lib/pack-export-url";
 import { HOW_TO_USE_PACK_STEPS, SITE } from "@/lib/site-config";
 import "@/app/success-page.css";
 
@@ -27,9 +28,20 @@ type Props = {
   outcome: SuccessOutcome;
   packSummary?: SuccessPackSummary | null;
   sessionId?: string | null;
+  packDownloadToken?: string | null;
 };
 
-export function SuccessClient({ outcome, packSummary, sessionId }: Props) {
+export function SuccessClient({ outcome, packSummary, sessionId, packDownloadToken }: Props) {
+  const exportHref =
+    outcome.kind === "ok"
+      ? buildPackExportHref(outcome.searchId, { sessionId, token: packDownloadToken })
+      : null;
+  const resultsHref =
+    outcome.kind === "ok"
+      ? `/results?searchId=${outcome.searchId}${
+          sessionId ? `&session_id=${encodeURIComponent(sessionId)}` : ""
+        }${packDownloadToken ? `&token=${encodeURIComponent(packDownloadToken)}` : ""}`
+      : null;
   const location = packSummary?.location?.trim() ?? "";
   const totalCount = packSummary?.totalCount ?? 0;
   const highPriority = packSummary?.highPriorityCount ?? 0;
@@ -58,14 +70,10 @@ export function SuccessClient({ outcome, packSummary, sessionId }: Props) {
               <strong>Download CSV</strong> below anytime (same file as the email attachment).
             </p>
             <div className="dsu-actions">
-              <Link href={`/results?searchId=${outcome.searchId}`} className="dsu-btn dsu-btn-primary">
+              <Link href={resultsHref ?? `/results?searchId=${outcome.searchId}`} className="dsu-btn dsu-btn-primary">
                 View your leads →
               </Link>
-              <a
-                href={`/api/search/${outcome.searchId}/export`}
-                download
-                className="dsu-btn dsu-btn-ghost"
-              >
+              <a href={exportHref ?? "#"} download className="dsu-btn dsu-btn-ghost">
                 ⬇ Download CSV
               </a>
               {sessionId ? (
@@ -149,8 +157,8 @@ export function SuccessClient({ outcome, packSummary, sessionId }: Props) {
               Checkout session not in link
             </p>
             <p>
-              If you already paid, open your results page and use <strong>Download CSV</strong> there — your pack may
-              already be unlocked. Otherwise complete checkout from Stripe again so we can attach a session.
+              If you already paid, use the download link from your payment confirmation or delivery email. Otherwise
+              complete checkout from Stripe again so we can attach a session.
             </p>
             <div className="dsu-warn-actions">
               <Link href="/" className="dsu-btn dsu-btn-primary" style={{ maxWidth: "none", flex: "none" }}>

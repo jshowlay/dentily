@@ -1,7 +1,9 @@
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { toSlugPart } from "@/lib/csv";
 import { getSearchForExport } from "@/lib/db";
+import { verifyPackExportAccess } from "@/lib/pack-export-access";
 import { ensureDentistPackChainFinalized } from "@/lib/ensure-pack-chain-finalized";
 import {
   buildLeadPackCsv,
@@ -18,7 +20,7 @@ const paramsSchema = z.object({
 });
 
 export async function GET(
-  _request: Request,
+  request: Request,
   context: { params: { searchId: string } | Promise<{ searchId: string }> }
 ) {
   try {
@@ -29,6 +31,15 @@ export async function GET(
     }
 
     const { searchId } = parsedParams.data;
+    const access = await verifyPackExportAccess({
+      searchId,
+      request,
+      cookies: await cookies(),
+    });
+    if (!access.allowed) {
+      return NextResponse.json({ error: { message: access.message } }, { status: 403 });
+    }
+
     await ensureDentistPackChainFinalized(searchId);
     const { search, rows } = await getSearchForExport(searchId);
 

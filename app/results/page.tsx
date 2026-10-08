@@ -5,6 +5,7 @@ import { ResultsPageView } from "@/components/results/results-page-view";
 import { ServerDbError } from "@/components/server-db-error";
 import { sanitizeLeadsForClient } from "@/lib/client-leads";
 import { getSearchWithLeads, isDatabaseConfigured } from "@/lib/db";
+import { buildPackExportHref, hasPackExportAuthQuery } from "@/lib/pack-export-url";
 import { getNicheConfig } from "@/lib/niches";
 import { canExportLeadPack } from "@/lib/search-status";
 
@@ -14,10 +15,14 @@ export default async function ResultsPage({
   searchParams,
 }: {
   /** Next 15 may pass a Promise; Next 14 passes a plain object — support both. */
-  searchParams: Promise<{ searchId?: string }> | { searchId?: string };
+  searchParams:
+    | Promise<{ searchId?: string; session_id?: string; token?: string }>
+    | { searchId?: string; session_id?: string; token?: string };
 }) {
   const sp = await Promise.resolve(searchParams);
   const searchIdStr = sp.searchId;
+  const checkoutSessionId = sp.session_id?.trim() || null;
+  const packDownloadToken = sp.token?.trim() || null;
   const rawId = searchIdStr ? Number(searchIdStr) : NaN;
   const searchId = Number.isFinite(rawId) && rawId > 0 ? Math.trunc(rawId) : null;
 
@@ -83,6 +88,13 @@ export default async function ResultsPage({
         ? Math.round(scoredLeads.reduce((sum, lead) => sum + Number(lead.score), 0) / scoredLeads.length)
         : null;
     const canExport = canExportLeadPack(parsed.status, parsed.leads.length);
+    const exportCsvHref =
+      parsed.isPaid && hasPackExportAuthQuery({ sessionId: checkoutSessionId, token: packDownloadToken })
+        ? buildPackExportHref(parsed.id, {
+            sessionId: checkoutSessionId,
+            token: packDownloadToken,
+          })
+        : null;
     const highPriorityCount = parsed.leads.filter((l) => (l.priority ?? "").toLowerCase() === "high").length;
     // Kick off the background website + Hunter enrichment pass while results are shown.
     const hasPendingEnrichment = parsed.leads.some((l) => l.emailStatus === "pending");
@@ -101,6 +113,7 @@ export default async function ResultsPage({
           averageScore={averageScore}
           canExport={canExport}
           isPaid={parsed.isPaid}
+          exportCsvHref={exportCsvHref}
           leads={sanitizeLeadsForClient(parsed.leads)}
         />
       </>

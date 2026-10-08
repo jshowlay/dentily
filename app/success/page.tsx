@@ -1,5 +1,5 @@
 import { SuccessClient, type SuccessOutcome, type SuccessPackSummary } from "@/app/success/success-client";
-import { getSearchWithLeads, isDatabaseConfigured } from "@/lib/db";
+import { getPackDownloadTokenForStripeSession, getSearchWithLeads, isDatabaseConfigured } from "@/lib/db";
 import { verifyAndFulfillCheckoutSession } from "@/lib/payments";
 
 export const dynamic = "force-dynamic";
@@ -52,5 +52,21 @@ export default async function SuccessPage({
   const packSummary =
     outcome.kind === "ok" ? await loadPackSummary(outcome.searchId) : null;
 
-  return <SuccessClient outcome={outcome} packSummary={packSummary} sessionId={sessionId} />;
+  let packDownloadToken: string | null = null;
+  if (outcome.kind === "ok" && sessionId && isDatabaseConfigured()) {
+    try {
+      packDownloadToken = await getPackDownloadTokenForStripeSession(sessionId);
+    } catch (e) {
+      console.warn("[success] pack download token", e);
+    }
+  }
+
+  return (
+    <SuccessClient
+      outcome={outcome}
+      packSummary={packSummary}
+      sessionId={sessionId}
+      packDownloadToken={packDownloadToken}
+    />
+  );
 }
