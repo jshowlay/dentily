@@ -26,7 +26,7 @@ export function LandingHeroRedesign({
             Know Which Dental Practices Need You — <em>and Exactly What to Say.</em>
           </h1>
           <p className="dh-hero-lead">
-            Up to {leadCount} practices per market — deduplicated, chain-filtered, with verified contact paths.
+            Up to {leadCount} practices per market — deduplicated, chain-filtered, with real contact paths for every practice.
           </p>
           <div className="dh-hero-ctas">
             <HashSafeLink href={primaryHref} className="dh-btn-primary">
