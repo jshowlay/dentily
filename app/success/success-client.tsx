@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { buildPackExportHref } from "@/lib/pack-export-url";
+import { SuccessPackDownload } from "@/components/success/success-pack-download";
 import { HOW_TO_USE_PACK_STEPS, SITE } from "@/lib/site-config";
 import "@/app/success-page.css";
 
@@ -32,10 +32,6 @@ type Props = {
 };
 
 export function SuccessClient({ outcome, packSummary, sessionId, packDownloadToken }: Props) {
-  const exportHref =
-    outcome.kind === "ok"
-      ? buildPackExportHref(outcome.searchId, { sessionId, token: packDownloadToken })
-      : null;
   const resultsHref =
     outcome.kind === "ok"
       ? `/results?searchId=${outcome.searchId}${
@@ -66,16 +62,18 @@ export function SuccessClient({ outcome, packSummary, sessionId, packDownloadTok
               Your {location ? `${location} ` : ""}leads are <em>ready</em>
             </h1>
             <p className="dsu-subtitle">
-              Your search is unlocked. We email your pack separately — if it is delayed, use{" "}
-              <strong>Download CSV</strong> below anytime (same file as the email attachment).
+              Your search is unlocked. We&apos;re preparing your CSV (about 2–3 minutes) and will email it too — download
+              below when ready.
             </p>
             <div className="dsu-actions">
               <Link href={resultsHref ?? `/results?searchId=${outcome.searchId}`} className="dsu-btn dsu-btn-primary">
                 View your leads →
               </Link>
-              <a href={exportHref ?? "#"} download className="dsu-btn dsu-btn-ghost">
-                ⬇ Download CSV
-              </a>
+              <SuccessPackDownload
+                searchId={outcome.searchId}
+                sessionId={sessionId}
+                packDownloadToken={packDownloadToken}
+              />
               {sessionId ? (
                 <a
                   href={`/api/download?session_id=${encodeURIComponent(sessionId)}`}

@@ -12,7 +12,7 @@ import { getStripe } from "@/lib/stripe";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 /** Background waitUntil work (chain finalize + CSV + email) may run after 200. */
-export const maxDuration = 120;
+export const maxDuration = 300;
 
 // Public route — no session auth. Stripe verifies via stripe-signature header below.
 // Endpoint URL in Stripe Dashboard must be https://www.dentily.co/api/webhooks/stripe

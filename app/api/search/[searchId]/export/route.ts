@@ -4,8 +4,7 @@ import { z } from "zod";
 import { toSlugPart } from "@/lib/csv";
 import { getSearchForExport } from "@/lib/db";
 import { verifyPackExportAccess } from "@/lib/pack-export-access";
-import { ensureDentistPackChainFinalized } from "@/lib/ensure-pack-chain-finalized";
-import { runSearchPackEnrichment } from "@/lib/search-pack-enrichment";
+import { ensurePaidPackReadyForExport } from "@/lib/ensure-paid-pack-ready";
 import {
   buildLeadPackCsv,
   buildLeadPackRowsFromExport,
@@ -41,8 +40,8 @@ export async function GET(
       return NextResponse.json({ error: { message: access.message } }, { status: 403 });
     }
 
-    await runSearchPackEnrichment(searchId, "paid");
-    await ensureDentistPackChainFinalized(searchId);
+    const ready = await ensurePaidPackReadyForExport(searchId);
+    console.log("[api/search/export] pack ready", searchId, ready);
     const { search, rows } = await getSearchForExport(searchId);
 
     if (!search) {

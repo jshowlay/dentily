@@ -9,7 +9,7 @@ import { buildLeadPackCsv, buildLeadPackRowsFromExport } from "@/lib/lead-pack-e
 import { finalizeDentistPackListingWithChainProbe } from "@/lib/pack-listing-quality";
 import { getNicheConfig } from "@/lib/niches";
 
-const WEBHOOK_LIMIT_MS = 120_000;
+const WEBHOOK_LIMIT_MS = 300_000;
 
 async function main() {
   const nicheConfig = getNicheConfig("dentists");
