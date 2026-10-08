@@ -35,7 +35,7 @@ import {
   normalizeMapsUrlForCsv,
   stripAllQueryParams,
 } from "@/lib/url-normalize";
-import type { EmailStatus, ExportLeadRow } from "@/lib/types";
+import type { EmailStatus, ExportLeadRow, Lead } from "@/lib/types";
 
 function coerceEmailStatus(raw: string | null | undefined): EmailStatus | null {
   if (!raw?.trim()) return null;
@@ -821,7 +821,11 @@ export function validateLeadPackMapsUrls(rows: LeadPackCsvRow[]): void {
   }
 }
 
-export function buildLeadPackRowsFromExport(rows: ExportLeadRow[]): LeadPackCsvRow[] {
+function prepareLeadPackPipeline(rows: ExportLeadRow[]): {
+  sourceRows: ExportLeadRow[];
+  rowsIn: ExportLeadRow[];
+  sorted: PipelineRow[];
+} {
   const marketCityForDedupe = inferMarketCityFromExportRows(rows);
   const sourceRows = collapseSamePracticeNameRows(
     dedupeExportLeadRows(rows, { marketCity: marketCityForDedupe }),
@@ -887,6 +891,19 @@ export function buildLeadPackRowsFromExport(rows: ExportLeadRow[]): LeadPackCsvR
   const sorted = [...pipeline].sort((a, b) =>
     compareLeadsForPaidPack(exportRowToLead(a, 0), exportRowToLead(b, 0))
   );
+
+  return { sourceRows, rowsIn, sorted };
+}
+
+/** Same deduped/scored lead list as the buyer CSV (before instruction row). */
+export function buildLeadsMatchingExportPack(rows: ExportLeadRow[]): Lead[] {
+  if (rows.length === 0) return [];
+  const { sorted } = prepareLeadPackPipeline(rows);
+  return sorted.map((r, i) => exportRowToLead(r, i));
+}
+
+export function buildLeadPackRowsFromExport(rows: ExportLeadRow[]): LeadPackCsvRow[] {
+  const { sourceRows, rowsIn, sorted } = prepareLeadPackPipeline(rows);
 
   const sortedLeads = sorted.map((r, i) => exportRowToLead(r, i));
   const marketCity = inferMarketCityFromExportRows(sorted);

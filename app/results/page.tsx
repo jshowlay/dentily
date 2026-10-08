@@ -4,7 +4,8 @@ import { DeferredEnrichment } from "@/components/deferred-enrichment";
 import { ResultsPageView } from "@/components/results/results-page-view";
 import { ServerDbError } from "@/components/server-db-error";
 import { sanitizeLeadsForClient } from "@/lib/client-leads";
-import { getSearchWithLeads, isDatabaseConfigured } from "@/lib/db";
+import { getSearchForExport, getSearchWithLeads, isDatabaseConfigured } from "@/lib/db";
+import { buildLeadsMatchingExportPack } from "@/lib/lead-pack-export";
 import { verifyPackAccessForResultsPage } from "@/lib/pack-export-access";
 import { buildPackExportHref, hasPackExportAuthQuery } from "@/lib/pack-export-url";
 import {
@@ -88,12 +89,23 @@ export default async function ResultsPage({
     }
 
     const nicheLabel = getNicheConfig(parsed.niche).name;
-    const scoredLeads = parsed.leads.filter((lead) => typeof lead.score === "number");
+    let displayLeads = parsed.leads;
+    try {
+      const { rows: exportRows } = await getSearchForExport(searchId);
+      if (exportRows.length > 0) {
+        const packLeads = buildLeadsMatchingExportPack(exportRows);
+        if (packLeads.length > 0) displayLeads = packLeads;
+      }
+    } catch (e) {
+      console.warn("[results] export pack view fallback to DB leads", searchId, e);
+    }
+    const recordCount = displayLeads.length;
+    const scoredLeads = displayLeads.filter((lead) => typeof lead.score === "number");
     const averageScore =
       scoredLeads.length > 0
         ? Math.round(scoredLeads.reduce((sum, lead) => sum + Number(lead.score), 0) / scoredLeads.length)
         : null;
-    const canExport = canExportLeadPack(parsed.status, parsed.leads.length);
+    const canExport = canExportLeadPack(parsed.status, recordCount);
     const packAccess = await verifyPackAccessForResultsPage(parsed.id, {
       sessionId: checkoutSessionId,
       token: packDownloadToken,
@@ -107,9 +119,9 @@ export default async function ResultsPage({
           })
         : null;
     const leadsForClient = hasBuyerAccess
-      ? parsed.leads
-      : redactLeadsForPublicPreview(parsed.leads);
-    const highPriorityCount = parsed.leads.filter((l) => (l.priority ?? "").toLowerCase() === "high").length;
+      ? displayLeads
+      : redactLeadsForPublicPreview(displayLeads);
+    const highPriorityCount = displayLeads.filter((l) => (l.priority ?? "").toLowerCase() === "high").length;
     // Kick off the background website + Hunter enrichment pass while results are shown.
     const hasPendingEnrichment = parsed.leads.some((l) => l.emailStatus === "pending");
 
@@ -124,7 +136,7 @@ export default async function ResultsPage({
           location={formatMarketLocation(parsed.location) || parsed.location}
           status={parsed.status}
           errorMessage={parsed.errorMessage}
-          recordCount={parsed.resultCount ?? parsed.leads.length}
+          recordCount={recordCount}
           highPriorityCount={highPriorityCount}
           averageScore={averageScore}
           canExport={canExport}
