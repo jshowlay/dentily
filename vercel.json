@@ -8,6 +8,9 @@
   "functions": {
     "app/api/search/route.ts": {
       "maxDuration": 120
+    },
+    "app/results/page.tsx": {
+      "regions": ["iad1"]
     }
   }
 }

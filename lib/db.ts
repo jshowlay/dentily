@@ -112,7 +112,10 @@ export function getPool() {
   return pool;
 }
 
+let schemaReady = false;
+
 export async function ensureSchema() {
+  if (schemaReady) return;
   for (let attempt = 1; attempt <= 2; attempt += 1) {
     const client = await getPool().connect();
     let releasedHard = false;
@@ -287,6 +290,9 @@ export async function ensureSchema() {
           WHERE email_3_sent_at IS NULL AND converted_at IS NULL AND unsubscribed_at IS NULL;
       `);
 
+      await client.query(`CREATE INDEX IF NOT EXISTS leads_search_id_idx ON leads (search_id);`);
+
+      schemaReady = true;
       return;
     } catch (error) {
       const retryable = isConnectionError(error);
@@ -698,6 +704,197 @@ export async function getSearchWithLeads(searchId: number): Promise<SearchWithLe
   throw new Error("Failed to load search after retries.");
 }
 
+/** Export pipeline fields only — avoids pulling full lead metadata JSONB blobs. */
+const LEADS_FOR_EXPORT_SQL = `
+  SELECT
+    place_id,
+    name,
+    address,
+    website,
+    phone,
+    email,
+    primary_email,
+    contact_form_url,
+    email_status,
+    email_source,
+    enrichment_notes,
+    email_rejection_reason,
+    rating,
+    review_count,
+    score,
+    reason,
+    outreach,
+    priority,
+    opportunity_type,
+    primary_type,
+    maps_url,
+    created_at,
+    metadata->'intelligence' AS intelligence,
+    metadata->'scoringEvidence' AS scoring_evidence
+  FROM leads
+  WHERE search_id = $1
+  ORDER BY score DESC NULLS LAST, created_at DESC
+`;
+
+function mapSearchRowToHeader(row: Record<string, unknown>): SearchWithLeads {
+  return {
+    id: row.id as number,
+    niche: row.niche as string,
+    location: row.location as string,
+    status: row.status as string,
+    resultCount: Number(row.result_count ?? 0),
+    errorMessage: (row.error_message as string | null) ?? null,
+    isPaid: Boolean(row.is_paid),
+    createdAt: row.created_at ? new Date(row.created_at as string).toISOString() : undefined,
+    leads: [],
+  };
+}
+
+function mapLeadPgRowToExportRow(r: Record<string, unknown>): ExportLeadRow {
+  const primary = ((r.primary_email ?? r.email) as string | null) ?? null;
+  const es = parseEmailStatus(r.email_status);
+  const intel = (r.intelligence ?? {}) as {
+    otherEmails?: string;
+    whyNow?: string;
+    clusterNotes?: string;
+    apolloEnrichment?: string;
+    homepageMentionsSmileGeneration?: boolean;
+  };
+  const signalLead = {
+    primaryEmail: primary,
+    contactFormUrl: (r.contact_form_url as string | null) ?? null,
+    phone: (r.phone as string | null) ?? null,
+    emailStatus: es,
+  };
+  const metadata: Record<string, unknown> = {};
+  if (r.scoring_evidence && typeof r.scoring_evidence === "object") {
+    metadata.scoringEvidence = r.scoring_evidence;
+  }
+  if (r.intelligence && typeof r.intelligence === "object") {
+    metadata.intelligence = r.intelligence;
+  }
+  return {
+    name: (r.name as string | null) ?? null,
+    address: (r.address as string | null) ?? null,
+    website: (r.website as string | null) ?? null,
+    phone: (r.phone as string | null) ?? null,
+    primary_email: primary,
+    other_emails: intel.otherEmails ?? null,
+    contact_form_url: (r.contact_form_url as string | null) ?? null,
+    email_status: (r.email_status as string | null) ?? null,
+    email_source: (r.email_source as string | null) ?? null,
+    enrichment_notes: (r.enrichment_notes as string | null) ?? null,
+    email_rejection_reason: (r.email_rejection_reason as string | null) ?? null,
+    why_now: intel.whyNow ?? null,
+    cluster_notes: intel.clusterNotes ?? null,
+    apollo_enrichment: intel.apolloEnrichment ?? null,
+    contactable: isLeadContactable(signalLead),
+    outreach_readiness: outreachReadinessFromContactSignals(signalLead),
+    rating: r.rating !== null && r.rating !== undefined ? Number(r.rating) : null,
+    review_count: (r.review_count as number | null) ?? null,
+    score: r.score !== null && r.score !== undefined ? Number(r.score) : null,
+    reason: (r.reason as string | null) ?? null,
+    outreach: (r.outreach as string | null) ?? null,
+    priority: (r.priority as string | null) ?? null,
+    opportunity_type: (r.opportunity_type as string | null) ?? null,
+    primary_type: (r.primary_type as string | null) ?? null,
+    maps_url: (r.maps_url as string | null) ?? null,
+    created_at: r.created_at ? new Date(r.created_at as string).toISOString() : null,
+    place_id: (r.place_id as string | null) ?? null,
+    homepage_dso_smile_generation: intel.homepageMentionsSmileGeneration ?? null,
+    metadata,
+  };
+}
+
+export type SearchForResultsPageData = {
+  search: SearchWithLeads;
+  exportRows: ExportLeadRow[];
+  hasPendingEnrichment: boolean;
+  timings: {
+    schemaMs: number;
+    connectMs: number;
+    searchMs: number;
+    leadsQueryMs: number;
+    mapMs: number;
+    totalMs: number;
+  };
+};
+
+/** One connection, one leads query — for /results (export-shaped rows + search header). */
+export async function getSearchForResultsPage(searchId: number): Promise<SearchForResultsPageData | null> {
+  const t0 = Date.now();
+  let schemaMs = 0;
+  let connectMs = 0;
+  let searchMs = 0;
+  let leadsQueryMs = 0;
+  let mapMs = 0;
+
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    let client: PoolClient | null = null;
+    let releasedHard = false;
+    try {
+      const tSchema = Date.now();
+      await ensureSchema();
+      schemaMs = Date.now() - tSchema;
+
+      const tConnect = Date.now();
+      client = await getPool().connect();
+      connectMs = Date.now() - tConnect;
+
+      const tSearch = Date.now();
+      const searchRes = await client.query(
+        "SELECT id, niche, location, status, result_count, error_message, is_paid, created_at FROM searches WHERE id = $1",
+        [searchId]
+      );
+      searchMs = Date.now() - tSearch;
+
+      const row = searchRes.rows[0];
+      if (!row) return null;
+
+      const tLeads = Date.now();
+      const leadsRes = await client.query(LEADS_FOR_EXPORT_SQL, [searchId]);
+      leadsQueryMs = Date.now() - tLeads;
+
+      const tMap = Date.now();
+      const exportRows = leadsRes.rows.map((r) => mapLeadPgRowToExportRow(r));
+      const hasPendingEnrichment = exportRows.some(
+        (r) => (r.email_status ?? "").trim().toLowerCase() === "pending"
+      );
+      mapMs = Date.now() - tMap;
+
+      return {
+        search: mapSearchRowToHeader(row),
+        exportRows,
+        hasPendingEnrichment,
+        timings: {
+          schemaMs,
+          connectMs,
+          searchMs,
+          leadsQueryMs,
+          mapMs,
+          totalMs: Date.now() - t0,
+        },
+      };
+    } catch (error) {
+      const retryable = isConnectionError(error);
+      if (retryable && attempt === 1) {
+        if (client) {
+          safeReleaseClient(client, true);
+          releasedHard = true;
+        }
+        await resetPool("retrying getSearchForResultsPage after connection failure");
+        continue;
+      }
+      throw error;
+    } finally {
+      if (client && !releasedHard) {
+        safeReleaseClient(client);
+      }
+    }
+  }
+  throw new Error("Failed to load results page data after retries.");
+}
+
 export async function getSearchForExport(searchId: number): Promise<{
   search: SearchWithLeads | null;
   rows: ExportLeadRow[];
@@ -712,75 +909,9 @@ export async function getSearchForExport(searchId: number): Promise<{
     const row = searchRes.rows[0];
     if (!row) return { search: null, rows: [] };
 
-    const search: SearchWithLeads = {
-      id: row.id as number,
-      niche: row.niche as string,
-      location: row.location as string,
-      status: row.status as string,
-      resultCount: Number(row.result_count ?? 0),
-      errorMessage: (row.error_message as string | null) ?? null,
-      isPaid: Boolean(row.is_paid),
-      createdAt: row.created_at ? new Date(row.created_at).toISOString() : undefined,
-      leads: [],
-    };
-
-    const leadsRes = await client.query(
-      `SELECT
-         place_id, name, address, website, phone, email, primary_email, contact_form_url, email_status, email_source, enrichment_notes, email_rejection_reason, rating, review_count, score, reason, outreach, priority, opportunity_type, primary_type, maps_url, metadata, created_at
-       FROM leads
-       WHERE search_id = $1
-       ORDER BY score DESC NULLS LAST, created_at DESC`,
-      [searchId]
-    );
-
-    const rows: ExportLeadRow[] = leadsRes.rows.map((r: any) => {
-      const primary = (r.primary_email ?? r.email) ?? null;
-      const es = parseEmailStatus(r.email_status);
-      const intel = (r.metadata?.intelligence ?? {}) as {
-        otherEmails?: string;
-        whyNow?: string;
-        clusterNotes?: string;
-        apolloEnrichment?: string;
-      };
-      const signalLead = {
-        primaryEmail: primary,
-        contactFormUrl: r.contact_form_url ?? null,
-        phone: r.phone ?? null,
-        emailStatus: es,
-      };
-      return {
-        name: r.name ?? null,
-        address: r.address ?? null,
-        website: r.website ?? null,
-        phone: r.phone ?? null,
-        primary_email: primary,
-        other_emails: intel.otherEmails ?? null,
-        contact_form_url: r.contact_form_url ?? null,
-        email_status: r.email_status ?? null,
-        email_source: r.email_source ?? null,
-        enrichment_notes: r.enrichment_notes ?? null,
-        email_rejection_reason: (r.email_rejection_reason as string | null) ?? null,
-        why_now: intel.whyNow ?? null,
-        cluster_notes: intel.clusterNotes ?? null,
-        apollo_enrichment: intel.apolloEnrichment ?? null,
-        contactable: isLeadContactable(signalLead),
-        outreach_readiness: outreachReadinessFromContactSignals(signalLead),
-        rating: r.rating !== null && r.rating !== undefined ? Number(r.rating) : null,
-        review_count: r.review_count ?? null,
-        score: r.score ?? null,
-        reason: r.reason ?? null,
-        outreach: r.outreach ?? null,
-        priority: r.priority ?? null,
-        opportunity_type: r.opportunity_type ?? null,
-        primary_type: r.primary_type ?? null,
-        maps_url: r.maps_url ?? null,
-        created_at: r.created_at ? new Date(r.created_at).toISOString() : null,
-        place_id: r.place_id ?? null,
-        metadata: (r.metadata ?? {}) as Record<string, unknown>,
-      };
-    });
-
-    return { search, rows };
+    const leadsRes = await client.query(LEADS_FOR_EXPORT_SQL, [searchId]);
+    const rows = leadsRes.rows.map((r) => mapLeadPgRowToExportRow(r));
+    return { search: mapSearchRowToHeader(row), rows };
   } finally {
     safeReleaseClient(client);
   }

@@ -4,7 +4,7 @@ import { DeferredEnrichment } from "@/components/deferred-enrichment";
 import { ResultsPageView } from "@/components/results/results-page-view";
 import { ServerDbError } from "@/components/server-db-error";
 import { sanitizeLeadsForClient } from "@/lib/client-leads";
-import { getSearchForExport, getSearchWithLeads, isDatabaseConfigured } from "@/lib/db";
+import { getSearchForResultsPage, isDatabaseConfigured } from "@/lib/db";
 import { buildLeadsMatchingExportPack } from "@/lib/lead-pack-export";
 import { verifyPackAccessForResultsPage } from "@/lib/pack-export-access";
 import { buildPackExportHref, hasPackExportAuthQuery } from "@/lib/pack-export-url";
@@ -17,6 +17,8 @@ import { formatMarketLocation } from "@/lib/format-market-location";
 import { canExportLeadPack } from "@/lib/search-status";
 
 export const dynamic = "force-dynamic";
+/** Colocate with Neon US East when DATABASE_URL is a us-east-1 host (see vercel.json). */
+export const preferredRegion = "iad1";
 
 export default async function ResultsPage({
   searchParams,
@@ -49,10 +51,11 @@ export default async function ResultsPage({
       );
     }
 
-    let parsed = null as Awaited<ReturnType<typeof getSearchWithLeads>>;
+    const pageT0 = Date.now();
+    let loaded: Awaited<ReturnType<typeof getSearchForResultsPage>> = null;
     let loadError: string | null = null;
     try {
-      parsed = await getSearchWithLeads(searchId);
+      loaded = await getSearchForResultsPage(searchId);
     } catch (e) {
       console.error("[results]", e);
       loadError = e instanceof Error ? e.message : "Could not load this search.";
@@ -72,7 +75,7 @@ export default async function ResultsPage({
       );
     }
 
-    if (!parsed) {
+    if (!loaded) {
       return (
         <div className="dentily-results min-h-screen bg-[#F7F5F0] p-8">
           <div className="mx-auto max-w-lg rounded-lg border border-[rgba(0,0,0,0.1)] bg-white p-6">
@@ -88,17 +91,14 @@ export default async function ResultsPage({
       );
     }
 
+    const parsed = loaded.search;
+    const packT0 = Date.now();
+    const displayLeads =
+      loaded.exportRows.length > 0 ? buildLeadsMatchingExportPack(loaded.exportRows) : [];
+    const packMs = Date.now() - packT0;
+
+    const tAccess0 = Date.now();
     const nicheLabel = getNicheConfig(parsed.niche).name;
-    let displayLeads = parsed.leads;
-    try {
-      const { rows: exportRows } = await getSearchForExport(searchId);
-      if (exportRows.length > 0) {
-        const packLeads = buildLeadsMatchingExportPack(exportRows);
-        if (packLeads.length > 0) displayLeads = packLeads;
-      }
-    } catch (e) {
-      console.warn("[results] export pack view fallback to DB leads", searchId, e);
-    }
     const recordCount = displayLeads.length;
     const scoredLeads = displayLeads.filter((lead) => typeof lead.score === "number");
     const averageScore =
@@ -110,6 +110,7 @@ export default async function ResultsPage({
       sessionId: checkoutSessionId,
       token: packDownloadToken,
     });
+    const accessMs = Date.now() - tAccess0;
     const hasBuyerAccess = canViewFullLeadPackOnResults(parsed.isPaid, packAccess);
     const exportCsvHref =
       parsed.isPaid && hasPackExportAuthQuery({ sessionId: checkoutSessionId, token: packDownloadToken })
@@ -122,12 +123,23 @@ export default async function ResultsPage({
       ? displayLeads
       : redactLeadsForPublicPreview(displayLeads);
     const highPriorityCount = displayLeads.filter((l) => (l.priority ?? "").toLowerCase() === "high").length;
-    // Kick off the background website + Hunter enrichment pass while results are shown.
-    const hasPendingEnrichment = parsed.leads.some((l) => l.emailStatus === "pending");
+
+    const pageMs = Date.now() - pageT0;
+    console.log("[results/page] timing", {
+      searchId,
+      vercelRegion: process.env.VERCEL_REGION ?? null,
+      vercelEnv: process.env.VERCEL_ENV ?? null,
+      recordCount,
+      exportRowCount: loaded.exportRows.length,
+      db: loaded.timings,
+      packMs,
+      accessMs,
+      pageMs,
+    });
 
     return (
       <>
-        {hasPendingEnrichment && (!parsed.isPaid || hasBuyerAccess) ? (
+        {loaded.hasPendingEnrichment && (!parsed.isPaid || hasBuyerAccess) ? (
           <DeferredEnrichment searchId={parsed.id} />
         ) : null}
         <ResultsPageView
