@@ -1,13 +1,12 @@
-import { createElement, type ReactElement } from "react";
 import { NextResponse, type NextRequest } from "next/server";
-import { renderToBuffer } from "@react-pdf/renderer";
 import type Stripe from "stripe";
-import { getSearchDeliveryInfo } from "@/lib/db";
+import { getSearchDeliveryInfo, getSearchForExport } from "@/lib/db";
 import {
   formatMarketLocation,
   marketLocationFilenamePart,
 } from "@/lib/format-market-location";
-import { QuickStartGuide } from "@/lib/pdf/QuickStartGuide";
+import { computeQuickStartPackStatsFromExportRows } from "@/lib/pdf/quick-start-pack-stats";
+import { renderQuickStartGuideBuffer } from "@/lib/pdf/render-quick-start-guide";
 import { getStripe } from "@/lib/stripe";
 
 export const dynamic = "force-dynamic";
@@ -49,30 +48,41 @@ export async function GET(request: NextRequest) {
 
   if (Number.isFinite(searchId) && searchId > 0) {
     try {
-      const info = await getSearchDeliveryInfo(searchId);
-      if (info?.location) market = formatMarketLocation(info.location) || info.location;
-      if (info?.totalPractices) totalPractices = info.totalPractices;
-      if (info?.contactableLeads) contactableLeads = info.contactableLeads;
-      if (info?.topPriorityLeads) topPriorityLeads = info.topPriorityLeads;
-      if (info?.emailCount) emailCount = info.emailCount;
-      if (info?.formCount) formCount = info.formCount;
-      if (info?.phoneCount) phoneCount = info.phoneCount;
+      const { search, rows } = await getSearchForExport(searchId);
+      if (search?.location) market = formatMarketLocation(search.location) || search.location;
+      if (rows.length > 0) {
+        const stats = computeQuickStartPackStatsFromExportRows(rows);
+        totalPractices = stats.totalPractices;
+        contactableLeads = stats.contactableLeads;
+        topPriorityLeads = stats.topPriorityLeads;
+        emailCount = stats.emailCount;
+        formCount = stats.formCount;
+        phoneCount = stats.phoneCount;
+      } else {
+        const info = await getSearchDeliveryInfo(searchId);
+        if (info) {
+          totalPractices = info.totalPractices;
+          contactableLeads = info.contactableLeads;
+          topPriorityLeads = info.topPriorityLeads;
+          emailCount = info.emailCount;
+          formCount = info.formCount;
+          phoneCount = info.phoneCount;
+        }
+      }
     } catch (e) {
-      console.warn("[api/download] could not fetch delivery info", searchId, e);
+      console.warn("[api/download] could not fetch pack stats", searchId, e);
     }
   }
 
-  const buffer = await renderToBuffer(
-    createElement(QuickStartGuide, {
-      market,
-      totalPractices,
-      contactableLeads,
-      topPriorityLeads,
-      emailCount,
-      formCount,
-      phoneCount,
-    }) as ReactElement
-  );
+  const buffer = await renderQuickStartGuideBuffer({
+    market,
+    totalPractices,
+    contactableLeads,
+    topPriorityLeads,
+    emailCount,
+    formCount,
+    phoneCount,
+  });
 
   const filename = `dentily-${marketLocationFilenamePart(market)}-quick-start.pdf`;
 

@@ -4,180 +4,181 @@
  */
 import React from "react";
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
-
-const COLORS = {
-  navy: "#0f172a",
-  skyBlue: "#0ea5e9",
-  skyLight: "#e0f2fe",
-  white: "#ffffff",
-  offWhite: "#f8fafc",
-  border: "#e2e8f0",
-  muted: "#64748b",
-  body: "#334155",
-};
+import { DENTILY_PDF_FONTS, DENTILY_PDF_THEME as T } from "@/lib/pdf/dentily-pdf-theme";
 
 const styles = StyleSheet.create({
   page: {
-    backgroundColor: COLORS.offWhite,
-    paddingBottom: 56,
-    fontSize: 11,
-    color: COLORS.navy,
-    fontFamily: "Helvetica",
-  },
-  headerBar: {
-    backgroundColor: COLORS.navy,
-    paddingVertical: 22,
+    backgroundColor: T.bg,
+    paddingTop: 36,
+    paddingBottom: 52,
     paddingHorizontal: 40,
-  },
-  headerAccentStripe: {
-    height: 4,
-    backgroundColor: COLORS.skyBlue,
-    marginHorizontal: -40,
-    marginTop: -22,
-    marginBottom: 18,
+    fontSize: 11,
+    color: T.ink,
+    fontFamily: DENTILY_PDF_FONTS.sans,
   },
   wordmark: {
-    color: COLORS.white,
-    fontSize: 26,
-    fontFamily: "Helvetica-Bold",
-    letterSpacing: 0.5,
+    fontFamily: DENTILY_PDF_FONTS.serif,
+    fontSize: 18,
+    color: T.ink,
+    marginBottom: 28,
   },
-  tagline: {
-    color: COLORS.white,
+  heroTitle: {
+    fontFamily: DENTILY_PDF_FONTS.serif,
+    fontSize: 28,
+    lineHeight: 1.25,
+    color: T.ink,
+    marginBottom: 8,
+  },
+  heroAccent: {
+    fontFamily: DENTILY_PDF_FONTS.serif,
+    fontStyle: "italic",
+    color: T.green,
+  },
+  heroSub: {
     fontSize: 12,
-    marginTop: 4,
-    opacity: 0.75,
+    color: T.muted,
+    lineHeight: 1.5,
+    marginBottom: 28,
   },
-  body: {
-    paddingHorizontal: 40,
-    paddingTop: 28,
+  sectionEyebrow: {
+    fontSize: 10,
+    textTransform: "uppercase",
+    letterSpacing: 1.2,
+    color: T.hint,
+    marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 14,
-    fontFamily: "Helvetica-Bold",
-    color: COLORS.navy,
+    fontFamily: DENTILY_PDF_FONTS.serif,
+    fontSize: 16,
+    color: T.ink,
     marginBottom: 14,
   },
-  sectionSpacer: {
-    marginTop: 30,
-  },
-  pillRow: {
+  statGrid: {
     flexDirection: "row",
-    gap: 12,
+    flexWrap: "wrap",
+    gap: 10,
+    marginBottom: 28,
   },
-  pill: {
-    flex: 1,
-    backgroundColor: COLORS.skyLight,
-    borderWidth: 0,
+  statCard: {
+    width: "31%",
+    minWidth: 150,
+    backgroundColor: T.surface,
+    borderWidth: 0.5,
+    borderColor: T.border,
     borderRadius: 10,
-    paddingVertical: 18,
-    paddingHorizontal: 12,
-    alignItems: "center",
+    paddingVertical: 14,
+    paddingHorizontal: 14,
   },
-  pillValue: {
-    fontSize: 26,
-    fontFamily: "Helvetica-Bold",
-    color: COLORS.skyBlue,
+  statValue: {
+    fontFamily: DENTILY_PDF_FONTS.serif,
+    fontSize: 22,
+    lineHeight: 1,
+    color: T.ink,
   },
-  pillLabel: {
-    fontSize: 9.5,
-    color: COLORS.muted,
-    marginTop: 5,
-    textAlign: "center",
-  },
-  table: {
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 8,
-    overflow: "hidden",
-    backgroundColor: COLORS.white,
-  },
-  tableHeadRow: {
-    flexDirection: "row",
-    backgroundColor: COLORS.navy,
-  },
-  tableRow: {
-    flexDirection: "row",
-    backgroundColor: COLORS.white,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-  },
-  th: {
-    color: COLORS.white,
-    fontFamily: "Helvetica-Bold",
+  statLabel: {
+    marginTop: 6,
     fontSize: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    color: T.hint,
+    lineHeight: 1.35,
   },
-  td: {
-    fontSize: 10.5,
+  breakdownCard: {
+    backgroundColor: T.surface,
+    borderWidth: 0.5,
+    borderColor: T.border,
+    borderRadius: 10,
+    overflow: "hidden",
+    marginBottom: 20,
+  },
+  breakdownRow: {
+    flexDirection: "row",
+    borderTopWidth: 0.5,
+    borderTopColor: T.border,
     paddingVertical: 11,
-    paddingHorizontal: 12,
-    color: COLORS.body,
+    paddingHorizontal: 14,
   },
-  colType: { width: "30%" },
-  colCount: { width: "28%" },
-  colDesc: { width: "42%" },
-  tdMutedCount: {
-    color: COLORS.skyBlue,
-    fontFamily: "Helvetica-Bold",
+  breakdownRowFirst: {
+    borderTopWidth: 0,
+  },
+  breakdownType: {
+    width: "34%",
+    fontSize: 10.5,
+    fontWeight: 500,
+    color: T.ink,
+  },
+  breakdownCount: {
+    width: "26%",
+    fontSize: 10.5,
+    fontWeight: 600,
+    color: T.green,
+  },
+  breakdownDesc: {
+    width: "40%",
+    fontSize: 10,
+    color: T.muted,
+    lineHeight: 1.45,
   },
   footerNote: {
-    marginTop: 26,
-    fontSize: 9.5,
-    color: COLORS.muted,
-    lineHeight: 1.5,
+    fontSize: 10,
+    color: T.muted,
+    lineHeight: 1.55,
   },
   step: {
     flexDirection: "row",
-    marginBottom: 18,
+    marginBottom: 20,
   },
   stepNum: {
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: COLORS.navy,
-    color: COLORS.white,
-    fontFamily: "Helvetica-Bold",
-    fontSize: 12,
+    backgroundColor: T.ink,
+    color: T.bg,
+    fontFamily: DENTILY_PDF_FONTS.sans,
+    fontWeight: 600,
+    fontSize: 11,
     textAlign: "center",
-    paddingTop: 6,
+    paddingTop: 7,
     marginRight: 12,
   },
   stepBody: {
     flex: 1,
   },
   stepTitle: {
+    fontFamily: DENTILY_PDF_FONTS.sans,
     fontSize: 12,
-    fontFamily: "Helvetica-Bold",
-    color: COLORS.navy,
-    marginBottom: 3,
+    fontWeight: 600,
+    color: T.ink,
+    marginBottom: 4,
   },
   stepDesc: {
     fontSize: 10.5,
-    color: COLORS.body,
-    lineHeight: 1.5,
+    color: T.muted,
+    lineHeight: 1.55,
   },
   stepEm: {
-    fontFamily: "Helvetica-Oblique",
-    color: COLORS.muted,
+    fontFamily: DENTILY_PDF_FONTS.serif,
+    fontStyle: "italic",
+    color: T.hint,
   },
   mono: {
-    fontFamily: "Courier",
-    color: COLORS.navy,
+    fontFamily: DENTILY_PDF_FONTS.sans,
+    fontWeight: 500,
+    color: T.ink,
   },
   pageFooter: {
     position: "absolute",
-    bottom: 24,
+    bottom: 22,
     left: 40,
     right: 40,
     flexDirection: "row",
     justifyContent: "space-between",
     fontSize: 9,
-    color: COLORS.muted,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    color: T.hint,
+    borderTopWidth: 0.5,
+    borderTopColor: T.border,
     paddingTop: 8,
+  },
+  sectionSpacer: {
+    marginTop: 8,
   },
 });
 
@@ -205,21 +206,22 @@ export interface QuickStartGuideProps {
 export function QuickStartGuide({
   market,
   totalPractices,
-  contactableLeads,
   topPriorityLeads,
   emailCount,
   formCount,
   phoneCount,
 }: QuickStartGuideProps) {
   const stats = [
-    { value: String(totalPractices), label: "Dental Practices" },
-    { value: String(contactableLeads), label: "Contactable Leads" },
-    { value: String(topPriorityLeads), label: "Top-Priority Leads" },
+    { value: String(totalPractices), label: "Total practices" },
+    { value: String(emailCount), label: "Email leads" },
+    { value: String(formCount), label: "Contact form" },
+    { value: String(phoneCount), label: "Phone only" },
+    { value: String(topPriorityLeads), label: "Top priority" },
   ];
 
   const breakdown: BreakdownRow[] = [
     { type: "Email leads", count: `${emailCount} practices`, description: "Ready to email directly" },
-    { type: "Contact Form", count: `${formCount} practices`, description: "Submit via their web form" },
+    { type: "Contact form", count: `${formCount} practices`, description: "Submit via their web form" },
     { type: "Phone only", count: `${phoneCount} practices`, description: "Call or voicemail" },
   ];
 
@@ -229,61 +231,57 @@ export function QuickStartGuide({
       author="Dentily"
       subject={`Quick start guide for your ${market} Dental Leads Pack`}
     >
-      {/* Page 1 — Welcome & What's Inside */}
       <Page size="A4" style={styles.page}>
-        <View style={styles.headerBar}>
-          <View style={styles.headerAccentStripe} />
-          <Text style={styles.wordmark}>Dentily</Text>
-          <Text style={styles.tagline}>{market} Dental Leads Pack</Text>
-        </View>
+        <Text style={styles.wordmark}>Dentily</Text>
 
-        <View style={styles.body}>
-          <Text style={styles.sectionTitle}>What&apos;s inside</Text>
-          <View style={styles.pillRow}>
-            {stats.map((s) => (
-              <View key={s.label} style={styles.pill}>
-                <Text style={styles.pillValue}>{s.value}</Text>
-                <Text style={styles.pillLabel}>{s.label}</Text>
-              </View>
-            ))}
-          </View>
+        <Text style={styles.heroTitle}>
+          <Text style={styles.heroAccent}>{market}</Text>
+          <Text> dental leads pack</Text>
+        </Text>
+        <Text style={styles.heroSub}>
+          Your quick start guide — stats match the cleaned CSV you downloaded (after dedupe and email
+          filtering).
+        </Text>
 
-          <View style={styles.sectionSpacer}>
-            <Text style={styles.sectionTitle}>Your lead breakdown</Text>
-            <View style={styles.table}>
-              <View style={styles.tableHeadRow}>
-                <Text style={[styles.th, styles.colType]}>Contact type</Text>
-                <Text style={[styles.th, styles.colCount]}>Volume</Text>
-                <Text style={[styles.th, styles.colDesc]}>What to do</Text>
-              </View>
-              {breakdown.map((row) => (
-                <View key={row.type} style={styles.tableRow}>
-                  <Text style={[styles.td, styles.colType]}>{row.type}</Text>
-                  <Text style={[styles.td, styles.colCount, styles.tdMutedCount]}>{row.count}</Text>
-                  <Text style={[styles.td, styles.colDesc]}>{row.description}</Text>
-                </View>
-              ))}
+        <Text style={styles.sectionEyebrow}>Pack summary</Text>
+        <View style={styles.statGrid}>
+          {stats.map((s) => (
+            <View key={s.label} style={styles.statCard}>
+              <Text style={styles.statValue}>{s.value}</Text>
+              <Text style={styles.statLabel}>{s.label}</Text>
             </View>
-          </View>
-
-          <Text style={styles.footerNote}>
-            All leads are verified {market}-area dental practices sourced from Google Maps and enriched
-            with contact data.
-          </Text>
+          ))}
         </View>
+
+        <Text style={styles.sectionTitle}>Your lead breakdown</Text>
+        <View style={styles.breakdownCard}>
+          {breakdown.map((row, i) => (
+            <View
+              key={row.type}
+              style={[styles.breakdownRow, ...(i === 0 ? [styles.breakdownRowFirst] : [])]}
+            >
+              <Text style={styles.breakdownType}>{row.type}</Text>
+              <Text style={styles.breakdownCount}>{row.count}</Text>
+              <Text style={styles.breakdownDesc}>{row.description}</Text>
+            </View>
+          ))}
+        </View>
+
+        <Text style={styles.footerNote}>
+          All leads are {market}-area dental practices sourced from Google Maps and enriched with
+          contact data using the same export pipeline as your CSV.
+        </Text>
 
         <PageFooter page={1} />
       </Page>
 
-      {/* Page 2 — How to Use This Pack — unchanged */}
       <Page size="A4" style={styles.page}>
-        <View style={styles.headerBar}>
-          <View style={styles.headerAccentStripe} />
-          <Text style={styles.wordmark}>Dentily</Text>
-          <Text style={styles.tagline}>How to use this pack</Text>
-        </View>
+        <Text style={styles.wordmark}>Dentily</Text>
+        <Text style={[styles.heroTitle, { fontSize: 22, marginBottom: 24 }]}>
+          How to use this <Text style={styles.heroAccent}>pack</Text>
+        </Text>
 
-        <View style={styles.body}>
+        <View>
           <View style={styles.step}>
             <Text style={styles.stepNum}>1</Text>
             <View style={styles.stepBody}>
