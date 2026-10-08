@@ -62,8 +62,9 @@ export function SuccessClient({ outcome, packSummary, sessionId, packDownloadTok
               Your {location ? `${location} ` : ""}leads are <em>ready</em>
             </h1>
             <p className="dsu-subtitle">
-              Your search is unlocked. We&apos;re preparing your CSV (about 2–3 minutes) and will email it too — download
-              below when ready.
+              Your search is unlocked
+              {totalCount > 0 ? ` — all ${totalCount} scored practices in your cleaned export` : ""}. We&apos;re
+              preparing your CSV (about 2–3 minutes) and will email it too — download below when ready.
             </p>
             <div className="dsu-actions">
               <Link href={resultsHref ?? `/results?searchId=${outcome.searchId}`} className="dsu-btn dsu-btn-primary">

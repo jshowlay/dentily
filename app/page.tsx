@@ -4,7 +4,7 @@ import { DentistLanding } from "@/components/dentist-landing";
 export const metadata: Metadata = {
   title: "Find Dental Practices That Need Marketing Help | Dentily",
   description:
-    "Dentily scores dental practices by growth opportunity so agencies and freelancers can do smarter outreach. Get 150 pitch-ready leads for your market.",
+    "Dentily scores dental practices by growth opportunity so agencies and freelancers can do smarter outreach. Get up to 150 pitch-ready leads for your market.",
   openGraph: {
     title: "Find Dental Practices That Need Marketing Help | Dentily",
     description:

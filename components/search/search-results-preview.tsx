@@ -73,8 +73,6 @@ type Props = {
 
 export function SearchResultsPreview({ location, unlockFormId }: Props) {
   const city = unlockCityLabel(location);
-  const remaining = SEARCH_PREVIEW_STATS.total - SEARCH_PREVIEW_VISIBLE_ROWS.length;
-
   return (
   <>
     <div className="ds-preview-header">
@@ -84,7 +82,7 @@ export function SearchResultsPreview({ location, unlockFormId }: Props) {
 
     <div className="ds-stats">
       <div className="ds-stat-card">
-        <div className="ds-stat-value">{SEARCH_PREVIEW_STATS.total}</div>
+        <div className="ds-stat-value">Up to {SEARCH_PREVIEW_STATS.total}</div>
         <div className="ds-stat-label">Practices scored</div>
       </div>
       <div className="ds-stat-card">
@@ -127,9 +125,10 @@ export function SearchResultsPreview({ location, unlockFormId }: Props) {
       <div className="ds-unlock">
         <p>
           <strong>
-            {remaining} more leads in {city}
+            Unlock the full pack for {city}
           </strong>{" "}
-          — including full contact paths, opportunity estimates, and outreach drafts. One-time{" "}
+          — up to {SEARCH_PREVIEW_STATS.total} scored practices with full contact paths, opportunity estimates, and
+          outreach drafts. One-time{" "}
           {SITE.leadPackPriceLabel}.
         </p>
         <button type="submit" form={unlockFormId} className="ds-unlock-btn">

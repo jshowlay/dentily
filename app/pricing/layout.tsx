@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Pricing — Dentily Practice Opportunity Pack",
   description:
-    "Get 150 scored dental practice leads for $99 one-time. Instant CSV download. Built for agencies and freelancers.",
+    "Get up to 150 scored dental practice leads for $99 one-time. Instant CSV download. Built for agencies and freelancers.",
 };
 
 export default function PricingLayout({ children }: { children: React.ReactNode }) {

@@ -23,7 +23,7 @@ export function LandingHeroRedesign({
             B2B prospecting for dental marketers
           </div>
           <h1>
-            {leadCount} Scored Dental Leads, <em>Delivered With a Pitch Angle for Each One.</em>
+            Up to {leadCount} Scored Dental Leads, <em>Delivered With a Pitch Angle for Each One.</em>
           </h1>
           <p className="dh-hero-lead">
             Stop cold-guessing. Know why each practice needs you — and what to say — before you ever reach out.
@@ -81,7 +81,7 @@ export function LandingHeroRedesign({
 
           <div className="dh-float-badge dh-float-badge--leads">
             <Check size={14} strokeWidth={2.5} aria-hidden />
-            {leadCount} scored leads ready
+            Up to {leadCount} scored leads ready
           </div>
           <div className="dh-float-badge dh-float-badge--outreach">
             <Zap size={14} fill="currentColor" aria-hidden />

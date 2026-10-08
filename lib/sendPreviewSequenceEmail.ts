@@ -54,7 +54,7 @@ function buildEmail1(row: PreviewCaptureRow, unlock: string, unsub: string): { s
     "",
     ...blocks,
     "",
-    `Your full pack has ${row.leadCount} scored practices, each with a contact path and an outreach draft written for that practice.`,
+    `Your full pack has ${row.leadCount} scored practices from this search, each with a contact path and an outreach draft written for that practice.`,
     "",
     `Unlock all ${row.leadCount} for $99: ${unlock}`,
     "",

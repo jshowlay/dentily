@@ -170,7 +170,7 @@ export function DashboardClient({ user, subscription, searches: initialSearches 
               <div>
                 <p className="font-semibold text-amber-950">Unlock your first lead pack</p>
                 <p className="mt-1 text-sm text-amber-900/80">
-                  $99 one-time — 150 scored practices per market with outreach drafts and CSV export.
+                  $99 one-time — up to {SITE.leadPackCount} scored practices per market with outreach drafts and CSV export.
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">

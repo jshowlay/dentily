@@ -28,6 +28,7 @@ export async function runPackDeliveryJob(session: Stripe.Checkout.Session): Prom
   let csvUrl: string | undefined;
   let csvBuffer: Buffer | undefined;
   let csvFilename: string | undefined;
+  let practiceCount: number | undefined;
 
   if (Number.isFinite(searchId) && searchId > 0) {
     try {
@@ -49,6 +50,7 @@ export async function runPackDeliveryJob(session: Stripe.Checkout.Session): Prom
         if (built) {
           csvBuffer = built.buffer;
           csvFilename = built.filename;
+          practiceCount = built.practiceCount;
         } else {
           console.warn("[stripe-pack-delivery] no CSV rows", searchId);
         }
@@ -63,6 +65,7 @@ export async function runPackDeliveryJob(session: Stripe.Checkout.Session): Prom
     sessionId: session.id,
     searchId: Number.isFinite(searchId) && searchId > 0 ? searchId : undefined,
     market,
+    practiceCount,
     csvPath,
     csvUrl,
     csvBuffer,

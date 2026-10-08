@@ -8,7 +8,7 @@ import "@/app/pricing-page.css";
 export const metadata: Metadata = {
   title: "Pricing",
   description:
-    "Get 150 scored dental practice leads for $99 one-time. Instant CSV download. Built for agencies and freelancers.",
+    "Get up to 150 scored dental practice leads for $99 one-time. Instant CSV download. Built for agencies and freelancers.",
 };
 
 type PricingPageProps = {

@@ -13,7 +13,7 @@ function buildSteps(leadCount: number) {
             <span className="dh-faux-search-dot" />
             Austin, TX — dental practices
           </div>
-          <p className="dh-faux-hint">↓ {leadCount} practices found · scoring now</p>
+          <p className="dh-faux-hint">↓ Up to {leadCount} practices found · scoring now</p>
         </>
       ),
     },

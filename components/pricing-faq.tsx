@@ -36,7 +36,7 @@ function buildFaqItems(leadCount: number): { q: string; a: string }[] {
     },
     {
       q: "Is this a subscription?",
-      a: `No — it's a one-time purchase. You pay once and get your ${leadCount} leads immediately. No recurring charges, no cancellation needed.`,
+      a: `No — it's a one-time purchase. You pay once and get your pack immediately (up to ${leadCount} scored practices for that market). No recurring charges, no cancellation needed.`,
     },
     {
       q: "How many leads are in each pack?",

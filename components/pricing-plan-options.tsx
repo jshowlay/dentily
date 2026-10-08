@@ -33,7 +33,7 @@ export function PricingPlanOptions({ plan = "starter" }: { plan?: Plan }) {
           </CardHeader>
           <CardContent className="flex flex-1 flex-col space-y-4 text-sm text-slate-700">
             <ul className="space-y-2">
-              <li>✓ {SITE.leadPackCount} leads, one market</li>
+              <li>✓ Up to {SITE.leadPackCount} leads, one market</li>
               <li>✓ CSV download</li>
               <li>✓ Scored priorities + outreach drafts</li>
             </ul>

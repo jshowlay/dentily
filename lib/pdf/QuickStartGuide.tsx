@@ -268,8 +268,8 @@ export function QuickStartGuide({
         </View>
 
         <Text style={styles.footerNote}>
-          All leads are {market}-area dental practices sourced from Google Maps and enriched with
-          contact data using the same export pipeline as your CSV.
+          All {totalPractices} practices in this pack are {market}-area dental listings sourced from Google Maps
+          and enriched with contact data using the same export pipeline as your CSV.
         </Text>
 
         <PageFooter page={1} />

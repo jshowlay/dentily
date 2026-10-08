@@ -1,3 +1,5 @@
+import { SITE } from "@/lib/site-config";
+
 /** Static sample rows for the /search results preview panel (not live API data). */
 
 export type SearchPreviewRow = {
@@ -71,7 +73,7 @@ export const SEARCH_PREVIEW_STATS = {
 } as const;
 
 export const WHATS_INCLUDED = [
-  "Up to 150 scored practice records",
+  `Up to ${SITE.leadPackCount} scored practice records`,
   "Priority tier + numeric score per lead",
   "Best contact path (email, form, or phone)",
   "Estimated monthly opportunity range",

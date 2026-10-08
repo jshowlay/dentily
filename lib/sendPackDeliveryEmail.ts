@@ -11,6 +11,8 @@ export interface SendPackDeliveryEmailOptions {
   searchId?: number;
   /** e.g. "Dallas", "Austin", "Houston" */
   market?: string;
+  /** Cleaned export row count (same as CSV), when known. */
+  practiceCount?: number;
   /** Local filesystem path to the CSV (optional). */
   csvPath?: string;
   /** Remote URL to fetch the CSV from (optional). */
@@ -68,6 +70,7 @@ export async function sendPackDeliveryEmail({
   sessionId,
   searchId,
   market,
+  practiceCount,
   csvPath,
   csvUrl,
   csvBuffer,
@@ -87,6 +90,10 @@ export async function sendPackDeliveryEmail({
       : null;
   const resend = new Resend(apiKey);
   const marketLabel = formatMarketLocation(market) || market?.trim() || "your market";
+  const countPhrase =
+    typeof practiceCount === "number" && practiceCount > 0
+      ? `All ${practiceCount} scored practices`
+      : "Your scored practices";
   const subject = `Your ${marketLabel} dental leads from Dentily`;
 
   const attachmentBuffer = await loadCsvAttachment({ csvPath, csvUrl, csvBuffer });
@@ -104,7 +111,7 @@ export async function sendPackDeliveryEmail({
     "",
     "Hi there,",
     "",
-    `Your ${marketLabel} dental leads pack from Dentily.`,
+    `${countPhrase} from your ${marketLabel} Dentily pack are ready.`,
     "",
     ...(csvAttachedLine ? [csvAttachedLine, ""] : []),
     ...(csvExportUrl ? [`Download CSV (web): ${csvExportUrl}`, ""] : []),
@@ -131,7 +138,7 @@ export async function sendPackDeliveryEmail({
         <p style="font-size: 13px; color: #64748b; margin: 0 0 24px;">From the Dentily Team · dentily.co</p>
         <p style="font-size: 15px; line-height: 1.6; margin: 0 0 16px;">Hi there,</p>
         <p style="font-size: 15px; color: #334155; line-height: 1.6; margin: 0 0 24px;">
-          Your ${marketLabel} dental leads pack from Dentily. Open your quick start guide below to get started with your leads.
+          ${countPhrase} from your ${marketLabel} Dentily pack are ready. Open your quick start guide below to get started.
         </p>
         ${
           csvAttachedLine

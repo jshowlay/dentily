@@ -51,7 +51,7 @@ export function PricingSection({
     cta: "Get started",
     ctaHref,
     features: [
-      `${leadCount} scored dental practices`,
+      `Up to ${leadCount} scored dental practices`,
       "Priority tiers + numeric scores",
       "Why-this-lead rationale per row",
       "Best contact path per lead",
