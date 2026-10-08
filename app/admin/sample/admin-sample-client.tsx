@@ -101,7 +101,7 @@ export function AdminSampleClient() {
 
   async function copyAll10() {
     if (!result?.leads.length) return;
-    const text = formatAdminSampleEmailBullets(result.leads, result.leads.length);
+    const text = formatAdminSampleEmailBullets(result.leads, result.leads.length, result.market);
     await navigator.clipboard.writeText(text);
     setCopiedAll(true);
     window.setTimeout(() => setCopiedAll(false), 2000);

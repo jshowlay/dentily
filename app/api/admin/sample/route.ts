@@ -50,10 +50,11 @@ export async function POST(request: Request) {
       parsed.data.state,
       ADMIN_SAMPLE_RESULT_LIMIT
     );
+    const market = `${parsed.data.city}, ${parsed.data.state.toUpperCase()}`;
     return NextResponse.json({
-      market: `${parsed.data.city}, ${parsed.data.state.toUpperCase()}`,
+      market,
       leads,
-      emailCopy: formatAdminSampleEmailBullets(leads, ADMIN_SAMPLE_EMAIL_BULLET_COUNT),
+      emailCopy: formatAdminSampleEmailBullets(leads, ADMIN_SAMPLE_EMAIL_BULLET_COUNT, market),
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Sample generation failed.";

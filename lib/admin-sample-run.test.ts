@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { buildAdminSampleEmailReason } from "@/lib/admin-sample-email-copy";
 import { buildDistinctAdminSampleEmailReasons } from "@/lib/admin-sample-email-copy";
-import { formatAdminSampleEmailBullets } from "@/lib/admin-sample-run";
+import {
+  formatAdminSampleEmailBullets,
+  normalizeAdminSampleCopyReason,
+} from "@/lib/admin-sample-format";
 import type { Lead } from "@/lib/types";
 import { EMPTY_LEAD_ENRICHMENT } from "@/lib/types";
 
@@ -61,15 +64,23 @@ describe("formatAdminSampleEmailBullets", () => {
         ),
       },
     ];
-    const text = formatAdminSampleEmailBullets(leads, 3);
+    const text = formatAdminSampleEmailBullets(leads, 3, "Austin, TX");
     expect(text).toContain(
-      "• Laguna Dental and Orthodontics: no website found, so patients searching online have nowhere to land"
+      "• Laguna Dental and Orthodontics: No website found, so patients searching online have nowhere to land"
     );
     expect(text).toContain("88");
     expect(text.toLowerCase()).not.toContain("priority");
     for (const line of text.split("\n")) {
       expect(line.split(/\s+/).filter(Boolean).length).toBeLessThanOrEqual(25);
     }
+  });
+
+  it("rewrites market gaps for paste copy", () => {
+    const raw =
+      "google rating is 4.2 stars vs. a 4.9 local median among practices in this run";
+    expect(normalizeAdminSampleCopyReason(raw, "Austin, TX")).toBe(
+      "google rating is 4.2 stars vs. a 4.9 average for Austin practices"
+    );
   });
 
   it("varies reason wording across leads", () => {
