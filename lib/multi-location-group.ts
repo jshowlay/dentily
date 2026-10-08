@@ -1,4 +1,4 @@
-import { classifyPriorityFromScore } from "@/lib/dentist-scoring";
+import { classifyPriorityForLead } from "@/lib/dentist-scoring";
 import { normalizeAddressKey } from "@/lib/lead-quality-filters";
 import { priorityRank, sortByPriorityThenScore } from "@/lib/lead-pack-export";
 import type { Lead } from "@/lib/types";
@@ -113,7 +113,7 @@ export function applyMultiLocationGroupRankAdjustments(leads: Lead[]): Lead[] {
     return {
       ...lead,
       score,
-      priority: classifyPriorityFromScore(score),
+      priority: classifyPriorityForLead(lead, score),
       metadata: {
         ...lead.metadata,
         multiLocationGroup: true,

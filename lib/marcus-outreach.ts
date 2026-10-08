@@ -6,6 +6,7 @@ import {
   normalizeOutreachCta,
 } from "@/lib/outreach-cta";
 import { parseCityFromAddress } from "@/lib/parse-city-from-address";
+import { getLeadScoringEvidence } from "@/lib/lead-scoring-evidence";
 import type { Lead } from "@/lib/types";
 import { dedupeSentencesInOutreach, hasDuplicateFiveWordSpan, stripLongDashes } from "@/lib/outreach-text";
 
@@ -26,7 +27,23 @@ export function hashString(s: string): number {
   return Math.abs(h);
 }
 
-export function classifyOutreachArchetype(lead: Pick<Lead, "rating" | "reviewCount" | "website">): OutreachArchetype {
+function establishedStaticEvidence(lead: Pick<Lead, "metadata">): boolean {
+  const ev = getLeadScoringEvidence(lead);
+  if (!ev?.gaps.length) return false;
+  return (
+    ev.noReviewIn90Days ||
+    Boolean(ev.ratingVsMarket) ||
+    Boolean(ev.reviewsVsMarket) ||
+    ev.website?.slowMobile === true ||
+    ev.website?.httpsOk === false ||
+    ev.website?.hasOnlineBooking === false ||
+    ev.website?.staleCopyright === true
+  );
+}
+
+export function classifyOutreachArchetype(
+  lead: Pick<Lead, "rating" | "reviewCount" | "website" | "metadata">
+): OutreachArchetype {
   const r = lead.rating;
   const rc = lead.reviewCount;
   const rating = r !== null && r !== undefined && Number.isFinite(Number(r)) ? Number(r) : null;
@@ -46,7 +63,14 @@ export function classifyOutreachArchetype(lead: Pick<Lead, "rating" | "reviewCou
   if (reviews !== null && reviews < 100) {
     return "newer_unknown";
   }
-  if (rating !== null && reviews !== null && rating >= 4.7 && reviews >= 200 && reviews <= 800) {
+  if (
+    rating !== null &&
+    reviews !== null &&
+    rating >= 4.7 &&
+    reviews >= 200 &&
+    reviews <= 800 &&
+    establishedStaticEvidence(lead)
+  ) {
     return "established_static";
   }
   return "general";

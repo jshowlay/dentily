@@ -4,6 +4,7 @@ import { personalizeDentistOutreachWithSignals } from "@/lib/dentist-outreach";
 import { MARCUS_OUTREACH_CTA } from "@/lib/outreach-cta";
 import {
   classifyOpportunityType,
+  classifyPriorityForLead,
   classifyPriorityFromScore,
   computeBaseScore,
   computeExportReasonLine,
@@ -193,7 +194,7 @@ async function scoreDentistLead(
         personalizeDentistOutreachWithSignals(lead, pickDentistFallbackOutreach(lead))
       ),
       opportunityType,
-      priority: classifyPriorityFromScore(finalScore),
+      priority: classifyPriorityForLead(lead, finalScore),
       usedAiFallback: true,
       dentistScoringMeta: { baseScore, aiAdjustment: 0 },
     };
@@ -228,7 +229,7 @@ async function scoreDentistLead(
       reason,
       outreach,
       opportunityType,
-      priority: classifyPriorityFromScore(finalScore),
+      priority: classifyPriorityForLead(lead, finalScore),
       usedAiFallback: false,
       dentistScoringMeta: { baseScore, aiAdjustment: adj },
     };
@@ -243,7 +244,7 @@ async function scoreDentistLead(
         personalizeDentistOutreachWithSignals(lead, pickDentistFallbackOutreach(lead))
       ),
       opportunityType,
-      priority: classifyPriorityFromScore(finalScore),
+      priority: classifyPriorityForLead(lead, finalScore),
       usedAiFallback: true,
       dentistScoringMeta: { baseScore, aiAdjustment: 0 },
     };
@@ -344,7 +345,7 @@ async function scoreDentistChunkWithAi(
         reason,
         outreach,
         opportunityType: row.opportunityType,
-        priority: classifyPriorityFromScore(finalScore),
+        priority: classifyPriorityForLead(row.lead, finalScore),
         usedAiFallback: false,
         dentistScoringMeta: { baseScore: row.baseScore, aiAdjustment: adj },
       });

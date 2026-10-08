@@ -7,6 +7,12 @@ import {
   RATING_STRONG,
   SCORING_WEIGHTS,
 } from "@/lib/lead-pipeline-config";
+import {
+  evidenceScoreAdjustment,
+  getLeadScoringEvidence,
+  hasEvidenceBackedGap,
+  primaryEvidenceReason,
+} from "@/lib/lead-scoring-evidence";
 import { classifyOutreachArchetype } from "@/lib/marcus-outreach";
 
 /** Optional batch context for name-based heuristics (multi-location / repeated brand). */
@@ -143,7 +149,6 @@ function opportunitySignal(lead: Lead): number {
   if (rcN !== null) {
     if (rcN < 25) s += 18;
     else if (rcN < 80) s += 10;
-    else if (rcN >= 200 && rcN <= 800 && (rN ?? 0) >= 4.7) s += 8;
     // Plateau: extra reviews at the same high rating do not keep subtracting opportunity.
     if (rcN >= REVIEW_SATURATION && (rN ?? 0) >= 4.8) s -= 30;
   }
@@ -163,6 +168,7 @@ export function computeBaseScore(lead: Lead, batch?: DentistScoringBatchContext)
   let combined = fit * w.fit + opp * w.opportunity;
   combined += dominantPracticeAdjustment(lead);
   combined += computeNameHeuristicAdjustment(lead, batch);
+  combined += evidenceScoreAdjustment(getLeadScoringEvidence(lead));
 
   const primary = (lead.primaryType ?? "").toLowerCase();
   if (primary.includes("dentist") || primary.includes("dental")) {
@@ -185,10 +191,17 @@ export function classifyOpportunityType(lead: Lead): string {
   return "general_growth";
 }
 
-export function classifyPriorityFromScore(score: number): "high" | "medium" | "low" {
-  if (score >= PRIORITY_SCORE_HIGH_MIN) return "high";
+export function classifyPriorityFromScore(
+  score: number,
+  hasEvidenceGap = false
+): "high" | "medium" | "low" {
+  if (score >= PRIORITY_SCORE_HIGH_MIN && hasEvidenceGap) return "high";
   if (score >= PRIORITY_SCORE_MEDIUM_MIN) return "medium";
   return "low";
+}
+
+export function classifyPriorityForLead(lead: Pick<Lead, "metadata">, score: number): "high" | "medium" | "low" {
+  return classifyPriorityFromScore(score, hasEvidenceBackedGap(getLeadScoringEvidence(lead)));
 }
 
 /** One-line reason for CSV that ties to a concrete signal (not platitudes). */
@@ -216,8 +229,13 @@ export function computeExportReasonLine(lead: Lead, opts?: { clusterDemoted?: bo
   else if ((lead.contactFormUrl ?? "").trim()) parts.push("Contact form path on file.");
   else if ((lead.phone ?? "").trim()) parts.push("Phone only on file. Digital path still thin.");
 
+  const evidence = getLeadScoringEvidence(lead);
+  if (evidence?.gaps.length) {
+    return primaryEvidenceReason(evidence, lead).slice(0, 140);
+  }
+
   if (parts.length === 0) {
-    return "Rule blend of fit and opportunity (see score). Reachability is separate on export.";
+    return primaryEvidenceReason(null, lead).slice(0, 140);
   }
   return parts.slice(0, 2).join(" ");
 }

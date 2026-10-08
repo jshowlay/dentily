@@ -1,3 +1,4 @@
+import { getLeadScoringEvidence } from "@/lib/lead-scoring-evidence";
 import type { Lead } from "@/lib/types";
 
 type ReasonBuilder = (lead: Lead) => string;
@@ -55,7 +56,18 @@ const GENERAL: ReasonBuilder[] = [
     `about ${l.reviewCount} Google reviews at ${l.rating} stars — opportunity to sharpen how the listing converts`,
 ];
 
+function evidenceReason(lead: Lead): string | null {
+  const gaps = getLeadScoringEvidence(lead)?.gaps ?? [];
+  if (!gaps.length) return null;
+  const first = gaps[0]!.replace(/\.$/, "");
+  return first.charAt(0).toLowerCase() + first.slice(1);
+}
+
 function pickPool(lead: Lead): ReasonBuilder[] {
+  const fromEvidence = evidenceReason(lead);
+  if (fromEvidence) {
+    return [() => fromEvidence];
+  }
   const hasSite = Boolean(lead.website?.trim());
   const o = opp(lead);
   if (!hasSite || o === "no_website") return NO_WEBSITE;

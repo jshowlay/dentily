@@ -106,7 +106,8 @@ describe("lead pipeline", () => {
   });
 
   it("priority buckets align with configured score thresholds", () => {
-    expect(classifyPriorityFromScore(70)).toBe("high");
+    expect(classifyPriorityFromScore(70, true)).toBe("high");
+    expect(classifyPriorityFromScore(70, false)).toBe("medium");
     expect(classifyPriorityFromScore(50)).toBe("medium");
     expect(classifyPriorityFromScore(30)).toBe("low");
   });
@@ -243,7 +244,7 @@ describe("lead pipeline", () => {
     expect(row?.best_contact_method).toBe("Phone (no digital path)");
   });
 
-  it("enriched contact paths do not push more than 20 rows into Priority Medium (50-row stress)", () => {
+  it("export rebuild without scoring evidence never assigns Priority High (50-row stress)", () => {
     const rows: ExportLeadRow[] = [];
     for (let i = 0; i < 50; i += 1) {
       const tier = i % 5;
@@ -263,9 +264,9 @@ describe("lead pipeline", () => {
       );
     }
     const pack = buildLeadPackRowsFromExport(rows);
-    const medium = pack.filter(
-      (p) => !isLeadPackInstructionRow(p) && p.priority.toLowerCase() === "medium"
+    const high = pack.filter(
+      (p) => !isLeadPackInstructionRow(p) && p.priority.toLowerCase() === "high"
     ).length;
-    expect(medium).toBeLessThanOrEqual(20);
+    expect(high).toBe(0);
   });
 });

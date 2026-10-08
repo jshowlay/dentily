@@ -545,6 +545,150 @@ export async function searchBusinesses(
   return deduped;
 }
 
+const legacyPlaceDetailsSchema = z.object({
+  status: z.string(),
+  error_message: z.string().optional(),
+  result: z
+    .object({
+      reviews: z
+        .array(
+          z.object({
+            time: z.number().optional(),
+          })
+        )
+        .optional(),
+    })
+    .optional(),
+});
+
+function daysSinceUnixSeconds(unixSec: number): number | null {
+  if (!Number.isFinite(unixSec) || unixSec <= 0) return null;
+  return Math.max(0, Math.floor((Date.now() - unixSec * 1000) / 86_400_000));
+}
+
+/** Newest-first: each review timestamp must be <= the prior (non-increasing). */
+function legacyReviewsNewestOrderConfirmed(
+  reviews: Array<{ time?: number }>
+): boolean {
+  if (reviews.length === 0) return false;
+  let prev: number | null = null;
+  for (const r of reviews) {
+    const t = r.time;
+    if (typeof t !== "number" || !Number.isFinite(t)) return false;
+    if (prev !== null && t > prev) return false;
+    prev = t;
+  }
+  return true;
+}
+
+export type ReviewRecencyReading = {
+  daysSinceLastReview: number | null;
+  /** True when newest-sort order is verified for this response. */
+  confirmed: boolean;
+};
+
+async function fetchLegacyPlaceReviews(
+  placeId: string,
+  sort: "newest" | "default"
+): Promise<{ status: string; reviews: Array<{ time?: number }> } | null> {
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+  if (!apiKey || !placeId.trim()) return null;
+
+  const params = new URLSearchParams({
+    place_id: placeId,
+    fields: "reviews",
+    key: apiKey,
+  });
+  if (sort === "newest") params.set("reviews_sort", "newest");
+  const url = `https://maps.googleapis.com/maps/api/place/details/json?${params.toString()}`;
+
+  try {
+    const json = await googlePlacesFetchJson<unknown>(url, { method: "GET" });
+    const parsed = legacyPlaceDetailsSchema.safeParse(json);
+    if (!parsed.success) return null;
+    return {
+      status: parsed.data.status,
+      reviews: parsed.data.result?.reviews ?? [],
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Places API (New) returns reviews sorted by relevance — not safe for recency.
+ * Legacy Place Details with reviews_sort=newest; only trust when order is confirmed.
+ */
+async function fetchReviewRecencyReading(placeId: string): Promise<ReviewRecencyReading> {
+  const empty: ReviewRecencyReading = { daysSinceLastReview: null, confirmed: false };
+  const newest = await fetchLegacyPlaceReviews(placeId, "newest");
+  if (!newest || newest.status !== "OK" || newest.reviews.length === 0) return empty;
+  if (!legacyReviewsNewestOrderConfirmed(newest.reviews)) {
+    return empty;
+  }
+
+  const t0 = newest.reviews[0]?.time;
+  if (typeof t0 !== "number") return empty;
+
+  return {
+    daysSinceLastReview: daysSinceUnixSeconds(t0),
+    confirmed: true,
+  };
+}
+
+/** Probe legacy newest-sort + monotonic timestamps before enabling recency for a batch. */
+export async function probeReviewRecencyApi(placeId: string): Promise<boolean> {
+  const reading = await fetchReviewRecencyReading(placeId);
+  if (!reading.confirmed) {
+    console.warn(
+      "[google-places] Review recency probe: newest-sort order not confirmed for sample place."
+    );
+    return false;
+  }
+  return true;
+}
+
+export type ReviewRecencyBatch = {
+  /** When false, recency gaps must not be emitted (API unavailable). */
+  enabled: boolean;
+  byPlaceId: Map<string, ReviewRecencyReading>;
+};
+
+export async function fetchReviewRecencyMap(
+  placeIds: string[],
+  opts?: { concurrency?: number }
+): Promise<ReviewRecencyBatch> {
+  const unique = Array.from(new Set(placeIds.filter(Boolean)));
+  const empty: ReviewRecencyBatch = { enabled: false, byPlaceId: new Map() };
+  if (unique.length === 0) return empty;
+
+  const probeOk = await probeReviewRecencyApi(unique[0]!);
+  if (!probeOk) {
+    console.warn(
+      "[google-places] Review recency disabled — legacy Place Details (reviews_sort=newest) unavailable."
+    );
+    return empty;
+  }
+
+  const concurrency = opts?.concurrency ?? 8;
+  const out = new Map<string, ReviewRecencyReading>();
+  let idx = 0;
+
+  async function worker() {
+    while (idx < unique.length) {
+      const i = idx;
+      idx += 1;
+      const id = unique[i]!;
+      out.set(id, await fetchReviewRecencyReading(id));
+    }
+  }
+
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, unique.length) }, () => worker())
+  );
+  return { enabled: true, byPlaceId: out };
+}
+
 export async function getPlaceDetails(placeId: string): Promise<NormalizedPlaceLead> {
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
   if (!apiKey) {

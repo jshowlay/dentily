@@ -323,13 +323,13 @@ export function computeWhyThisLead(r: PipelineRow): string {
   } else if (key === "reputation_gap") {
     core = `Public rating of ${ratingStr} is likely filtering them out of high-intent searches — reputation work has clear ROI here.`;
   } else if (key === "established_static") {
-    core = `Strong rating (${ratingStr}) with ${rcStr} reviews but no visible growth motion — ready for paid acquisition or conversion work.`;
+    core = `Mature profile (${ratingStr} stars, ${rcStr} reviews) with specific local or digital gaps worth a targeted pitch.`;
   } else if (key === "newer_unknown") {
     core = `Early-stage practice with only ${rcStr} reviews — visibility and reputation-building is the immediate unlock.`;
   } else if (key === "high_volume_saturation") {
     core = `Already dominant (${rcStr} reviews) — not a growth pitch. Consider hiring-pipeline or referral-partnership angles instead.`;
   } else {
-    core = `Solid fundamentals (${ratingStr} stars, ${rcStr} reviews) with room to convert local visibility into more bookings.`;
+    core = `Solid fundamentals (${ratingStr} stars, ${rcStr} reviews) — prioritize only if export includes evidence-backed gaps.`;
   }
   const tail = pri ? ` (${pri} priority.)` : "";
   return capWords(`${core}${tail}${dsoSuffix}`, 28);

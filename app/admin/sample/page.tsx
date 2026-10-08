@@ -7,6 +7,7 @@ import {
 } from "@/lib/admin-sample-auth";
 import { AdminSampleClient } from "@/app/admin/sample/admin-sample-client";
 import { AdminSampleLogin } from "@/app/admin/sample/admin-sample-login";
+import { AdminSampleShell } from "@/components/admin/admin-sample-shell";
 
 export const metadata: Metadata = {
   title: "Admin · Sample leads",
@@ -16,11 +17,14 @@ export const metadata: Metadata = {
 export default function AdminSamplePage() {
   if (!isAdminPasswordConfigured()) {
     return (
-      <main className="min-h-screen bg-slate-950 px-6 py-16 text-white">
-        <p className="text-sm text-white/80">
-          Set <code className="rounded bg-white/10 px-1">ADMIN_PASSWORD</code> in the environment to use this tool.
+      <AdminSampleShell>
+        <p className="dr-crumb">Admin · sample leads</p>
+        <h1 className="dr-title dr-serif">Not configured</h1>
+        <p className="dr-subtitle">
+          Set <code className="rounded bg-black/5 px-1.5 py-0.5 font-mono text-xs">ADMIN_PASSWORD</code> in the
+          environment to use this tool.
         </p>
-      </main>
+      </AdminSampleShell>
     );
   }
 
