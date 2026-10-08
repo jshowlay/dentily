@@ -1,4 +1,5 @@
 import { readFile } from "fs/promises";
+import { formatMarketLocation } from "@/lib/format-market-location";
 import { Resend } from "resend";
 import { getAppBaseUrl } from "@/lib/stripe";
 
@@ -85,7 +86,7 @@ export async function sendPackDeliveryEmail({
       ? `${baseUrl}/api/search/${searchId}/export?session_id=${encodeURIComponent(sessionId)}`
       : null;
   const resend = new Resend(apiKey);
-  const marketLabel = market?.trim() || "your market";
+  const marketLabel = formatMarketLocation(market) || market?.trim() || "your market";
   const subject = `Your ${marketLabel} dental leads from Dentily`;
 
   const attachmentBuffer = await loadCsvAttachment({ csvPath, csvUrl, csvBuffer });

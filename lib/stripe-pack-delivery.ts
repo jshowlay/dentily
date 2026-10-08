@@ -1,6 +1,7 @@
 import type Stripe from "stripe";
 import { getSearchDeliveryInfo } from "@/lib/db";
 import { buildPackCsvAttachment } from "@/lib/build-pack-csv-for-search";
+import { formatMarketLocation } from "@/lib/format-market-location";
 import { sendPackDeliveryEmail } from "@/lib/sendPackDeliveryEmail";
 
 /** One-time pack checkout (not subscription signup). */
@@ -31,7 +32,7 @@ export async function runPackDeliveryJob(session: Stripe.Checkout.Session): Prom
   if (Number.isFinite(searchId) && searchId > 0) {
     try {
       const info = await getSearchDeliveryInfo(searchId);
-      if (info?.location) market = info.location;
+      if (info?.location) market = formatMarketLocation(info.location) || info.location;
       if (info?.csvPath?.trim()) csvPath = info.csvPath.trim();
       if (info?.csvUrl?.trim()) csvUrl = info.csvUrl.trim();
     } catch (e) {
@@ -75,7 +76,7 @@ export async function runPackDeliveryJob(session: Stripe.Checkout.Session): Prom
 
 export async function trackPreviewCaptureConversion(session: Stripe.Checkout.Session): Promise<void> {
   const email = session.customer_details?.email ?? session.customer_email ?? null;
-  const market = session.metadata?.market ?? "";
+  const market = formatMarketLocation(session.metadata?.market ?? "") || session.metadata?.market || "";
   if (!email || !market.trim()) return;
   const { markPreviewCapturesConverted } = await import("@/lib/preview-captures");
   const updated = await markPreviewCapturesConverted(email, market);

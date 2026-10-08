@@ -3,6 +3,7 @@ import {
   applyColocatedPracticeWebsites,
   filterNonPracticeLeadQuality,
   isExcludedCommunityClinic,
+  looksLikeEntityRegistrationName,
   looksLikeIndividualProviderName,
   MIN_REVIEWS_FOR_RATING_SIGNALS,
   prepareLeadsForScoring,
@@ -35,6 +36,12 @@ describe("lead-quality-filters", () => {
     expect(isExcludedCommunityClinic(lead({ name: "Austin Community Dental Clinic" }))).toBe(true);
     expect(isExcludedCommunityClinic(lead({ name: "UT School of Dentistry" }))).toBe(true);
     expect(isExcludedCommunityClinic(lead({ name: "Smile Family Dental" }))).toBe(false);
+  });
+
+  it("detects entity-style registration names", () => {
+    expect(looksLikeEntityRegistrationName("DENTALCLINICUSLLC")).toBe(true);
+    expect(looksLikeEntityRegistrationName("FooBarPLLC")).toBe(true);
+    expect(looksLikeEntityRegistrationName("Forest Family Dental PLLC")).toBe(false);
   });
 
   it("detects individual provider names", () => {

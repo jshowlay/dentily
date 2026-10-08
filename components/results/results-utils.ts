@@ -1,3 +1,4 @@
+import { formatMarketLocation } from "@/lib/format-market-location";
 import { sortLeadsForPaidPack } from "@/lib/pack-listing-quality";
 import type { Lead } from "@/lib/types";
 
@@ -58,10 +59,9 @@ export function cityFromAddress(address: string | null | undefined): string {
 }
 
 export function cityLabelFromLocation(location: string): string {
-  const trimmed = location.trim();
-  if (!trimmed) return "your market";
-  const first = trimmed.split(",")[0]?.trim();
-  return first || trimmed;
+  const formatted = formatMarketLocation(location);
+  if (formatted) return formatted;
+  return "your market";
 }
 
 export function scoreBadgeClass(score: number | null | undefined): string {

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSearchRowForPayment } from "@/lib/db";
+import { formatMarketLocation } from "@/lib/format-market-location";
 import { SITE } from "@/lib/site-config";
 import { getAppBaseUrl, getStripe } from "@/lib/stripe";
 
@@ -46,7 +47,7 @@ export async function POST(request: Request) {
       cancel_url: `${base}/pricing?searchId=${searchId}`,
       metadata: {
         searchId: String(searchId),
-        market: row.location ?? "",
+        market: formatMarketLocation(row.location) || row.location || "",
       },
     });
 

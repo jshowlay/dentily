@@ -90,7 +90,7 @@ function shouldMergeByDba(a: ExportLeadRow, b: ExportLeadRow): boolean {
   if (!aHasDba && !bHasDba) return false;
   const keysA = new Set(dbaMergeKeysForName(a.name));
   const keysB = new Set(dbaMergeKeysForName(b.name));
-  for (const k of keysA) {
+  for (const k of Array.from(keysA)) {
     if (keysB.has(k)) return true;
   }
   return false;

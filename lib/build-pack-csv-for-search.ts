@@ -1,6 +1,6 @@
 import { getSearchForExport } from "@/lib/db";
 import { ensurePaidPackReadyForExport } from "@/lib/ensure-paid-pack-ready";
-import { toSlugPart } from "@/lib/csv";
+import { marketLocationFilenamePart } from "@/lib/format-market-location";
 import { buildLeadPackCsv, buildLeadPackRowsFromExport } from "@/lib/lead-pack-export";
 
 /** Build the lead pack CSV bytes for a paid search (same pipeline as /api/search/[id]/export). */
@@ -15,7 +15,7 @@ export async function buildPackCsvAttachment(
 
   const packRows = buildLeadPackRowsFromExport(rows);
   const csv = buildLeadPackCsv(packRows);
-  const filename = `dentily-${toSlugPart(search.location)}-dental-leads-${searchId}.csv`;
+  const filename = `dentily-${marketLocationFilenamePart(search.location)}-dental-leads-${searchId}.csv`;
   console.log(`[build-pack-csv] searchId=${searchId} csvReady totalMs=${Date.now() - t0}`);
   return { buffer: Buffer.from(`\uFEFF${csv}`, "utf-8"), filename };
 }

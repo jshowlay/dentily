@@ -63,6 +63,33 @@ export function looksLikePracticeListingName(name: string | null | undefined): b
   return PRACTICE_NAME_HINT.test(name ?? "");
 }
 
+const ENTITY_SUFFIX_RE = /(LLC|PLLC|PC|PA|INC)\.?$/i;
+
+/**
+ * Secretary-of-state style names (not patient-facing practice brands).
+ * e.g. DENTALCLINICUSLLC, FooBarPLLC with no spaces.
+ */
+export function looksLikeEntityRegistrationName(name: string | null | undefined): boolean {
+  const raw = (name ?? "").trim();
+  if (!raw) return false;
+  const compact = raw.replace(/\s+/g, "");
+  if (compact.length < 8) return false;
+
+  if (!/\s/.test(raw) && ENTITY_SUFFIX_RE.test(compact)) return true;
+
+  if (
+    !/\s/.test(raw) &&
+    raw.length >= 12 &&
+    raw === raw.toUpperCase() &&
+    /[A-Z]/.test(raw) &&
+    /[A-Z]{2,}/.test(raw)
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
 function groupByAddress(leads: Lead[]): Map<string, Lead[]> {
   const m = new Map<string, Lead[]>();
   for (const lead of leads) {

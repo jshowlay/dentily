@@ -1,5 +1,6 @@
 import { SuccessClient, type SuccessOutcome, type SuccessPackSummary } from "@/app/success/success-client";
 import { getPackDownloadTokenForStripeSession, getSearchWithLeads, isDatabaseConfigured } from "@/lib/db";
+import { formatMarketLocation } from "@/lib/format-market-location";
 import { verifyAndFulfillCheckoutSession } from "@/lib/payments";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +14,7 @@ async function loadPackSummary(searchId: number): Promise<SuccessPackSummary | n
     const highPriorityCount = parsed.leads.filter((l) => (l.priority ?? "").toLowerCase() === "high").length;
     return {
       searchId,
-      location: parsed.location,
+      location: formatMarketLocation(parsed.location) || parsed.location,
       totalCount,
       highPriorityCount,
     };

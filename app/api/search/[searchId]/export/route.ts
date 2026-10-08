@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { toSlugPart } from "@/lib/csv";
+import { marketLocationFilenamePart } from "@/lib/format-market-location";
 import { getSearchForExport } from "@/lib/db";
 import { verifyPackExportAccess } from "@/lib/pack-export-access";
 import { ensurePaidPackReadyForExport } from "@/lib/ensure-paid-pack-ready";
@@ -59,7 +59,7 @@ export async function GET(
     const csv = buildLeadPackCsv(packRows);
     const topYesCount = packRows.filter((r) => !isLeadPackInstructionRow(r) && r.top_lead === "Yes").length;
     logExportPrioritySummary(packRows, topYesCount);
-    const filename = `dentily-${toSlugPart(search.location)}-dental-leads-${searchId}.csv`;
+    const filename = `dentily-${marketLocationFilenamePart(search.location)}-dental-leads-${searchId}.csv`;
     const body = `\uFEFF${csv}`;
 
     return new NextResponse(body, {

@@ -11,6 +11,7 @@ import {
 import { isGenericKeywordPracticeName } from "@/lib/admin-sample-eligibility";
 import {
   isExcludedCommunityClinic,
+  looksLikeEntityRegistrationName,
   looksLikeIndividualProviderName,
 } from "@/lib/lead-quality-filters";
 import { classifyPriorityForLead } from "@/lib/dentist-scoring";
@@ -152,6 +153,7 @@ export function resolvePackListingLabel(
 ): PackListingLabel | null {
   if (isExcludedCommunityClinic(lead)) return PACK_LISTING_LABELS.community;
   if (looksLikeIndividualProviderName(lead.name)) return PACK_LISTING_LABELS.provider;
+  if (looksLikeEntityRegistrationName(lead.name)) return PACK_LISTING_LABELS.generic;
   if (isGenericKeywordPracticeName(lead.name, ctx.marketCity)) return PACK_LISTING_LABELS.generic;
   if (isMultiLocationGroupLead(lead, ctx.multiCtx)) return PACK_LISTING_LABELS.chain;
   if (isKnownMultiLocationChainListing(lead)) return PACK_LISTING_LABELS.chain;

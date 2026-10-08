@@ -3,6 +3,10 @@ import { NextResponse, type NextRequest } from "next/server";
 import { renderToBuffer } from "@react-pdf/renderer";
 import type Stripe from "stripe";
 import { getSearchDeliveryInfo } from "@/lib/db";
+import {
+  formatMarketLocation,
+  marketLocationFilenamePart,
+} from "@/lib/format-market-location";
 import { QuickStartGuide } from "@/lib/pdf/QuickStartGuide";
 import { getStripe } from "@/lib/stripe";
 
@@ -46,7 +50,7 @@ export async function GET(request: NextRequest) {
   if (Number.isFinite(searchId) && searchId > 0) {
     try {
       const info = await getSearchDeliveryInfo(searchId);
-      if (info?.location) market = info.location;
+      if (info?.location) market = formatMarketLocation(info.location) || info.location;
       if (info?.totalPractices) totalPractices = info.totalPractices;
       if (info?.contactableLeads) contactableLeads = info.contactableLeads;
       if (info?.topPriorityLeads) topPriorityLeads = info.topPriorityLeads;
@@ -70,8 +74,7 @@ export async function GET(request: NextRequest) {
     }) as ReactElement
   );
 
-  const marketSlug = market.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-  const filename = `dentily-${marketSlug}-quick-start.pdf`;
+  const filename = `dentily-${marketLocationFilenamePart(market)}-quick-start.pdf`;
 
   return new NextResponse(buffer as unknown as BodyInit, {
     status: 200,

@@ -547,7 +547,7 @@ function inferMarketCityFromExportRows(rows: ExportLeadRow[]): string | null {
   }
   let best: string | null = null;
   let max = 0;
-  for (const [city, n] of counts) {
+  for (const [city, n] of Array.from(counts.entries())) {
     if (n > max) {
       max = n;
       best = city;

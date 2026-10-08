@@ -307,18 +307,8 @@ export function ResultsPageView(props: ResultsPageViewProps) {
                               </td>
                               <td>
                                 {contactDisplay.kind === "locked" ? (
-                                  <span className="dr-contact dr-contact-locked">
-                                    <svg
-                                      className="dr-contact-lock-icon"
-                                      width="12"
-                                      height="12"
-                                      viewBox="0 0 24 24"
-                                      fill="currentColor"
-                                      aria-hidden
-                                    >
-                                      <path d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V12a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5zm0 2a3 3 0 0 1 3 3v3H9V7a3 3 0 0 1 3-3z" />
-                                    </svg>
-                                    In full pack
+                                  <span className="dr-contact dr-contact-locked" aria-label="Contact details in full pack">
+                                    <span aria-hidden>🔒</span> In full pack
                                   </span>
                                 ) : contactDisplay.kind === "empty" ? (
                                   <span className="dr-contact dr-contact-none">None</span>
