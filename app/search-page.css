@@ -18,6 +18,12 @@
   min-height: 100vh;
 }
 
+/** Form fields only (e.g. /admin/sample) — not a full-page shell */
+.dentily-search.is-embedded {
+  min-height: 0;
+  background: transparent;
+}
+
 .dentily-search h1,
 .dentily-search h2,
 .dentily-search .ds-serif {

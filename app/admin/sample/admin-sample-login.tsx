@@ -38,7 +38,7 @@ export function AdminSampleLogin() {
       <h1 className="dr-title dr-serif">Sign in</h1>
       <p className="dr-subtitle">Enter the admin password to generate outreach samples for any market.</p>
 
-      <div className="dentily-search mt-8 max-w-md">
+      <div className="dentily-search is-embedded mt-6 max-w-md">
         <form onSubmit={onSubmit} className="space-y-5">
           <div>
             <label className="ds-field-label" htmlFor="admin-password">

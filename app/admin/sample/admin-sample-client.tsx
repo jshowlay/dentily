@@ -92,7 +92,7 @@ export function AdminSampleClient() {
         Apollo). Returns the top {ADMIN_SAMPLE_RESULT_LIMIT} independent practices.
       </p>
 
-      <div className="dentily-search mt-8 max-w-2xl">
+      <div className="dentily-search is-embedded mt-6 max-w-2xl">
         <form onSubmit={onGenerate} className="flex flex-wrap items-end gap-4">
           <div className="min-w-[160px] flex-1">
             <label className="ds-field-label" htmlFor="sample-city">
@@ -140,7 +140,7 @@ export function AdminSampleClient() {
 
       {result && stats ? (
         <>
-          <div className="dr-stats">
+          <div className="dr-stats !mt-4">
             <div className="dr-stat">
               <div className="dr-stat-value">{stats.count}</div>
               <div className="dr-stat-label">Practices</div>
