@@ -54,8 +54,8 @@ export function SuccessClient({ outcome, packSummary, sessionId }: Props) {
               Your {location ? `${location} ` : ""}leads are <em>ready</em>
             </h1>
             <p className="dsu-subtitle">
-              Check your email — we sent your pack and quick start guide to the address you used at checkout. You can
-              also grab everything directly below.
+              Your search is unlocked. We email your pack separately — if it is delayed, use{" "}
+              <strong>Download CSV</strong> below anytime (same file as the email attachment).
             </p>
             <div className="dsu-actions">
               <Link href={`/results?searchId=${outcome.searchId}`} className="dsu-btn dsu-btn-primary">

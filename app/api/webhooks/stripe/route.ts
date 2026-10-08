@@ -1,103 +1,22 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
-import { fulfillCheckoutSession } from "@/lib/payments";
 import {
-  fulfillSubscriptionCheckout,
   handleInvoicePaymentFailed,
   handleInvoicePaymentSucceeded,
   handleSubscriptionDeleted,
   handleSubscriptionUpdated,
 } from "@/lib/subscription-stripe";
-import { getSearchDeliveryInfo } from "@/lib/db";
-import { buildPackCsvAttachment } from "@/lib/build-pack-csv-for-search";
+import { handleCheckoutSessionCompleted } from "@/lib/stripe-checkout-webhook";
 import { getStripe } from "@/lib/stripe";
-import { sendPackDeliveryEmail } from "@/lib/sendPackDeliveryEmail";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
-/** Chain finalize + CSV attach can take ~25s on cold paths; stay under Pro limit. */
+/** Background waitUntil work (chain finalize + CSV + email) may run after 200. */
 export const maxDuration = 120;
 
 // Public route — no session auth. Stripe verifies via stripe-signature header below.
 // Endpoint URL in Stripe Dashboard must be https://www.dentily.co/api/webhooks/stripe
 // (apex dentily.co returns HTTP 307 before this handler runs).
-
-/**
- * In-process guard so a Stripe retry of the same event doesn't send a duplicate
- * delivery email. Fulfillment itself is idempotent at the DB layer; this only
- * dedupes the email side effect within a running instance.
- */
-const deliveredSessions = new Set<string>();
-
-async function deliverPackEmail(session: Stripe.Checkout.Session): Promise<void> {
-  if (session.payment_status !== "paid") return;
-  if (deliveredSessions.has(session.id)) return;
-
-  const email = session.customer_details?.email ?? session.customer_email ?? null;
-  if (!email) {
-    console.warn("[webhooks/stripe] no buyer email on session; skipping delivery email", session.id);
-    return;
-  }
-
-  const raw = session.metadata?.searchId;
-  const searchId = raw ? Number(raw) : NaN;
-  let market: string | undefined;
-  let csvPath: string | undefined;
-  let csvUrl: string | undefined;
-  let csvBuffer: Buffer | undefined;
-  let csvFilename: string | undefined;
-
-  if (Number.isFinite(searchId) && searchId > 0) {
-    try {
-      const info = await getSearchDeliveryInfo(searchId);
-      if (info?.location) market = info.location;
-      if (info?.csvPath?.trim()) csvPath = info.csvPath.trim();
-      if (info?.csvUrl?.trim()) csvUrl = info.csvUrl.trim();
-    } catch (e) {
-      console.warn("[webhooks/stripe] could not fetch delivery info for session", session.id, e);
-    }
-
-    if (!csvPath && !csvUrl) {
-      try {
-        const tCsv = Date.now();
-        const built = await buildPackCsvAttachment(searchId);
-        console.log("[webhooks/stripe] buildPackCsvAttachment ms=", Date.now() - tCsv, {
-          searchId,
-        });
-        if (built) {
-          csvBuffer = built.buffer;
-          csvFilename = built.filename;
-        } else {
-          console.warn("[webhooks/stripe] no CSV rows for search; email will omit attachment", searchId);
-        }
-      } catch (e) {
-        console.warn("[webhooks/stripe] could not build CSV attachment for session", session.id, e);
-      }
-    }
-  }
-
-  deliveredSessions.add(session.id);
-  try {
-    await sendPackDeliveryEmail({
-      toEmail: email,
-      sessionId: session.id,
-      market,
-      csvPath,
-      csvUrl,
-      csvBuffer,
-      csvFilename,
-    });
-    console.log("[webhooks/stripe] delivery email sent", session.id, {
-      market,
-      csvAttached: Boolean(csvPath || csvUrl || csvBuffer),
-    });
-  } catch (err) {
-    // Best-effort: never fail the webhook on email errors (avoids Stripe retries
-    // re-running fulfillment). Allow a future retry by clearing the guard.
-    deliveredSessions.delete(session.id);
-    console.error("[webhooks/stripe] delivery email failed", session.id, err);
-  }
-}
 
 export async function POST(request: Request) {
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -123,29 +42,9 @@ export async function POST(request: Request) {
 
   try {
     switch (event.type) {
-      case "checkout.session.completed": {
-        const session = event.data.object as Stripe.Checkout.Session;
-        if (session.metadata?.userId && session.metadata?.plan) {
-          await fulfillSubscriptionCheckout(session);
-        } else {
-          await fulfillCheckoutSession(session);
-          await deliverPackEmail(session);
-          try {
-            const email = session.customer_details?.email ?? session.customer_email ?? null;
-            const market = session.metadata?.market ?? "";
-            if (email && market.trim()) {
-              const { markPreviewCapturesConverted } = await import("@/lib/preview-captures");
-              const updated = await markPreviewCapturesConverted(email, market);
-              if (updated > 0) {
-                console.log("[webhooks/stripe] preview capture converted", { email, market, updated });
-              }
-            }
-          } catch (convErr) {
-            console.warn("[webhooks/stripe] preview conversion tracking failed", convErr);
-          }
-        }
+      case "checkout.session.completed":
+        await handleCheckoutSessionCompleted(event);
         break;
-      }
       case "customer.subscription.created":
       case "customer.subscription.updated": {
         await handleSubscriptionUpdated(event.data.object as Stripe.Subscription);

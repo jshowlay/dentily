@@ -32,6 +32,9 @@ export function AdminSampleClient() {
   const [result, setResult] = useState<GenerateResponse | null>(null);
   const [copiedTop3, setCopiedTop3] = useState(false);
   const [copiedAll, setCopiedAll] = useState(false);
+  const [resendSessionId, setResendSessionId] = useState("");
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
 
   const stats = useMemo(() => {
     if (!result?.leads.length) return null;
@@ -71,6 +74,29 @@ export function AdminSampleClient() {
     await navigator.clipboard.writeText(result.emailCopy);
     setCopiedTop3(true);
     window.setTimeout(() => setCopiedTop3(false), 2000);
+  }
+
+  async function onResendPack(e: FormEvent) {
+    e.preventDefault();
+    setResendMessage(null);
+    setResendLoading(true);
+    try {
+      const res = await fetch("/api/admin/resend-pack", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ stripeSessionId: resendSessionId.trim() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data?.error?.message ?? "Resend failed.");
+      }
+      setResendMessage(data.message ?? "Pack resent.");
+    } catch (err) {
+      setResendMessage(err instanceof Error ? err.message : "Resend failed.");
+    } finally {
+      setResendLoading(false);
+    }
   }
 
   async function copyAll10() {
@@ -226,6 +252,38 @@ export function AdminSampleClient() {
           </div>
         </>
       ) : null}
+
+      <div className="dentily-search is-embedded mt-10 max-w-2xl border-t border-black/10 pt-8">
+        <h2 className="text-lg font-semibold text-[var(--color-ink,#1a1a18)]">Resend paid pack email</h2>
+        <p className="mt-1 text-sm text-[var(--color-muted,#5a5a55)]">
+          Retry delivery for a Stripe Checkout session (<code className="font-mono text-xs">cs_…</code>). Uses the
+          same chain-finalized CSV pipeline as checkout.
+        </p>
+        <form onSubmit={onResendPack} className="mt-4 flex flex-wrap items-end gap-3">
+          <div className="min-w-[240px] flex-1">
+            <label className="ds-field-label" htmlFor="resend-session">
+              Session ID
+            </label>
+            <div className="ds-input-wrap">
+              <input
+                id="resend-session"
+                value={resendSessionId}
+                onChange={(e) => setResendSessionId(e.target.value)}
+                placeholder="cs_live_…"
+                disabled={resendLoading}
+              />
+            </div>
+          </div>
+          <button type="submit" className="ds-submit shrink-0" disabled={resendLoading || !resendSessionId.trim()}>
+            {resendLoading ? "Sending…" : "Resend pack"}
+          </button>
+        </form>
+        {resendMessage ? (
+          <p className="ds-form-hint mt-3" role="status">
+            {resendMessage}
+          </p>
+        ) : null}
+      </div>
     </AdminSampleShell>
   );
 }

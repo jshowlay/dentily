@@ -179,6 +179,12 @@ export async function ensureSchema() {
     await client.query(
       `ALTER TABLE payments ADD COLUMN IF NOT EXISTS enrichment_status TEXT;`
     );
+    await client.query(
+      `ALTER TABLE payments ADD COLUMN IF NOT EXISTS pack_delivery_email_sent_at TIMESTAMPTZ;`
+    );
+    await client.query(
+      `ALTER TABLE payments ADD COLUMN IF NOT EXISTS pack_delivery_in_progress_at TIMESTAMPTZ;`
+    );
 
     await client.query(`ALTER TABLE searches ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending';`);
     await client.query(`ALTER TABLE searches ADD COLUMN IF NOT EXISTS result_count INTEGER DEFAULT 0;`);
@@ -199,6 +205,14 @@ export async function ensureSchema() {
         status TEXT NOT NULL,
         email TEXT,
         created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS stripe_webhook_events (
+        event_id TEXT PRIMARY KEY,
+        event_type TEXT NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       );
     `);
 
@@ -1031,6 +1045,83 @@ export async function setBackgroundEnrichmentStatus(
       status,
       stripeSessionId,
     ]);
+  } finally {
+    safeReleaseClient(client);
+  }
+}
+
+/** Insert once; false when Stripe retried the same event id (skip duplicate side effects). */
+export async function tryRecordStripeWebhookEvent(
+  eventId: string,
+  eventType: string
+): Promise<boolean> {
+  await ensureSchema();
+  const client = await getPool().connect();
+  try {
+    const res = await client.query(
+      `INSERT INTO stripe_webhook_events (event_id, event_type) VALUES ($1, $2)
+       ON CONFLICT (event_id) DO NOTHING
+       RETURNING event_id`,
+      [eventId, eventType]
+    );
+    return (res.rowCount ?? 0) > 0;
+  } finally {
+    safeReleaseClient(client);
+  }
+}
+
+/**
+ * Claim the one-time pack delivery email for this checkout session (cross-instance).
+ * Returns false if already sent or another worker holds a fresh in-progress claim.
+ */
+export async function tryClaimPackDeliveryEmail(stripeSessionId: string): Promise<boolean> {
+  await ensureSchema();
+  const client = await getPool().connect();
+  try {
+    const res = await client.query(
+      `UPDATE payments
+       SET pack_delivery_in_progress_at = NOW()
+       WHERE stripe_session_id = $1
+         AND pack_delivery_email_sent_at IS NULL
+         AND (
+           pack_delivery_in_progress_at IS NULL
+           OR pack_delivery_in_progress_at < NOW() - INTERVAL '15 minutes'
+         )
+       RETURNING id`,
+      [stripeSessionId]
+    );
+    return (res.rowCount ?? 0) > 0;
+  } finally {
+    safeReleaseClient(client);
+  }
+}
+
+export async function markPackDeliveryEmailSent(stripeSessionId: string): Promise<void> {
+  await ensureSchema();
+  const client = await getPool().connect();
+  try {
+    await client.query(
+      `UPDATE payments
+       SET pack_delivery_email_sent_at = NOW(), pack_delivery_in_progress_at = NULL
+       WHERE stripe_session_id = $1`,
+      [stripeSessionId]
+    );
+  } finally {
+    safeReleaseClient(client);
+  }
+}
+
+/** Allow Stripe retry to resend after a failed background delivery attempt. */
+export async function releasePackDeliveryClaim(stripeSessionId: string): Promise<void> {
+  await ensureSchema();
+  const client = await getPool().connect();
+  try {
+    await client.query(
+      `UPDATE payments
+       SET pack_delivery_in_progress_at = NULL
+       WHERE stripe_session_id = $1 AND pack_delivery_email_sent_at IS NULL`,
+      [stripeSessionId]
+    );
   } finally {
     safeReleaseClient(client);
   }
