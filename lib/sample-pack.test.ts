@@ -7,7 +7,6 @@ import {
   buildLeadPackCsv,
   buildLeadPackRowsFromExport,
   isLeadPackInstructionRow,
-  LEAD_PACK_INSTRUCTION_ROW_NAME,
 } from "@/lib/lead-pack-export";
 import { buildMarcusWrittenOutreach } from "@/lib/marcus-outreach";
 import { exportRowToLead } from "@/lib/export-lead-adapter";
@@ -26,11 +25,9 @@ describe("Austin public sample pack", () => {
     expect(csv).toContain("Action Tier");
     expect(csv).toContain("Why This Lead");
 
-    const names = pack.map((r) => r.name);
-    expect(names[0]).toBe(LEAD_PACK_INSTRUCTION_ROW_NAME);
-    expect(names.includes(LEAD_PACK_INSTRUCTION_ROW_NAME)).toBe(true);
+    expect(pack.some((r) => isLeadPackInstructionRow(r))).toBe(false);
 
-    const leadRows = pack.filter((r) => !isLeadPackInstructionRow(r));
+    const leadRows = pack;
     expect(leadRows.length).toBeGreaterThanOrEqual(7);
 
     for (const r of leadRows) {

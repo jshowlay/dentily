@@ -59,11 +59,77 @@ function badTldArtifact(tld: string): boolean {
 
 export type MarketingEmailValidation = { ok: true; normalized: string } | { ok: false; reason: string };
 
+const PLACEHOLDER_MAILBOXES = new Set([
+  "a@abc.com",
+  "user@domain.com",
+  "your@email.com",
+  "name@example.com",
+  "test@test.com",
+  "email@email.com",
+  "you@example.com",
+  "someone@example.com",
+  "name@domain.com",
+  "your@email.com",
+]);
+
+const PLACEHOLDER_LOCALS = new Set(["test", "email", "name", "user", "your", "example", "someone", "placeholder"]);
+const PLACEHOLDER_DOMAINS = new Set([
+  "example.com",
+  "domain.com",
+  "abc.com",
+  "test.com",
+  "email.com",
+  "sample.com",
+  "yourdomain.com",
+]);
+
+const ROLE_LOCAL_PREFIXES = [
+  "careers",
+  "jobs",
+  "job",
+  "hr",
+  "humanresources",
+  "billing",
+  "privacy",
+  "webmaster",
+  "recruiting",
+  "resume",
+  "resumes",
+  "apply",
+  "employment",
+];
+
+/** Strip unicode / JSON escape artifacts before validation. */
+export function normalizeRawEmailCandidate(raw: string): string {
+  let s = raw.trim();
+  s = s.replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(Number.parseInt(hex, 16)));
+  s = s.replace(/u00[0-9a-fA-F]{2}/gi, "");
+  s = s.replace(/[\u201c\u201d\u0022']/g, "");
+  s = s.replace(/\.(png|jpe?g|gif|webp|svg|pdf)$/i, "");
+  return s.trim().toLowerCase();
+}
+
+function isPlaceholderMailbox(local: string, domain: string, full: string): boolean {
+  if (PLACEHOLDER_MAILBOXES.has(full)) return true;
+  if (PLACEHOLDER_LOCALS.has(local)) return true;
+  if (PLACEHOLDER_DOMAINS.has(domain)) return true;
+  if (local === "a" && domain === "abc.com") return true;
+  if (local.startsWith("test@") || local === "test") return true;
+  if (local === "email" || local.endsWith("@")) return true;
+  return false;
+}
+
+function isRoleInboxLocal(local: string): boolean {
+  const base = local.split("+")[0] ?? local;
+  return ROLE_LOCAL_PREFIXES.some((p) => base === p || base.startsWith(`${p}.`) || base.startsWith(`${p}_`));
+}
+
 /**
  * Validates a single mailbox string after normalizeEmailCandidate.
  */
 export function validateMarketingEmail(raw: string): MarketingEmailValidation {
-  const trimmed = raw.trim().toLowerCase();
+  const trimmed = normalizeRawEmailCandidate(raw);
+  if (!trimmed.includes("@")) return { ok: false, reason: "parse_failed" };
   const { name: displayName, address: addrFromParse } = parseAddrPair(trimmed);
   if (displayName.length > 0) {
     return { ok: false, reason: "parseaddr_display_name" };
@@ -105,6 +171,14 @@ export function validateMarketingEmail(raw: string): MarketingEmailValidation {
   const rebuilt = `${local}@${domain}`;
   if (!MARKETING_EMAIL_RE.test(rebuilt)) {
     return { ok: false, reason: "rfc_shape_failed" };
+  }
+
+  if (isPlaceholderMailbox(local, domain, rebuilt)) {
+    return { ok: false, reason: "placeholder_mailbox" };
+  }
+
+  if (isRoleInboxLocal(local)) {
+    return { ok: false, reason: "role_inbox" };
   }
 
   if (rebuilt.length > 254) return { ok: false, reason: "too_long" };

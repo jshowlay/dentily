@@ -309,8 +309,8 @@ export function QuickStartGuide({
             <View style={styles.stepBody}>
               <Text style={styles.stepTitle}>Start with Email leads</Text>
               <Text style={styles.stepDesc}>
-                Filter &quot;Best Contact Method&quot; = Email. These have verified addresses and the
-                highest reply rate.
+                Filter &quot;Best Contact Method&quot; = Email. These have addresses found on the
+                practice&apos;s website and the highest reply rate.
               </Text>
             </View>
           </View>

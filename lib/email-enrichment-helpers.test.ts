@@ -111,7 +111,7 @@ describe("pickBestEmail", () => {
     expect(domainMismatchWarning).toBe(true);
   });
 
-  it("excludes billing from primary and keeps in alternates", () => {
+  it("excludes billing role inboxes from primary and alternates", () => {
     const { best, alternates } = pickBestEmail(
       [
         { email: "billing@clinic.test", source: "website" },
@@ -120,7 +120,7 @@ describe("pickBestEmail", () => {
       "https://clinic.test/"
     );
     expect(best?.email).toBe("hello@clinic.test");
-    expect(alternates).toContain("billing@clinic.test");
+    expect(alternates).not.toContain("billing@clinic.test");
   });
 
   it("rejects placeholder addresses", () => {

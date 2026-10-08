@@ -87,6 +87,40 @@ function markSharedGroupPlaceIds(leads: Lead[], keyFn: (l: Lead) => string): Set
   return out;
 }
 
+function marketCitySlug(marketCity: string | null | undefined): string {
+  return (marketCity ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "");
+}
+
+/** True when the practice site host plausibly references the search market (e.g. boise in domain). */
+export function websiteDomainMentionsMarketCity(
+  website: string | null | undefined,
+  marketCity: string | null | undefined
+): boolean {
+  const slug = marketCitySlug(marketCity);
+  if (!slug || slug.length < 3) return true;
+  const host = (registrableHostFromUrl(website) ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+  if (!host) return true;
+  if (host.includes(slug)) return true;
+  const parts = (marketCity ?? "")
+    .toLowerCase()
+    .split(/[^a-z]+/)
+    .filter((p) => p.length >= 4);
+  return parts.some((p) => host.includes(p));
+}
+
+function looksLikeNationalBrandChainLocation(lead: Lead, ctx: PackListingContext): boolean {
+  if (websiteDomainMentionsMarketCity(lead.website, ctx.marketCity)) return false;
+  if (isMultiLocationGroupLead(lead, ctx.multiCtx)) return true;
+  if (ctx.sharedDomainPlaceIds.has(lead.placeId)) return true;
+  if (ctx.sharedBrandPlaceIds.has(lead.placeId)) return true;
+  if (ctx.sharedChainBrandPlaceIds.has(lead.placeId)) return true;
+  if (leadMatchesMultiLocationBrandKey(lead, ctx.chainBrandKeys)) return true;
+  return false;
+}
+
 export function buildPackListingContext(
   leads: Lead[],
   marketCity?: string | null,
@@ -125,6 +159,7 @@ export function resolvePackListingLabel(
   if (ctx.sharedDomainPlaceIds.has(lead.placeId)) return PACK_LISTING_LABELS.chain;
   if (ctx.sharedBrandPlaceIds.has(lead.placeId)) return PACK_LISTING_LABELS.chain;
   if (ctx.sharedChainBrandPlaceIds.has(lead.placeId)) return PACK_LISTING_LABELS.chain;
+  if (looksLikeNationalBrandChainLocation(lead, ctx)) return PACK_LISTING_LABELS.chain;
   return null;
 }
 

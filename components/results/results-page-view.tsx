@@ -22,7 +22,7 @@ import {
   type SortMode,
 } from "@/components/results/results-utils";
 import { describeScoreFactors } from "@/lib/lead-score-factors";
-import { computeBestContactMethod } from "@/lib/contact-labels";
+import { resolveResultsContactDisplay } from "@/lib/contact-labels";
 import type { Lead } from "@/lib/types";
 import { SITE } from "@/lib/site-config";
 import "@/app/results-page.css";
@@ -254,11 +254,14 @@ export function ResultsPageView(props: ResultsPageViewProps) {
                         const key = leadRowKey(lead, index);
                         const isExpanded = expandedKey === key;
                         const pClass = priorityClass(lead.priority);
-                        const contact = computeBestContactMethod({
-                          primary_email: lead.primaryEmail,
-                          contact_form_url: lead.contactFormUrl,
-                          phone: lead.phone,
-                        });
+                        const contactDisplay = resolveResultsContactDisplay(
+                          {
+                            primaryEmail: lead.primaryEmail,
+                            contactFormUrl: lead.contactFormUrl,
+                            phone: lead.phone,
+                          },
+                          { contactsLocked: !hasBuyerAccess }
+                        );
                         const factors = describeScoreFactors(lead);
                         const outreachParts = parseOutreachPreview(lead.outreach);
                         const priRaw = (lead.priority ?? "").trim();
@@ -303,7 +306,25 @@ export function ResultsPageView(props: ResultsPageViewProps) {
                                 </span>
                               </td>
                               <td>
-                                <span className="dr-contact">{contact}</span>
+                                {contactDisplay.kind === "locked" ? (
+                                  <span className="dr-contact dr-contact-locked">
+                                    <svg
+                                      className="dr-contact-lock-icon"
+                                      width="12"
+                                      height="12"
+                                      viewBox="0 0 24 24"
+                                      fill="currentColor"
+                                      aria-hidden
+                                    >
+                                      <path d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V12a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5zm0 2a3 3 0 0 1 3 3v3H9V7a3 3 0 0 1 3-3z" />
+                                    </svg>
+                                    In full pack
+                                  </span>
+                                ) : contactDisplay.kind === "empty" ? (
+                                  <span className="dr-contact dr-contact-none">None</span>
+                                ) : (
+                                  <span className="dr-contact">{contactDisplay.label}</span>
+                                )}
                               </td>
                               <td className="dr-col-actions">
                                 <div

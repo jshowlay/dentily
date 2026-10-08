@@ -8,7 +8,12 @@ import {
 } from "@/lib/dentist-scoring";
 import { exportRowToLead, exportRowUsesPersistedScoring } from "@/lib/export-lead-adapter";
 import { computeWhyThisLeadFromLead } from "@/lib/lead-scoring-evidence";
-import { compareLeadsForPaidPack, getPackListingLabelFromLead } from "@/lib/pack-listing-quality";
+import {
+  buildPackListingContext,
+  compareLeadsForPaidPack,
+  getPackListingLabelFromLead,
+  resolvePackListingLabel,
+} from "@/lib/pack-listing-quality";
 import { enrichWithApollo } from "@/lib/apollo-stub";
 import { buildMarcusWrittenOutreach, buildVoicemailScript } from "@/lib/marcus-outreach";
 import { computePlaceholdersRemaining } from "@/lib/outreach-placeholders";
@@ -20,6 +25,8 @@ import {
   OFF_DOMAIN_EMAIL_NOTE,
   type PracticeOwnership,
 } from "@/lib/practice-ownership";
+import { dedupeExportLeadRows } from "@/lib/lead-pack-dedupe";
+import { emailMailboxMatchesPracticeIdentity } from "@/lib/practice-email-gate";
 import { validateMarketingEmail } from "@/lib/marketing-email-validate";
 import { outreachReadinessFromContactSignals } from "@/lib/outreach-readiness";
 import { normalizePracticeDisplayName } from "@/lib/practice-name";
@@ -241,14 +248,48 @@ function preferOnDomainPrimaryEmail(row: ExportLeadRow): ExportLeadRow {
     primary_email = onDomain;
     other_emails = rest.slice(0, 6).join(", ");
     enrichment_notes = fromNotes.cleanedNotes || enrichment_notes;
-  } else {
-    const note = OFF_DOMAIN_EMAIL_NOTE;
-    enrichment_notes = [fromNotes.cleanedNotes || (row.enrichment_notes ?? "").trim(), note]
-      .filter(Boolean)
-      .join(" ");
+    return dropOffDomainOtherEmails({ ...row, primary_email, enrichment_notes, other_emails });
   }
 
-  return dropOffDomainOtherEmails({ ...row, primary_email, enrichment_notes, other_emails });
+  return rejectOffDomainOrganizationEmail(row);
+}
+
+function clearPrimaryEmailForExportGate(
+  row: ExportLeadRow,
+  gateReason: string
+): ExportLeadRow {
+  const hadPrimary = Boolean(csvCell(row.primary_email));
+  const email_rejection_reason = [row.email_rejection_reason, gateReason].filter(Boolean).join("; ");
+  const wasFound = coerceEmailStatus(row.email_status) === "found";
+  const email_status =
+    hadPrimary && wasFound ? "not_found" : row.email_status;
+  const signals = {
+    primaryEmail: null as string | null,
+    contactFormUrl: row.contact_form_url,
+    phone: row.phone,
+    emailStatus: coerceEmailStatus(email_status),
+  };
+  return {
+    ...row,
+    primary_email: null,
+    email_rejection_reason,
+    email_status,
+    contactable: Boolean(csvCell(row.contact_form_url) || csvCell(row.phone)),
+    outreach_readiness: outreachReadinessFromContactSignals(signals),
+  };
+}
+
+/** Drop primary mailboxes on domains that do not match the practice website or name. */
+export function rejectOffDomainOrganizationEmail(row: ExportLeadRow): ExportLeadRow {
+  const primary = csvCell(row.primary_email);
+  if (!primary) return row;
+  const website = row.website;
+  if (!website) return row;
+  if (emailMatchesWebsiteDomain(primary, website)) return row;
+  if (emailMailboxMatchesPracticeIdentity(primary, row.name)) return row;
+  const note = OFF_DOMAIN_EMAIL_NOTE;
+  const enrichment_notes = [row.enrichment_notes, note].filter(Boolean).join(" ");
+  return clearPrimaryEmailForExportGate({ ...row, enrichment_notes }, "csv_export_gate:off_domain_organization");
 }
 
 /** When primary is on-domain, Other Emails should not list off-domain alternates. */
@@ -496,6 +537,25 @@ function applyAddressClusters(rows: PipelineRow[], opts?: { preservePersistedSco
   });
 }
 
+function inferMarketCityFromExportRows(rows: ExportLeadRow[]): string | null {
+  const counts = new Map<string, number>();
+  for (const r of rows) {
+    const city = parseCityFromAddress(r.address);
+    if (!city?.trim()) continue;
+    const k = city.trim().toLowerCase();
+    counts.set(k, (counts.get(k) ?? 0) + 1);
+  }
+  let best: string | null = null;
+  let max = 0;
+  for (const [city, n] of counts) {
+    if (n > max) {
+      max = n;
+      best = city;
+    }
+  }
+  return best;
+}
+
 /** Blank for CSV / Sheets — never the string "null" or "undefined". */
 export function csvCell(value: string | null | undefined): string {
   if (value === null || value === undefined) return "";
@@ -660,6 +720,10 @@ export function sanitizeExportRowForEmailGate(row: ExportLeadRow): ExportLeadRow
     }
   }
 
+  const wasFound = coerceEmailStatus(row.email_status) === "found";
+  const email_status =
+    raw && !csvCell(primary_email) && wasFound ? "not_found" : row.email_status;
+
   const signals = {
     primaryEmail: primary_email,
     contactFormUrl: row.contact_form_url,
@@ -671,8 +735,13 @@ export function sanitizeExportRowForEmailGate(row: ExportLeadRow): ExportLeadRow
     ...row,
     primary_email,
     email_rejection_reason,
+    email_status,
     contactable: Boolean(csvCell(primary_email) || csvCell(row.contact_form_url) || csvCell(row.phone)),
-    outreach_readiness: outreachReadinessFromContactSignals(signals),
+    outreach_readiness: outreachReadinessFromContactSignals({
+      ...signals,
+      primaryEmail: primary_email,
+      emailStatus: coerceEmailStatus(email_status),
+    }),
   };
 }
 
@@ -753,12 +822,14 @@ export function validateLeadPackMapsUrls(rows: LeadPackCsvRow[]): void {
 }
 
 export function buildLeadPackRowsFromExport(rows: ExportLeadRow[]): LeadPackCsvRow[] {
-  const sourceRows = rows;
-  const rowsIn = rows
+  const marketCityForDedupe = inferMarketCityFromExportRows(rows);
+  const sourceRows = dedupeExportLeadRows(rows, { marketCity: marketCityForDedupe });
+  const rowsIn = sourceRows
     .map((r) => ({ ...r, name: normalizePracticeDisplayName(r.name) || r.name }))
     .map(stripWebsiteForExport)
     .map(sanitizeExportRowForEmailGate)
     .map(preferOnDomainPrimaryEmail)
+    .map(rejectOffDomainOrganizationEmail)
     .map(dropOffDomainOtherEmails)
     .map(applyContactFormDomainGate);
   const batchCtx = { allNamesLower: rowsIn.map((r) => (r.name ?? "").toLowerCase()) };
@@ -814,6 +885,10 @@ export function buildLeadPackRowsFromExport(rows: ExportLeadRow[]): LeadPackCsvR
     compareLeadsForPaidPack(exportRowToLead(a, 0), exportRowToLead(b, 0))
   );
 
+  const sortedLeads = sorted.map((r, i) => exportRowToLead(r, i));
+  const marketCity = inferMarketCityFromExportRows(sorted);
+  const listingCtx = buildPackListingContext(sortedLeads, marketCity);
+
   const eligibility = sorted.map((r) => ({
     primary_email: r.primary_email,
     contact_form_url: r.contact_form_url,
@@ -861,7 +936,8 @@ export function buildLeadPackRowsFromExport(rows: ExportLeadRow[]): LeadPackCsvR
         })
       : computeWhyThisLead(r);
 
-    const listingLabel = getPackListingLabelFromLead(lead);
+    const listingLabel =
+      resolvePackListingLabel(lead, listingCtx) ?? getPackListingLabelFromLead(lead);
 
     return {
       name: csvCell(r.name),
@@ -927,9 +1003,8 @@ export function buildLeadPackRowsFromExport(rows: ExportLeadRow[]): LeadPackCsvR
 
   logPipelineRunComplete(sourceRows, rowsIn, sorted, dataRows.length);
 
-  const pack = [buildInstructionPackRow(), ...dataRows];
-  validateLeadPackMapsUrls(pack);
-  return pack;
+  validateLeadPackMapsUrls(dataRows);
+  return dataRows;
 }
 
 const CSV_COLUMN_ORDER: Array<{ key: keyof LeadPackCsvRow; label: string }> = [

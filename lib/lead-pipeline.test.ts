@@ -156,6 +156,7 @@ describe("lead pipeline", () => {
   it("flags Frontier Trail co-tenants: one keeper, one demoted with cluster notes", () => {
     const pack = buildLeadPackRowsFromExport(SAMPLE_EXPORT.slice(0, 2));
     const data = pack.filter((p) => !isLeadPackInstructionRow(p));
+    expect(data.length).toBe(2);
     const lows = data.filter((p) => p.priority.toLowerCase() === "low");
     expect(lows.length).toBe(1);
     expect(data.every((p) => p.cluster_notes.includes("Shared address with"))).toBe(true);

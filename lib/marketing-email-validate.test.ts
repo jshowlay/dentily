@@ -59,4 +59,18 @@ describe("validateMarketingEmail", () => {
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.reason).toBe("tld_artifact");
   });
+
+  it("rejects placeholder and role inboxes", () => {
+    expect(validateMarketingEmail("a@abc.com").ok).toBe(false);
+    expect(validateMarketingEmail("user@domain.com").ok).toBe(false);
+    expect(validateMarketingEmail("your@email.com").ok).toBe(false);
+    expect(validateMarketingEmail("careers@smiledental.com").ok).toBe(false);
+    expect(validateMarketingEmail("billing@oakdental.co").ok).toBe(false);
+  });
+
+  it("strips u0022 escape artifacts and re-validates", () => {
+    const r = validateMarketingEmail('u0022info@clinic.comu0022');
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.normalized).toBe("info@clinic.com");
+  });
 });

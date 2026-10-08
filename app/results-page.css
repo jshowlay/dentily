@@ -388,6 +388,22 @@
   white-space: nowrap;
 }
 
+.dentily-results .dr-contact-locked {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-hint);
+}
+
+.dentily-results .dr-contact-none {
+  color: var(--color-hint);
+}
+
+.dentily-results .dr-contact-lock-icon {
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
 .dentily-results .dr-actions {
   display: flex;
   flex-wrap: wrap;

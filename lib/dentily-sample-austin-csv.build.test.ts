@@ -72,7 +72,7 @@ describe("dentily-sample-austin.csv generator", () => {
   it("selects 10 distinct rows from combined Austin exports", () => {
     const combined: ExportLeadRow[] = [...AUSTIN_SAMPLE_PACK_EXPORT_ROWS, ...AUSTIN_PIPELINE_SAMPLE_EXPORT];
     const pack = buildLeadPackRowsFromExport(combined);
-    const data = pack.slice(1).filter((r) => !isLeadPackInstructionRow(r));
+    const data = pack.filter((r) => !isLeadPackInstructionRow(r));
     const ten = selectTenAustinSampleRows(data);
     expect(ten).toHaveLength(10);
     expect(new Set(ten.map((r) => r.name)).size).toBe(10);
@@ -83,16 +83,15 @@ describe("dentily-sample-austin.csv generator", () => {
 
     const combined: ExportLeadRow[] = [...AUSTIN_SAMPLE_PACK_EXPORT_ROWS, ...AUSTIN_PIPELINE_SAMPLE_EXPORT];
     const pack = buildLeadPackRowsFromExport(combined);
-    const instruction = pack[0];
-    expect(isLeadPackInstructionRow(instruction)).toBe(true);
+    expect(pack.some((r) => isLeadPackInstructionRow(r))).toBe(false);
 
-    const data = pack.slice(1).filter((r) => !isLeadPackInstructionRow(r));
+    const data = pack.filter((r) => !isLeadPackInstructionRow(r));
     expect(data.length).toBeGreaterThanOrEqual(10);
 
     const ten = selectTenAustinSampleRows(data);
     expect(ten).toHaveLength(10);
 
-    const csv = buildLeadPackCsv([instruction, ...ten]);
+    const csv = buildLeadPackCsv(ten);
     const out = join(process.cwd(), "public", "sample", "dentily-sample-austin.csv");
     writeFileSync(out, `\uFEFF${csv}`, "utf8");
     expect(out).toMatch(/dentily-sample-austin\.csv$/);
