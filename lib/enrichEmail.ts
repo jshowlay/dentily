@@ -254,10 +254,9 @@ async function tierNpiProspeo(
   domain: string,
   practiceName: string,
   city: string,
-  state: string
+  state: string,
+  allowProspeo: boolean
 ): Promise<EnrichResult | null> {
-  const prospeoKey = process.env.PROSPEO_API_KEY?.trim();
-  if (!prospeoKey) return null;
   if (!city || !state) return null;
 
   const npiUrl =
@@ -285,6 +284,9 @@ async function tierNpiProspeo(
   }
   if (!matched?.first || !matched?.last) return null;
 
+  const prospeoKey = process.env.PROSPEO_API_KEY?.trim();
+  if (!allowProspeo || !prospeoKey) return null;
+
   const prospeoRes = await fetchWithTimeout(
     "https://api.prospeo.io/email-finder",
     {
@@ -308,16 +310,26 @@ async function tierNpiProspeo(
   return null;
 }
 
-export async function enrichEmail(params: {
-  domain: string;
-  practice_name: string;
-  city: string;
-  state: string;
-}): Promise<EnrichResult> {
+export type EnrichEmailOptions = {
+  /** When false, skip ZeroBounce, Apollo, and Prospeo (website crawl + free NPI lookup only). */
+  paidProviders?: boolean;
+};
+
+export async function enrichEmail(
+  params: {
+    domain: string;
+    practice_name: string;
+    city: string;
+    state: string;
+  },
+  options?: EnrichEmailOptions
+): Promise<EnrichResult> {
   const domain = (params.domain || "").trim().toLowerCase().replace(/^www\./, "");
   if (!domain) return { ...EMPTY };
 
-  const cached = enrichCache.get(domain);
+  const paidProviders = options?.paidProviders !== false;
+  const cacheKey = paidProviders ? domain : `${domain}:preview`;
+  const cached = enrichCache.get(cacheKey);
   if (cached && Date.now() - cached.cachedAt < CACHE_TTL_MS) {
     const { cachedAt: _cachedAt, ...result } = cached;
     return result;
@@ -325,16 +337,22 @@ export async function enrichEmail(params: {
 
   const tiers: Array<() => Promise<EnrichResult | null>> = [
     () => tierWebsiteCrawl(domain),
-    () => tierPatternGuess(domain),
-    () => tierApollo(domain),
-    () => tierNpiProspeo(domain, params.practice_name ?? "", params.city ?? "", params.state ?? ""),
+    ...(paidProviders ? [() => tierPatternGuess(domain), () => tierApollo(domain)] : []),
+    () =>
+      tierNpiProspeo(
+        domain,
+        params.practice_name ?? "",
+        params.city ?? "",
+        params.state ?? "",
+        paidProviders
+      ),
   ];
 
   for (const run of tiers) {
     try {
       const result = await run();
       if (result?.email) {
-        enrichCache.set(domain, { ...result, cachedAt: Date.now() });
+        enrichCache.set(cacheKey, { ...result, cachedAt: Date.now() });
         return result;
       }
     } catch (err) {

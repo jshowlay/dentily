@@ -457,10 +457,11 @@ function mergeEnrichmentOntoLead(lead: Lead, patch: LeadEnrichmentFields): Lead 
 export async function batchEnrichLeads(
   leads: Lead[],
   runtime?: Partial<EmailEnrichmentRuntimeConfig>,
-  options?: { hunterFallback?: boolean }
+  options?: { hunterFallback?: boolean; skipWebsiteDiscovery?: boolean }
 ): Promise<Lead[]> {
   const config = { ...loadEmailEnrichmentConfig(), ...runtime };
   const runHunter = options?.hunterFallback ?? true;
+  const skipWebsiteDiscovery = options?.skipWebsiteDiscovery ?? false;
 
   if (isEmailEnrichmentDisabled()) {
     console.log("[email-enrichment] batch skipped: DENTILY_DISABLE_EMAIL_ENRICHMENT is set");
@@ -492,7 +493,8 @@ export async function batchEnrichLeads(
               address: lead.address,
               phone: lead.phone,
             },
-            config
+            config,
+            skipWebsiteDiscovery ? { skipWebsiteDiscovery: true } : undefined
           );
           if (
             patch.website &&
@@ -629,9 +631,11 @@ const DEEP_SOURCE_LABEL: Record<EnrichSource, string> = {
  */
 export async function runDeepEnrichment(
   leads: Lead[],
-  location: { city: string; state: string }
+  location: { city: string; state: string },
+  options?: { paidProviders?: boolean }
 ): Promise<Lead[]> {
   if (process.env.DENTILY_DISABLE_DEEP_ENRICH) return leads;
+  const paidProviders = options?.paidProviders !== false;
   const max = Number.parseInt(process.env.DENTILY_DEEP_ENRICH_MAX ?? "50", 10) || 50;
 
   const candidates = leads.filter(
@@ -652,12 +656,15 @@ export async function runDeepEnrichment(
     if (!domain) continue;
 
     try {
-      const result = await enrichEmail({
-        domain,
-        practice_name: lead.name,
-        city: location.city,
-        state: location.state,
-      });
+      const result = await enrichEmail(
+        {
+          domain,
+          practice_name: lead.name,
+          city: location.city,
+          state: location.state,
+        },
+        { paidProviders }
+      );
       if (!result.email || !result.source) continue;
 
       const validation = validateMarketingEmail(result.email);

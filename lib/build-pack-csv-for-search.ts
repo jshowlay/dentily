@@ -2,12 +2,15 @@ import { getSearchForExport } from "@/lib/db";
 import { ensureDentistPackChainFinalized } from "@/lib/ensure-pack-chain-finalized";
 import { toSlugPart } from "@/lib/csv";
 import { buildLeadPackCsv, buildLeadPackRowsFromExport } from "@/lib/lead-pack-export";
+import { runSearchPackEnrichment } from "@/lib/search-pack-enrichment";
 
 /** Build the lead pack CSV bytes for a paid search (same pipeline as /api/search/[id]/export). */
 export async function buildPackCsvAttachment(
   searchId: number
 ): Promise<{ buffer: Buffer; filename: string } | null> {
   const t0 = Date.now();
+  const enrichStats = await runSearchPackEnrichment(searchId, "paid");
+  console.log(`[build-pack-csv] searchId=${searchId} paidEnrichment`, enrichStats);
   const chain = await ensureDentistPackChainFinalized(searchId);
   console.log(
     `[build-pack-csv] searchId=${searchId} chainFinalize skipped=${chain.skipped} ms=${chain.totalMs ?? 0}`
