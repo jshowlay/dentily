@@ -23,10 +23,10 @@ export function LandingHeroRedesign({
             B2B prospecting for dental marketers
           </div>
           <h1>
-            Up to {leadCount} Scored Dental Leads, <em>Delivered With a Pitch Angle for Each One.</em>
+            Know Which Dental Practices Need You — <em>and Exactly What to Say.</em>
           </h1>
           <p className="dh-hero-lead">
-            Stop cold-guessing. Know why each practice needs you — and what to say — before you ever reach out.
+            Up to {leadCount} practices per market — deduplicated, chain-filtered, with verified contact paths.
           </p>
           <div className="dh-hero-ctas">
             <HashSafeLink href={primaryHref} className="dh-btn-primary">
@@ -77,15 +77,15 @@ export function LandingHeroRedesign({
                 </span>
               </div>
             </article>
+            <div className="dh-float-badge dh-float-badge--outreach">
+              <Zap size={14} fill="currentColor" aria-hidden />
+              Same-day outreach
+            </div>
           </div>
 
           <div className="dh-float-badge dh-float-badge--leads">
             <Check size={14} strokeWidth={2.5} aria-hidden />
             Up to {leadCount} scored leads ready
-          </div>
-          <div className="dh-float-badge dh-float-badge--outreach">
-            <Zap size={14} fill="currentColor" aria-hidden />
-            Same-day outreach
           </div>
         </div>
       </div>

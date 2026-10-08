@@ -347,8 +347,10 @@
 }
 
 .dentily-home .dh-float-badge--outreach {
-  top: 0;
-  right: 0;
+  top: auto;
+  bottom: calc(100% + 10px);
+  left: 0;
+  right: auto;
   color: var(--color-amber);
 }
 
