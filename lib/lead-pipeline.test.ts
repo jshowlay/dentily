@@ -112,6 +112,59 @@ describe("lead pipeline", () => {
     expect(classifyPriorityFromScore(30)).toBe("low");
   });
 
+  it("demotes corporate and community labels below independents in export order", () => {
+    const pack = buildLeadPackRowsFromExport([
+      makeFixtureExportRow({
+        name: "Small Smiles Dental Center",
+        address: "1 A St, Boise, ID",
+        website: "https://www.smallsmiles.com/",
+        score: 100,
+        priority: "high",
+        maps_url: "https://maps.google.com/?cid=111",
+        metadata: {
+          scoringEvidence: {
+            gaps: [],
+            reviewRecencyEnabled: true,
+            reviewRecencyConfirmed: true,
+            noReviewIn90Days: false,
+            marketMedianRating: null,
+            marketMedianReviewCount: null,
+            daysSinceLastReview: null,
+            ratingVsMarket: null,
+            reviewsVsMarket: null,
+            website: null,
+          },
+        },
+      }),
+      makeFixtureExportRow({
+        name: "Treaty Oak Dental",
+        address: "2 B St, Boise, ID",
+        score: 65,
+        priority: "medium",
+        maps_url: "https://maps.google.com/?cid=222",
+        metadata: {
+          scoringEvidence: {
+            gaps: ["Review gap"],
+            reviewRecencyEnabled: true,
+            reviewRecencyConfirmed: true,
+            noReviewIn90Days: true,
+            marketMedianRating: 4.9,
+            marketMedianReviewCount: 100,
+            daysSinceLastReview: 120,
+            ratingVsMarket: null,
+            reviewsVsMarket: null,
+            website: null,
+          },
+        },
+      }),
+    ]).filter((p) => !isLeadPackInstructionRow(p));
+    expect(pack[0]?.name).toBe("Treaty Oak Dental");
+    const chain = pack.find((p) => p.name.includes("Small Smiles"));
+    expect(chain?.listing_label).toBe("Corporate chain");
+    expect(Number(chain?.score)).toBeLessThan(100);
+    expect(pack.indexOf(chain!)).toBeGreaterThan(0);
+  });
+
   it("CSV export keeps persisted score and reason when scoringEvidence is stored", () => {
     const persistedReason = "Stored at search time — do not recompute.";
     const row = makeFixtureExportRow({
@@ -157,9 +210,13 @@ describe("lead pipeline", () => {
     const pack = buildLeadPackRowsFromExport(SAMPLE_EXPORT.slice(0, 2));
     const data = pack.filter((p) => !isLeadPackInstructionRow(p));
     expect(data.length).toBe(2);
-    const lows = data.filter((p) => p.priority.toLowerCase() === "low");
-    expect(lows.length).toBe(1);
     expect(data.every((p) => p.cluster_notes.includes("Shared address with"))).toBe(true);
+    const keeper = data.find((p) => p.name === "South Austin Dental Associates");
+    const demoted = data.find((p) => p.name === "Austin Emergency Dental");
+    expect(keeper).toBeTruthy();
+    expect(demoted).toBeTruthy();
+    expect(Number(keeper!.score)).toBeGreaterThan(Number(demoted!.score));
+    expect(demoted!.priority.toLowerCase()).toBe("low");
   });
 
   it("WRITE_FIXED_CSV=1 writes dentily-austin-dental-leads-fixed.csv (optional)", () => {

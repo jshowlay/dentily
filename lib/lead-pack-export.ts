@@ -9,8 +9,8 @@ import {
 import { exportRowToLead, exportRowUsesPersistedScoring } from "@/lib/export-lead-adapter";
 import { computeWhyThisLeadFromLead } from "@/lib/lead-scoring-evidence";
 import {
+  applyPackListingQualityRankAdjustments,
   buildPackListingContext,
-  compareLeadsForPaidPack,
   resolvePackListingLabel,
 } from "@/lib/pack-listing-quality";
 import { enrichWithApollo } from "@/lib/apollo-stub";
@@ -36,6 +36,10 @@ import {
   stripAllQueryParams,
 } from "@/lib/url-normalize";
 import type { EmailStatus, ExportLeadRow, Lead } from "@/lib/types";
+
+type PrepareLeadPackPipelineOptions = {
+  chainBrandKeys?: Set<string>;
+};
 
 function coerceEmailStatus(raw: string | null | undefined): EmailStatus | null {
   if (!raw?.trim()) return null;
@@ -168,6 +172,43 @@ type PipelineRow = ExportLeadRow & {
   cluster_demoted: boolean;
   ownership: PracticeOwnership;
 };
+
+function pipelineRowKey(
+  row: Pick<ExportLeadRow, "place_id" | "maps_url" | "name" | "address">
+): string {
+  const pid = (row.place_id ?? "").trim();
+  if (pid) return `p:${pid}`;
+  return `n:${(row.name ?? "").trim()}|${(row.address ?? "").trim()}`;
+}
+
+function leadRowKeyForPipeline(lead: Pick<Lead, "placeId" | "mapsUrl" | "name" | "address">): string {
+  const pid = (lead.placeId ?? "").trim();
+  if (pid && !pid.includes("://")) return `p:${pid}`;
+  return `n:${(lead.name ?? "").trim()}|${(lead.address ?? "").trim()}`;
+}
+
+/** Re-order pipeline rows and sync score/priority/metadata after live pack listing rank. */
+function orderPipelineByRankedLeads(pipeline: PipelineRow[], ranked: Lead[]): PipelineRow[] {
+  const byKey = new Map<string, PipelineRow>();
+  for (const row of pipeline) {
+    byKey.set(pipelineRowKey(row), row);
+  }
+  const out: PipelineRow[] = [];
+  for (const lead of ranked) {
+    const row = byKey.get(leadRowKeyForPipeline(lead));
+    if (!row) continue;
+    out.push({
+      ...row,
+      score: lead.score ?? row.score,
+      priority: lead.priority ?? row.priority,
+      metadata: {
+        ...(row.metadata && typeof row.metadata === "object" ? row.metadata : {}),
+        ...lead.metadata,
+      },
+    });
+  }
+  return out.length > 0 ? out : pipeline;
+}
 
 function parseUrlHostname(raw: string | null | undefined): string | null {
   const s = csvCell(raw);
@@ -821,7 +862,10 @@ export function validateLeadPackMapsUrls(rows: LeadPackCsvRow[]): void {
   }
 }
 
-function prepareLeadPackPipeline(rows: ExportLeadRow[]): {
+function prepareLeadPackPipeline(
+  rows: ExportLeadRow[],
+  options?: PrepareLeadPackPipelineOptions
+): {
   sourceRows: ExportLeadRow[];
   rowsIn: ExportLeadRow[];
   sorted: PipelineRow[];
@@ -844,10 +888,15 @@ function prepareLeadPackPipeline(rows: ExportLeadRow[]): {
   let pipeline: PipelineRow[] = rowsIn.map((r, i) => {
     const lead = exportRowToLead(r, i);
     const persisted = exportRowUsesPersistedScoring(r);
-    const score =
+    const evidenceScore = computeBaseScore(lead, batchCtx);
+    let score =
       persisted && r.score !== null && r.score !== undefined
         ? Number(r.score)
-        : computeBaseScore(lead, batchCtx);
+        : evidenceScore;
+    // Stale DB scores from old chain demotion (e.g. 1) — re-rank from live evidence.
+    if (persisted && score < 20) {
+      score = evidenceScore;
+    }
     let priority =
       persisted && r.priority
         ? r.priority
@@ -888,9 +937,23 @@ function prepareLeadPackPipeline(rows: ExportLeadRow[]): {
 
   const preservePersistedScores = pipeline.some((r) => exportRowUsesPersistedScoring(r));
   pipeline = applyAddressClusters(pipeline, { preservePersistedScores });
-  const sorted = [...pipeline].sort((a, b) =>
-    compareLeadsForPaidPack(exportRowToLead(a, 0), exportRowToLead(b, 0))
-  );
+
+  const marketCity = inferMarketCityFromExportRows(pipeline);
+  const leadsForRank = pipeline.map((r, i) => {
+    const lead = exportRowToLead(r, i);
+    return {
+      ...lead,
+      score: r.score ?? lead.score,
+      priority: r.priority ?? lead.priority,
+      opportunityType: r.opportunity_type ?? lead.opportunityType,
+      reason: r.reason ?? lead.reason,
+      outreach: r.outreach ?? lead.outreach,
+    };
+  });
+  const ranked = applyPackListingQualityRankAdjustments(leadsForRank, marketCity, {
+    chainBrandKeys: options?.chainBrandKeys ?? new Set(),
+  });
+  const sorted = orderPipelineByRankedLeads(pipeline, ranked);
 
   return { sourceRows, rowsIn, sorted };
 }
