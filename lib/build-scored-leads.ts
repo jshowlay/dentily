@@ -1,14 +1,25 @@
 import { getPlaceDetails, MAX_RAW_RESULTS, searchBusinesses } from "@/lib/google-places";
 import { normalizePracticeDisplayName } from "@/lib/practice-name";
 import { dedupeLeads } from "@/lib/dedupe-leads";
-import { prepareLeadsForScoring } from "@/lib/lead-quality-filters";
+import { applyColocatedPracticeWebsites } from "@/lib/lead-quality-filters";
+import { discoverMultiLocationBrandKeys } from "@/lib/admin-sample-chain-probe";
+import {
+  applyPackListingQualityRankAdjustments,
+  buildPackListingContext,
+  marketCityFromSearchLocation,
+  selectIndependentPlaceIdsForExpensiveEvidence,
+} from "@/lib/pack-listing-quality";
+import {
+  PUBLIC_SEARCH_CHAIN_PROBE_MAX,
+  PUBLIC_SEARCH_CHAIN_PROBE_TOP_SCORED,
+  PUBLIC_SEARCH_EVIDENCE_INDEPENDENT_LIMIT,
+} from "@/lib/public-search-runtime-config";
 import { type DentistScoringBatchContext } from "@/lib/dentist-scoring";
 import {
   attachScoringEvidenceToDentistLeads,
   type ScoringEvidenceAttachOptions,
 } from "@/lib/lead-scoring-evidence";
 import { logSearchPrioritySummary } from "@/lib/lead-pack-export";
-import { applyMultiLocationGroupRankAdjustments } from "@/lib/multi-location-group";
 import { scoreDentistLeadsBatched, scoreLead } from "@/lib/score-lead";
 import { logDentistScoringBatch } from "@/lib/scoring-log";
 import { getExistingPracticeIdsForUser } from "@/lib/subscription-db";
@@ -98,6 +109,7 @@ export type BuildScoredLeadsParams = {
 
 export async function buildScoredLeads(params: BuildScoredLeadsParams): Promise<Lead[]> {
   const { niche, location, nicheConfig, subscriptionUserId, searchId } = params;
+  const tPipeline = Date.now();
 
   if (!process.env.GOOGLE_MAPS_API_KEY) {
     throw new Error("Missing GOOGLE_MAPS_API_KEY.");
@@ -106,6 +118,7 @@ export async function buildScoredLeads(params: BuildScoredLeadsParams): Promise<
   const terms =
     nicheConfig.id === "dentists" ? dentalTerms : [`${niche} in ${location}`];
 
+  const tPlaces = Date.now();
   const allRaw = await Promise.all(
     terms.map((term) =>
       searchBusinesses(
@@ -123,7 +136,7 @@ export async function buildScoredLeads(params: BuildScoredLeadsParams): Promise<
   });
 
   console.log(
-    `[build-scored-leads] searchId=${searchId} terms=${terms.length} totalRawResults=${found.length}`
+    `[build-scored-leads] searchId=${searchId} placesSearch ms=${Date.now() - tPlaces} terms=${terms.length} totalRawResults=${found.length}`
   );
 
   const normalizedLeads: Lead[] = found.map((l) => ({
@@ -169,6 +182,7 @@ export async function buildScoredLeads(params: BuildScoredLeadsParams): Promise<
   }
 
   const needsDetails = filteredLeads.filter((l) => !l.website || !l.phone);
+  const tDetails = Date.now();
   if (needsDetails.length > 0) {
     const detailsById = await Promise.allSettled(
       needsDetails.map(async (lead) => {
@@ -211,12 +225,17 @@ export async function buildScoredLeads(params: BuildScoredLeadsParams): Promise<
       if (!lead.mapsUrl) lead.mapsUrl = details.mapsUrl;
     }
   }
+  if (needsDetails.length > 0) {
+    console.log(
+      `[build-scored-leads] searchId=${searchId} placeDetails n=${needsDetails.length} ms=${Date.now() - tDetails}`
+    );
+  }
 
   let dedupedForScoring = dedupeLeads(filteredLeads).slice(0, INTERMEDIATE_LEAD_CAP);
   const beforeQuality = dedupedForScoring.length;
-  dedupedForScoring = prepareLeadsForScoring(dedupedForScoring);
+  dedupedForScoring = applyColocatedPracticeWebsites(dedupedForScoring);
   console.log(
-    `[build-scored-leads] searchId=${searchId} leadQualityFilter removed=${beforeQuality - dedupedForScoring.length}`
+    `[build-scored-leads] searchId=${searchId} colocatedWebsitePass count=${dedupedForScoring.length} (was ${beforeQuality})`
   );
 
   const dentistBatch: DentistScoringBatchContext | undefined =
@@ -224,12 +243,30 @@ export async function buildScoredLeads(params: BuildScoredLeadsParams): Promise<
       ? { allNamesLower: dedupedForScoring.map((l) => l.name.toLowerCase()) }
       : undefined;
 
+  const marketCity =
+    nicheConfig.id === "dentists" ? marketCityFromSearchLocation(location) : null;
+  const listingCtxForEvidence =
+    nicheConfig.id === "dentists"
+      ? buildPackListingContext(dedupedForScoring, marketCity)
+      : null;
+
   if (nicheConfig.id === "dentists") {
     const tEvidence = Date.now();
     console.log(
       `[build-scored-leads] searchId=${searchId} attaching scoring evidence for ${dedupedForScoring.length} leads`
     );
-    await attachScoringEvidenceToDentistLeads(dedupedForScoring, params.scoringEvidenceOptions);
+    const evidenceLimit =
+      params.scoringEvidenceOptions?.expensiveCandidateLimit ??
+      PUBLIC_SEARCH_EVIDENCE_INDEPENDENT_LIMIT;
+    const expensivePlaceIds = selectIndependentPlaceIdsForExpensiveEvidence(
+      dedupedForScoring,
+      listingCtxForEvidence!,
+      evidenceLimit
+    );
+    await attachScoringEvidenceToDentistLeads(dedupedForScoring, {
+      ...params.scoringEvidenceOptions,
+      expensivePlaceIds,
+    });
     console.log(
       `[build-scored-leads] searchId=${searchId} scoring evidence ms=${Date.now() - tEvidence}`
     );
@@ -245,6 +282,7 @@ export async function buildScoredLeads(params: BuildScoredLeadsParams): Promise<
 
   let scoredLeadsRaw: Lead[];
 
+  const tScore = Date.now();
   if (nicheConfig.id === "dentists") {
     const batchScored = await scoreDentistLeadsBatched(dedupedForScoring, dentistBatch);
     scoredLeadsRaw = dedupedForScoring.map((lead, i) => {
@@ -287,12 +325,37 @@ export async function buildScoredLeads(params: BuildScoredLeadsParams): Promise<
   }
 
   console.log(
-    `[build-scored-leads] searchId=${searchId} scoredCount=${scoredLeadsRaw.length} failedAIScores=${failedAIScores}`
+    `[build-scored-leads] searchId=${searchId} scoreBatch ms=${Date.now() - tScore} scoredCount=${scoredLeadsRaw.length} failedAIScores=${failedAIScores}`
   );
   logSearchPrioritySummary(scoredLeadsRaw, Math.min(10, scoredLeadsRaw.length));
   if (nicheConfig.id === "dentists") {
     logDentistScoringBatch(dentistScoringLog);
   }
 
-  return applyMultiLocationGroupRankAdjustments(scoredLeadsRaw);
+  if (nicheConfig.id !== "dentists") {
+    return scoredLeadsRaw;
+  }
+
+  let chainBrandKeys = new Set<string>();
+  const tChain = Date.now();
+  try {
+    chainBrandKeys = await discoverMultiLocationBrandKeys(scoredLeadsRaw, location, {
+      maxProbes: PUBLIC_SEARCH_CHAIN_PROBE_MAX,
+      probeFromTopScored: PUBLIC_SEARCH_CHAIN_PROBE_TOP_SCORED,
+    });
+  } catch (e) {
+    console.warn("[build-scored-leads] chain probe skipped", e);
+  }
+  console.log(
+    `[build-scored-leads] searchId=${searchId} chainProbe ms=${Date.now() - tChain} keys=${chainBrandKeys.size}`
+  );
+
+  const tPackQuality = Date.now();
+  const ranked = applyPackListingQualityRankAdjustments(scoredLeadsRaw, marketCity, {
+    chainBrandKeys,
+  });
+  console.log(
+    `[build-scored-leads] searchId=${searchId} packQuality ms=${Date.now() - tPackQuality} total ms=${Date.now() - tPipeline}`
+  );
+  return ranked;
 }

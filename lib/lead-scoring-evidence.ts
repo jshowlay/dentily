@@ -240,6 +240,8 @@ const DEFAULT_EXPENSIVE_CANDIDATE_LIMIT = 20;
 export type ScoringEvidenceAttachOptions = {
   /** Review recency, homepage crawl, and PageSpeed run only for this many top prelim-score leads. */
   expensiveCandidateLimit?: number;
+  /** When set, only these place IDs get recency / website / PageSpeed checks. */
+  expensivePlaceIds?: Set<string>;
 };
 
 export async function attachScoringEvidenceToDentistLeads(
@@ -265,9 +267,9 @@ export async function attachScoringEvidenceToDentistLeads(
   }));
   prelim.sort((a, b) => b.prelimScore - a.prelimScore);
 
-  const expensivePlaceIds = new Set(
-    prelim.slice(0, expensiveLimit).map(({ lead }) => lead.placeId).filter(Boolean)
-  );
+  const expensivePlaceIds =
+    opts?.expensivePlaceIds ??
+    new Set(prelim.slice(0, expensiveLimit).map(({ lead }) => lead.placeId).filter(Boolean));
   const pageSpeedPlaceIds = new Set(
     prelim
       .filter(({ lead }) => expensivePlaceIds.has(lead.placeId) && Boolean(lead.website?.trim()))

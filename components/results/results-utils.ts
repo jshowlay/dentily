@@ -1,3 +1,4 @@
+import { sortLeadsForPaidPack } from "@/lib/pack-listing-quality";
 import type { Lead } from "@/lib/types";
 
 export type PriorityFilter = "all" | "high" | "medium" | "low";
@@ -114,17 +115,8 @@ export function filterLeads(leads: Lead[], filter: PriorityFilter): Lead[] {
 
 export function sortLeads(leads: Lead[], mode: SortMode): Lead[] {
   const copy = [...leads];
-  if (mode === "score-desc") {
-    copy.sort((a, b) => (Number(b.score) || 0) - (Number(a.score) || 0));
-    return copy;
-  }
-  if (mode === "priority") {
-    copy.sort((a, b) => {
-      const pr = priorityRank(a.priority) - priorityRank(b.priority);
-      if (pr !== 0) return pr;
-      return (Number(b.score) || 0) - (Number(a.score) || 0);
-    });
-    return copy;
+  if (mode === "score-desc" || mode === "priority") {
+    return sortLeadsForPaidPack(copy);
   }
   copy.sort((a, b) => (Number(b.reviewCount) || 0) - (Number(a.reviewCount) || 0));
   return copy;

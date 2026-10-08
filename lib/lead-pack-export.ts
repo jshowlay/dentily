@@ -8,6 +8,7 @@ import {
 } from "@/lib/dentist-scoring";
 import { exportRowToLead, exportRowUsesPersistedScoring } from "@/lib/export-lead-adapter";
 import { computeWhyThisLeadFromLead } from "@/lib/lead-scoring-evidence";
+import { compareLeadsForPaidPack, getPackListingLabelFromLead } from "@/lib/pack-listing-quality";
 import { enrichWithApollo } from "@/lib/apollo-stub";
 import { buildMarcusWrittenOutreach, buildVoicemailScript } from "@/lib/marcus-outreach";
 import { computePlaceholdersRemaining } from "@/lib/outreach-placeholders";
@@ -406,6 +407,7 @@ function logPipelineRunComplete(
 function buildInstructionPackRow() {
   return {
     name: LEAD_PACK_INSTRUCTION_ROW_NAME,
+    listing_label: "",
     priority: "",
     action_tier: "",
     why_this_lead: "",
@@ -695,6 +697,7 @@ function applyContactFormDomainGate(row: ExportLeadRow): ExportLeadRow {
 
 export type LeadPackCsvRow = {
   name: string;
+  listing_label: string;
   priority: string;
   action_tier: string;
   why_this_lead: string;
@@ -807,7 +810,9 @@ export function buildLeadPackRowsFromExport(rows: ExportLeadRow[]): LeadPackCsvR
 
   const preservePersistedScores = pipeline.some((r) => exportRowUsesPersistedScoring(r));
   pipeline = applyAddressClusters(pipeline, { preservePersistedScores });
-  const sorted = sortByPriorityThenScore(pipeline);
+  const sorted = [...pipeline].sort((a, b) =>
+    compareLeadsForPaidPack(exportRowToLead(a, 0), exportRowToLead(b, 0))
+  );
 
   const eligibility = sorted.map((r) => ({
     primary_email: r.primary_email,
@@ -856,8 +861,11 @@ export function buildLeadPackRowsFromExport(rows: ExportLeadRow[]): LeadPackCsvR
         })
       : computeWhyThisLead(r);
 
+    const listingLabel = getPackListingLabelFromLead(lead);
+
     return {
       name: csvCell(r.name),
+      listing_label: csvCell(listingLabel ?? ""),
       priority: displayPriorityCsv(r.priority),
       action_tier: actionTier,
       why_this_lead: whyThisLead,
@@ -926,6 +934,7 @@ export function buildLeadPackRowsFromExport(rows: ExportLeadRow[]): LeadPackCsvR
 
 const CSV_COLUMN_ORDER: Array<{ key: keyof LeadPackCsvRow; label: string }> = [
   { key: "name", label: "Name" },
+  { key: "listing_label", label: "Listing Label" },
   { key: "priority", label: "Priority" },
   { key: "action_tier", label: "Action Tier" },
   { key: "why_this_lead", label: "Why This Lead" },

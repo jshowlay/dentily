@@ -1,4 +1,5 @@
 import { describeScoreFactors } from "@/lib/lead-score-factors";
+import { getPackListingLabelFromLead } from "@/lib/pack-listing-quality";
 import { computeBestContactMethod } from "@/lib/contact-labels";
 import {
   isLeadContactable,
@@ -86,6 +87,7 @@ export function LeadsTable({ leads }: { leads: Lead[] }) {
       <TableHeader>
         <TableRow>
           <TableHead>Practice</TableHead>
+          <TableHead>Listing</TableHead>
           <TableHead>Niche</TableHead>
           <TableHead>Type</TableHead>
           <TableHead>Priority</TableHead>
@@ -126,6 +128,9 @@ export function LeadsTable({ leads }: { leads: Lead[] }) {
               }
             >
               {lead.name}
+            </TableCell>
+            <TableCell className="max-w-[120px] text-xs text-slate-600">
+              {getPackListingLabelFromLead(lead) ?? "—"}
             </TableCell>
             <TableCell>
               {lead.niche ? (

@@ -10,10 +10,11 @@ import {
   getSubscriptionByUserId,
   markSearchPaidForUser,
 } from "@/lib/subscription-db";
+import { PUBLIC_SEARCH_MAX_DURATION_SEC } from "@/lib/public-search-runtime-config";
 import { PENDING_ENRICHMENT } from "@/lib/types";
 
 export const runtime = "nodejs";
-export const maxDuration = 120;
+export const maxDuration = PUBLIC_SEARCH_MAX_DURATION_SEC;
 
 const searchSchema = z.object({
   niche: z.string().trim().min(2),
@@ -102,6 +103,7 @@ export async function POST(request: Request) {
     );
 
     try {
+      const tRequest = Date.now();
       const scoredLeads = await buildScoredLeads({
         searchId,
         niche,
@@ -109,6 +111,9 @@ export async function POST(request: Request) {
         nicheConfig,
         subscriptionUserId,
       });
+      console.log(
+        `[api/search] searchId=${searchId} buildScoredLeads ms=${Date.now() - tRequest} count=${scoredLeads.length}`
+      );
 
       if (scoredLeads.length === 0) {
         await setSearchStatus(searchId, "completed", { resultCount: 0 });
@@ -129,8 +134,10 @@ export async function POST(request: Request) {
 
       console.log(`[api/search] insert count=${leadsForInsert.length}`);
 
+      const tPersist = Date.now();
       const inserted = await insertLeads(searchId, leadsForInsert);
       await setSearchStatus(searchId, "completed", { resultCount: inserted });
+      console.log(`[api/search] searchId=${searchId} persist ms=${Date.now() - tPersist}`);
 
       if (subscriptionUserId) {
         await markSearchPaidForUser(searchId, subscriptionUserId);
@@ -138,6 +145,10 @@ export async function POST(request: Request) {
       }
 
       const savedSearch = await getSearchWithLeads(searchId);
+      const totalMs = Date.now() - tRequest;
+      console.log(
+        `[api/search] searchId=${searchId} total ms=${totalMs} limitSec=${PUBLIC_SEARCH_MAX_DURATION_SEC} headroomMs=${PUBLIC_SEARCH_MAX_DURATION_SEC * 1000 - totalMs}`
+      );
 
       return NextResponse.json({
         searchId,
