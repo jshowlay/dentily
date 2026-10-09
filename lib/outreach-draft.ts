@@ -152,7 +152,7 @@ function buildHumanBody(lead: Lead, style: OutreachDraftStyle, city: string, cta
       return `I was comparing ${peers} and ${name} shows ${count} Google reviews, while most ${peers} have ${med}. That gap shows up fast when someone is picking a dentist. ${cta}`;
     }
     case "no_online_booking":
-      return `I was on ${name}'s homepage and didn't spot a way to book online from the homepage. In ${city}, that extra step is often where people drop off. ${cta}`;
+      return `I was on ${name}'s homepage and didn't spot a way to book online. In ${city}, that extra step is often where people drop off. ${cta}`;
     case "multi_office": {
       const count = rc ?? 0;
       const med = medReviews != null ? roundNatural(medReviews) : "about 100";
