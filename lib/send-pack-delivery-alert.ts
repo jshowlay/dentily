@@ -31,7 +31,7 @@ export async function sendPackDeliveryFailureAlert(input: PackDeliveryFailureAle
     return;
   }
 
-  const from = process.env.RESEND_FROM_EMAIL?.trim() ?? "Dentily <leads@dentily.co>";
+  const from = process.env.RESEND_FROM_EMAIL?.trim() ?? "Dentily <hello@dentily.co>";
   const errText =
     input.error instanceof Error
       ? `${input.error.message}\n${input.error.stack ?? ""}`

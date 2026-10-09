@@ -31,7 +31,7 @@ export async function sendEnrichedCsv({
     throw new Error("RESEND_API_KEY is not configured.");
   }
 
-  const from = process.env.RESEND_FROM_EMAIL?.trim() ?? "Dentily <leads@dentily.co>";
+  const from = process.env.RESEND_FROM_EMAIL?.trim() ?? "Dentily <hello@dentily.co>";
   const resend = new Resend(apiKey);
 
   const csv = toCsvString(leads);
