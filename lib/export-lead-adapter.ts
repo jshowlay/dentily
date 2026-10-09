@@ -1,4 +1,5 @@
 import { getLeadScoringEvidence } from "@/lib/lead-scoring-evidence";
+import { cleanPracticeDisplayName } from "@/lib/practice-display-name";
 import type { ExportLeadRow, Lead } from "@/lib/types";
 import { EMPTY_LEAD_ENRICHMENT } from "@/lib/types";
 
@@ -13,7 +14,7 @@ export function exportRowToLead(row: ExportLeadRow, idx: number): Lead {
   const placeKey = (row.place_id ?? row.maps_url ?? row.name ?? `row-${idx}`).slice(0, 256);
   return {
     placeId: placeKey,
-    name: row.name ?? "",
+    name: cleanPracticeDisplayName(row.name ?? ""),
     niche: "dentists",
     address: row.address,
     website: row.website,

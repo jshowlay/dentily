@@ -84,6 +84,15 @@ describe("pack listing quality", () => {
     expect(packListingLabelAppliesScorePenalty(PACK_LISTING_LABELS.corporateChain)).toBe(true);
   });
 
+  it("does not label generic Dental Center of … names as corporate chain without shared domain", () => {
+    const leads = [
+      lead({ placeId: "hp", name: "Dental Center of Highland Park", website: "https://highlandparkdental.com/" }),
+      lead({ placeId: "ep", name: "Dental Center of Echo Park", website: "https://echoparkdental.com/" }),
+    ];
+    const ctx = buildPackListingContext(leads, "Los Angeles");
+    expect(resolvePackListingLabel(leads[0]!, ctx)).not.toBe(PACK_LISTING_LABELS.corporateChain);
+  });
+
   it("labels shared brand-prefix locations (West Coast Dental of …) as corporate chain", () => {
     const leads = [
       lead({ placeId: "wc1", name: "West Coast Dental of Los Angeles", website: "https://www.westcoastdental.com/" }),

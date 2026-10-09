@@ -4,6 +4,12 @@ import {
   normalizeChainBrandKey,
 } from "@/lib/admin-sample-chain-probe";
 import {
+  buildChainBrandGroups,
+  buildSharedChainBrandPlaceIds,
+  qualifyChainBrandGroup,
+  type ChainBrandGroupQualification,
+} from "@/lib/chain-brand-grouping";
+import {
   PUBLIC_SEARCH_CHAIN_PROBE_MAX,
   PUBLIC_SEARCH_CHAIN_PROBE_TOP_SCORED,
 } from "@/lib/public-search-runtime-config";
@@ -298,9 +304,7 @@ export function buildPackListingContext(
     chainBrandKeys,
     sharedDomainPlaceIds: domainGroups.members,
     sharedBrandPlaceIds: brandGroups.members,
-    sharedChainBrandPlaceIds: markSharedGroupPlaceIds(leads, (lead) =>
-      normalizeChainBrandKey(lead.name)
-    ),
+    sharedChainBrandPlaceIds: buildSharedChainBrandPlaceIds(leads),
     domainGroupSizeByPlaceId: domainGroups.sizeByPlaceId,
     brandGroupSizeByPlaceId: brandGroups.sizeByPlaceId,
   };
@@ -453,6 +457,175 @@ export async function finalizeDentistPackListingWithChainProbe(
 }
 
 /** For expensive evidence: prefer independent listings by prelim score. */
+export type CorporateChainCluster = {
+  clusterKey: string;
+  reason: string;
+  practices: { name: string; placeId: string }[];
+};
+
+function matchedDsoNameFragment(name: string): string | null {
+  const n = (name ?? "").toLowerCase();
+  for (const frag of DSO_BRAND_NAME_FRAGMENTS) {
+    if (n.includes(frag)) return frag;
+  }
+  return null;
+}
+
+function chainBrandGroupReason(q: ChainBrandGroupQualification): string {
+  switch (q.kind) {
+    case "distinctive_brand_prefix":
+      return `Shared brand prefix after location strip (“${q.brandKey}”) — distinctive name token(s)`;
+    case "generic_brand_plus_domain":
+      return `Shared brand prefix (“${q.brandKey}”) plus same website domain (${q.domain})`;
+    case "generic_brand_plus_phone":
+      return `Shared brand prefix (“${q.brandKey}”) plus same phone number`;
+  }
+}
+
+/** Corporate-chain clusters in one market (for QA on metro packs). */
+export function listCorporateChainClusters(
+  leads: Lead[],
+  marketCity?: string | null
+): CorporateChainCluster[] {
+  const ctx = buildPackListingContext(leads, marketCity);
+  const clusters: CorporateChainCluster[] = [];
+  const assigned = new Set<string>();
+  const corporateLeads = leads.filter(
+    (l) => resolvePackListingLabel(l, ctx) === PACK_LISTING_LABELS.corporateChain
+  );
+
+  for (const [brandKey, members] of buildChainBrandGroups(leads).entries()) {
+    const q = qualifyChainBrandGroup(brandKey, members);
+    if (!q) continue;
+    const corpMembers = members.filter(
+      (l) =>
+        ctx.sharedChainBrandPlaceIds.has(l.placeId) &&
+        resolvePackListingLabel(l, ctx) === PACK_LISTING_LABELS.corporateChain
+    );
+    if (corpMembers.length < 2) continue;
+    for (const m of corpMembers) assigned.add(m.placeId);
+    clusters.push({
+      clusterKey: `brand:${brandKey}`,
+      reason: chainBrandGroupReason(q),
+      practices: corpMembers.map((l) => ({ name: l.name, placeId: l.placeId })),
+    });
+  }
+
+  const byDsoDomain = new Map<string, Lead[]>();
+  for (const lead of corporateLeads) {
+    if (assigned.has(lead.placeId)) continue;
+    const domain = registrableHostFromUrl(lead.website);
+    if (domain && isCorporateDentalBrandDomain(domain)) {
+      const list = byDsoDomain.get(domain) ?? [];
+      list.push(lead);
+      byDsoDomain.set(domain, list);
+    }
+  }
+  for (const [domain, members] of byDsoDomain.entries()) {
+    for (const m of members) assigned.add(m.placeId);
+    clusters.push({
+      clusterKey: `dso-domain:${domain}`,
+      reason: `Known DSO / group website domain (${domain})`,
+      practices: members.map((l) => ({ name: l.name, placeId: l.placeId })),
+    });
+  }
+
+  const byDsoFrag = new Map<string, Lead[]>();
+  for (const lead of corporateLeads) {
+    if (assigned.has(lead.placeId)) continue;
+    const frag = matchedDsoNameFragment(lead.name);
+    if (!frag) continue;
+    const list = byDsoFrag.get(frag) ?? [];
+    list.push(lead);
+    byDsoFrag.set(frag, list);
+    assigned.add(lead.placeId);
+  }
+  for (const [frag, members] of byDsoFrag.entries()) {
+    clusters.push({
+      clusterKey: `dso-name:${frag}`,
+      reason: `Known DSO / group name match (“${frag}”)`,
+      practices: members.map((l) => ({ name: l.name, placeId: l.placeId })),
+    });
+  }
+
+  const domainFivePlus = new Map<string, Lead[]>();
+  for (const lead of corporateLeads) {
+    if (assigned.has(lead.placeId)) continue;
+    const domain = registrableHostFromUrl(lead.website);
+    if (!domain) continue;
+    const list = domainFivePlus.get(domain) ?? [];
+    list.push(lead);
+    domainFivePlus.set(domain, list);
+  }
+  for (const [domain, members] of domainFivePlus.entries()) {
+    if (members.length < 5) continue;
+    for (const m of members) assigned.add(m.placeId);
+    clusters.push({
+      clusterKey: `domain:${domain}`,
+      reason: `Same website domain across ${members.length} listings (${domain})`,
+      practices: members.map((l) => ({ name: l.name, placeId: l.placeId })),
+    });
+  }
+
+  const leftovers = corporateLeads.filter((l) => !assigned.has(l.placeId));
+  for (const lead of leftovers) {
+    let reason = "Corporate chain heuristic";
+    if (websiteIndicatesCorporateLocationsNetwork(lead.website)) {
+      reason = "Corporate multi-location website pattern";
+    }
+    clusters.push({
+      clusterKey: `solo:${lead.placeId}`,
+      reason,
+      practices: [{ name: lead.name, placeId: lead.placeId }],
+    });
+  }
+
+  clusters.sort((a, b) => b.practices.length - a.practices.length || a.clusterKey.localeCompare(b.clusterKey));
+  return clusters;
+}
+
+export function explainPackListingLabel(
+  lead: Lead,
+  ctx: PackListingContext,
+  allLeads?: Lead[]
+): { label: PackListingLabel | null; reason: string | null } {
+  if (isExcludedCommunityClinic(lead)) {
+    return { label: PACK_LISTING_LABELS.community, reason: "Community / nonprofit / health-center clinic rules" };
+  }
+  if (looksLikeIndividualProviderName(lead.name)) {
+    return { label: PACK_LISTING_LABELS.provider, reason: "Individual provider listing (Dr / DDS profile)" };
+  }
+  if (looksLikeEntityRegistrationName(lead.name)) {
+    return { label: PACK_LISTING_LABELS.generic, reason: "Entity-registration style name (SOS / glued suffix)" };
+  }
+  if (isGenericKeywordPracticeName(lead.name, ctx.marketCity)) {
+    return { label: PACK_LISTING_LABELS.generic, reason: "Generic SEO-style practice name (no distinct brand token)" };
+  }
+  if (isCorporateChainLead(lead, ctx)) {
+    if (ctx.sharedChainBrandPlaceIds.has(lead.placeId) && allLeads?.length) {
+      const brandKey = normalizeChainBrandKey(lead.name);
+      const members = buildChainBrandGroups(allLeads).get(brandKey) ?? [];
+      const q = qualifyChainBrandGroup(brandKey, members);
+      if (q) {
+        return { label: PACK_LISTING_LABELS.corporateChain, reason: chainBrandGroupReason(q) };
+      }
+    }
+    const frag = matchedDsoNameFragment(lead.name);
+    if (frag) {
+      return { label: PACK_LISTING_LABELS.corporateChain, reason: `Known DSO name match: “${frag}”` };
+    }
+    const domain = registrableHostFromUrl(lead.website);
+    if (domain && isCorporateDentalBrandDomain(domain)) {
+      return { label: PACK_LISTING_LABELS.corporateChain, reason: `Known DSO domain: ${domain}` };
+    }
+    return { label: PACK_LISTING_LABELS.corporateChain, reason: "Corporate chain signals (domain group or site pattern)" };
+  }
+  if (isLocalMultiOfficeLead(lead, ctx)) {
+    return { label: PACK_LISTING_LABELS.multiOffice, reason: "Local multi-office / shared brand (non-DSO)" };
+  }
+  return { label: null, reason: null };
+}
+
 export function selectIndependentPlaceIdsForExpensiveEvidence(
   leads: Lead[],
   ctx: PackListingContext,
