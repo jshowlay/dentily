@@ -631,6 +631,13 @@
   cursor: wait;
 }
 
+.dentily-results .dr-unlock-guarantee {
+  margin: 10px 0 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: rgba(247, 245, 240, 0.55);
+}
+
 .dentily-results .dr-pricing-link {
   display: block;
   margin-top: 10px;

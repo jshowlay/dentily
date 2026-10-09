@@ -5,6 +5,7 @@
 import React from "react";
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import { DENTILY_PDF_FONTS, DENTILY_PDF_THEME as T } from "@/lib/pdf/dentily-pdf-theme";
+import { PACK_CONTACT_SATISFACTION_GUARANTEE } from "@/lib/site-config";
 
 const styles = StyleSheet.create({
   page: {
@@ -187,7 +188,7 @@ type BreakdownRow = { type: string; count: string; description: string };
 function PageFooter({ page }: { page: number }) {
   return (
     <View style={styles.pageFooter} fixed>
-      <Text>Questions? Email hello@dentily.co</Text>
+      <Text style={{ maxWidth: "72%", lineHeight: 1.4 }}>{PACK_CONTACT_SATISFACTION_GUARANTEE}</Text>
       <Text>Page {page} of 2</Text>
     </View>
   );

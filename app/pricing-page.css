@@ -651,6 +651,15 @@
   margin: 10px 0 0;
 }
 
+.dp-pricing-embed .dp-guarantee,
+.dentily-pricing .dp-guarantee {
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--color-muted, #5a5a55);
+  text-align: center;
+  margin: 12px 0 0;
+}
+
 .dp-pricing-embed .dp-tip {
   max-width: 1200px;
   margin: 20px auto 0;

@@ -1,3 +1,5 @@
+import { PACK_CONTACT_SATISFACTION_GUARANTEE } from "@/lib/site-config";
+
 type PricingFaqProps = {
   layout?: "accordion" | "grid";
   /** Lead count for pack-size answers — defaults to 150 until confirmed. */
@@ -45,6 +47,10 @@ function buildFaqItems(leadCount: number): { q: string; a: string }[] {
     {
       q: "Do I get the same leads twice?",
       a: "Within one pack, we dedupe by Google place ID and drop repeat name-and-phone rows. Listings that share the same address are grouped in the CSV with cluster notes, and extras are scored lower so you are not steered to double-contact the same location. Each purchase is tied to that search run — buying again for the same market is a fresh build, not a cross-purchase blocklist.",
+    },
+    {
+      q: "What if I can't contact most of the practices?",
+      a: PACK_CONTACT_SATISFACTION_GUARANTEE,
     },
   ];
 }

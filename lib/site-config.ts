@@ -40,3 +40,7 @@ export const HOW_TO_USE_PACK_STEPS: readonly string[] = [
 /** Plain-English quality note — manual review; not an automated guarantee. */
 export const QUALITY_REPLACEMENT_NOTE =
   "If a purchased pack is materially unusable due to widespread bad or missing records, contact support — we can review and, at our discretion, offer a replacement or credit. Not a substitute for legal advice or a formal SLA.";
+
+/** Contact-path satisfaction guarantee — same wording on FAQ, pricing, results, and Quick Start PDF. */
+export const PACK_CONTACT_SATISFACTION_GUARANTEE =
+  "If fewer than half the practices in your pack have a way to contact them (email, contact form, or phone), email us and we'll refund you in full.";

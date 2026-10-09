@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { BuyLeadPackButton } from "@/components/buy-lead-pack-button";
-import { HOW_TO_USE_PACK_STEPS, SITE } from "@/lib/site-config";
+import { HOW_TO_USE_PACK_STEPS, PACK_CONTACT_SATISFACTION_GUARANTEE, SITE } from "@/lib/site-config";
 
 type Props = {
   searchId: number;
@@ -105,6 +105,7 @@ export function ResultsSidebar({
             nativeButton
             className="dr-unlock-cta"
           />
+          <p className="dr-unlock-guarantee">{PACK_CONTACT_SATISFACTION_GUARANTEE}</p>
           <Link href={`/pricing?searchId=${searchId}`} className="dr-pricing-link">
             View pricing details
           </Link>

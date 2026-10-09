@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { SITE } from "@/lib/site-config";
+import { PACK_CONTACT_SATISFACTION_GUARANTEE, SITE } from "@/lib/site-config";
 import "@/app/pricing-page.css";
 
 function FeatureCheck({ text }: { text: string }) {
@@ -96,6 +96,7 @@ export function PricingSection({
           <Link href={starterPlan.ctaHref} className="dp-cta is-ghost">
             {starterPlan.cta} →
           </Link>
+          <p className="dp-guarantee">{PACK_CONTACT_SATISFACTION_GUARANTEE}</p>
         </article>
       </div>
 
