@@ -1,7 +1,7 @@
 import type { Lead } from "@/lib/types";
 
 const OPP_LABELS: Record<string, string> = {
-  no_website: "No public website (discovery gap)",
+  no_website: "No website on Google listing (discovery gap)",
   low_reviews: "Low reviews (visibility opportunity)",
   moderate_reviews_growth: "Moderate reviews (room to grow demand)",
   reputation_improvement: "Rating profile (reputation angle)",
@@ -44,7 +44,7 @@ export function describeScoreFactors(
     if (lead.website?.trim()) {
       lines.push("Website on file — listing completeness");
     } else {
-      lines.push("No website on file — outreach / SEO angle");
+      lines.push("No website on Google listing — outreach / SEO angle");
     }
 
     if (lead.phone?.trim()) {

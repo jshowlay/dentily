@@ -1,4 +1,5 @@
 import { formatMarketLocation } from "@/lib/format-market-location";
+import { NO_WEBSITE_ON_GOOGLE_LISTING_LABEL } from "@/lib/no-website-signal";
 import { getLeadScoringEvidence } from "@/lib/lead-scoring-evidence";
 import { sortLeadsForPaidPack } from "@/lib/pack-listing-quality";
 import type { Lead } from "@/lib/types";
@@ -37,7 +38,7 @@ export function signalLabel(type: string | null | undefined, reason?: string | n
   const key = normalizeOpportunityKey(type);
   const plain: Record<string, string> = {
     reputation_gap: "Reputation gap",
-    no_website: "No website",
+    no_website: NO_WEBSITE_ON_GOOGLE_LISTING_LABEL,
     low_review_volume: "Low review volume",
     newer_unknown: "Low review volume",
     established_static: "Strong reviews, few gaps",
@@ -76,7 +77,7 @@ export function signalDisplayForLead(
   }
 
   if (key === "no_website" && !hasSite) {
-    return { icon: SIGNAL_ICONS.no_website!, label: "No website" };
+    return { icon: SIGNAL_ICONS.no_website!, label: NO_WEBSITE_ON_GOOGLE_LISTING_LABEL };
   }
 
   if (key === "reputation_gap" && ev?.ratingVsMarket) {

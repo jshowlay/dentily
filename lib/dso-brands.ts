@@ -20,6 +20,10 @@ export const DSO_GROUP_EMAIL_DOMAINS = new Set(
     "affordabledentures.com",
     "smallsmiles.com",
     "willamettedental.com",
+    "westcoastdental.com",
+    "coastdental.com",
+    "pacificdentalservices.com",
+    "pdshealth.com",
   ].map((d) => d.toLowerCase())
 );
 
@@ -41,6 +45,10 @@ export const DSO_BRAND_NAME_FRAGMENTS = [
   "access dental",
   "small smiles",
   "willamette dental",
+  "west coast dental",
+  "coast dental",
+  "pacific dental services",
+  "smile generation",
 ] as const;
 
 /** Website path fragments that suggest a location page on a corporate site. */

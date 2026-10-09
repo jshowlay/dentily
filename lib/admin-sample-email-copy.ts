@@ -8,7 +8,7 @@ function opp(lead: Lead): string {
 }
 
 const NO_WEBSITE: ReasonBuilder[] = [
-  () => "no website found, so patients searching online have nowhere to land",
+  () => "no website on the Google listing, so patients searching online have nowhere to land",
   () => "missing a standalone site, so searchers often click through to a competitor instead",
   () => "no owned website on the listing, so paid and organic traffic has no home base",
 ];

@@ -1,3 +1,4 @@
+import { NO_WEBSITE_ON_GOOGLE_LISTING_LABEL } from "@/lib/no-website-signal";
 import type { Lead } from "@/lib/types";
 import { MIN_REVIEWS_FOR_RATING_SIGNALS } from "@/lib/lead-quality-filters";
 import {
@@ -210,7 +211,9 @@ export function computeExportReasonLine(lead: Lead, opts?: { clusterDemoted?: bo
     return "Co-located listing in this export. Demoted so you do not double-contact the same address.";
   }
   const parts: string[] = [];
-  if (!lead.website?.trim()) parts.push("No standalone website on file.");
+  if (!lead.website?.trim()) {
+    parts.push(NO_WEBSITE_ON_GOOGLE_LISTING_LABEL + ".");
+  }
   const r = lead.rating;
   const rc = lead.reviewCount;
   if (

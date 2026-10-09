@@ -84,6 +84,16 @@ describe("pack listing quality", () => {
     expect(packListingLabelAppliesScorePenalty(PACK_LISTING_LABELS.corporateChain)).toBe(true);
   });
 
+  it("labels shared brand-prefix locations (West Coast Dental of …) as corporate chain", () => {
+    const leads = [
+      lead({ placeId: "wc1", name: "West Coast Dental of Los Angeles", website: "https://www.westcoastdental.com/" }),
+      lead({ placeId: "wc2", name: "West Coast Dental of 6th Street", website: "https://www.westcoastdental.com/" }),
+    ];
+    const ctx = buildPackListingContext(leads, "Los Angeles");
+    expect(resolvePackListingLabel(leads[0]!, ctx)).toBe(PACK_LISTING_LABELS.corporateChain);
+    expect(resolvePackListingLabel(leads[1]!, ctx)).toBe(PACK_LISTING_LABELS.corporateChain);
+  });
+
   it("labels Rocky Mountain Endodontics Boise as multi-office", () => {
     const ctx = buildPackListingContext([], "Boise, ID");
     expect(

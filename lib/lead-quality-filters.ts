@@ -1,3 +1,5 @@
+import { DSO_BRAND_NAME_FRAGMENTS } from "@/lib/dso-brands";
+import { registrableHostFromUrl } from "@/lib/url-normalize";
 import type { Lead } from "@/lib/types";
 
 /** Same normalization as lead-pack-export (kept local to avoid import cycles). */
@@ -16,7 +18,10 @@ const PRACTICE_NAME_HINT =
   /\b(dental|dentistry|orthodont|smile|smiles|family|care|center|centre|clinic|group|office|practice|associates|oral|periodont|endodont|prosthodont|pediatric|implant|cosmetic)\b/i;
 
 const EXCLUDED_CLINIC_NAME =
-  /\b(community\s+(health|dental|clinic)|free\s+clinic|ministr(?:y|ies)|de\s+cristo|fqhc|school\s+of\s+dentistry|federally\s+qualified|charit(?:y|able)|non-?profit|county\s+(health|dental)|public\s+health)\b/i;
+  /\b(community\s+(health|dental|clinic)|free\s+clinic|ministr(?:y|ies)|de\s+cristo|fqhc|school\s+of\s+dentistry|federally\s+qualified|charit(?:y|able)|non-?profit|county\s+(health|dental)|public\s+health|health\s+center|health\s+services|apla\s+health)\b/i;
+
+const COMMUNITY_DENTAL_NAME =
+  /\bcommunity\b.*\b(dental|health|clinic)\b|\b(dental|health|clinic)\b.*\bcommunity\b/i;
 
 const EXCLUDED_CLINIC_TYPE =
   /\b(university|school|government|hospital|health_clinic|community_health_center)\b/;
@@ -37,14 +42,35 @@ function isUniversityDentalClinicName(name: string): boolean {
   return false;
 }
 
+function isClearlyPrivateDentalPracticeName(name: string): boolean {
+  if (EXCLUDED_CLINIC_NAME.test(name)) return false;
+  if (COMMUNITY_DENTAL_NAME.test(name)) return false;
+  if (UNIVERSITY_DENTAL.test(name)) return false;
+  if (isUniversityDentalClinicName(name)) return false;
+  const lower = name.toLowerCase();
+  if (DSO_BRAND_NAME_FRAGMENTS.some((frag) => lower.includes(frag))) return true;
+  return PRACTICE_NAME_HINT.test(name);
+}
+
+function websiteSuggestsNonprofitClinic(website: string | null | undefined, name: string): boolean {
+  const host = (registrableHostFromUrl(website) ?? "").toLowerCase();
+  if (!host.endsWith(".org")) return false;
+  if (isClearlyPrivateDentalPracticeName(name)) return false;
+  return true;
+}
+
 /** Nonprofit / community / university dental listings — not B2B growth targets. */
-export function isExcludedCommunityClinic(lead: Pick<Lead, "name" | "primaryType">): boolean {
+export function isExcludedCommunityClinic(
+  lead: Pick<Lead, "name" | "primaryType" | "website">
+): boolean {
   const name = (lead.name ?? "").trim();
   if (!name) return false;
   if (/\bterry\s+reilly\b/i.test(name)) return true;
   if (EXCLUDED_CLINIC_NAME.test(name)) return true;
+  if (COMMUNITY_DENTAL_NAME.test(name)) return true;
   if (UNIVERSITY_DENTAL.test(name)) return true;
   if (isUniversityDentalClinicName(name)) return true;
+  if (websiteSuggestsNonprofitClinic(lead.website, name)) return true;
   const pt = (lead.primaryType ?? "").toLowerCase();
   if (pt && EXCLUDED_CLINIC_TYPE.test(pt)) return true;
   return false;

@@ -43,6 +43,7 @@ export function stripBrandSuffixes(name: string): string {
 /** Strip trailing " - Riverside", " | Austin", or "(Downtown)" style suffixes. */
 export function stripLocationSuffixFromName(name: string): string {
   let base = stripBrandSuffixes(name);
+  base = base.replace(/\s+of\s+[A-Za-z0-9][A-Za-z0-9\s.'-]{0,64}$/i, "").trim();
   base = base.replace(/\s[-–—|]\s*[A-Za-z0-9][A-Za-z0-9\s.'-]{0,48}$/, "").trim();
   base = base.replace(/\s*\([A-Za-z0-9][A-Za-z0-9\s.'-]{0,48}\)\s*$/, "").trim();
   return base;

@@ -48,7 +48,7 @@ async function crawlPendingLeads(searchId: number, search: NonNullable<Awaited<R
     await markPendingLeadsEnrichmentSkipped(
       searchId,
       pendingNoWebsite.map((l) => l.placeId),
-      "No website on listing — use phone or Maps for outreach."
+      "No website on Google listing — use phone or Maps for outreach."
     );
   }
 

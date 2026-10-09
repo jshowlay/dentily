@@ -66,7 +66,7 @@ describe("formatAdminSampleEmailBullets", () => {
     ];
     const text = formatAdminSampleEmailBullets(leads, 3, "Austin, TX");
     expect(text).toContain(
-      "• Laguna Dental and Orthodontics: No website found, so patients searching online have nowhere to land"
+      "• Laguna Dental and Orthodontics: No website on the Google listing, so patients searching online have nowhere to land"
     );
     expect(text).toContain("88");
     expect(text.toLowerCase()).not.toContain("priority");

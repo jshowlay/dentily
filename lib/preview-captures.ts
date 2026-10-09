@@ -40,7 +40,7 @@ function signalLabel(type: string | null | undefined, reason?: string | null): s
   const key = (type ?? "").trim().toLowerCase().replace(/\s+/g, "_");
   const labels: Record<string, string> = {
     reputation_gap: "Reputation gap",
-    no_website: "No website",
+    no_website: "No website on Google listing",
     newer_unknown: "Newer unknown",
     established_static: "Established static",
     general_growth: "General growth",

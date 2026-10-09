@@ -144,7 +144,7 @@ function buildHumanBody(lead: Lead, style: OutreachDraftStyle, city: string, cta
     }
     case "no_website": {
       const audience = /\b(pediatric|kids|children)/i.test(name) ? "Parents" : "People";
-      return `I was looking at practices in ${city} and couldn't find a website for ${name}, just the Google Maps listing. ${audience} searching in ${city} usually want to see a site before they call. ${cta}`;
+      return `I was looking at practices in ${city} and noticed your Google listing doesn't link to a website for ${name}. ${audience} searching in ${city} usually want to click through to a site before they call. ${cta}`;
     }
     case "low_review_volume": {
       const count = rc ?? 0;

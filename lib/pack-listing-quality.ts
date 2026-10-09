@@ -199,6 +199,8 @@ function hasExplicitCorporateChainSignals(lead: Lead, ctx: PackListingContext): 
 function isCorporateChainLead(lead: Lead, ctx: PackListingContext): boolean {
   if (hasExplicitCorporateChainSignals(lead, ctx)) return true;
 
+  if (ctx.sharedChainBrandPlaceIds.has(lead.placeId)) return true;
+
   const domainSize = groupSizeForLead(lead, ctx, "domain");
   if (
     domainSize >= 5 &&

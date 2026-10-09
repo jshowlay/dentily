@@ -39,6 +39,21 @@ describe("lead-quality-filters", () => {
     expect(isExcludedCommunityClinic(lead({ name: "USC Herman Ostrow School of Dentistry" }))).toBe(true);
     expect(isExcludedCommunityClinic(lead({ name: "UCLA Dental Clinics" }))).toBe(true);
     expect(isExcludedCommunityClinic(lead({ name: "Smile Family Dental" }))).toBe(false);
+    expect(
+      isExcludedCommunityClinic(
+        lead({ name: "APLA Health Dental Clinic, Downtown Los Angeles", website: "https://apla.org/" })
+      )
+    ).toBe(true);
+    expect(
+      isExcludedCommunityClinic(
+        lead({ name: "Forest Family Dental", website: "https://forestfamilydental.org/" })
+      )
+    ).toBe(false);
+    expect(
+      isExcludedCommunityClinic(
+        lead({ name: "Neighborhood Health Center Dental", website: "https://example.org/" })
+      )
+    ).toBe(true);
   });
 
   it("detects entity-style registration names", () => {

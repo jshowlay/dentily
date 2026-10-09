@@ -1,4 +1,5 @@
 import { buildCsv } from "@/lib/csv";
+import { NO_WEBSITE_EXPORT_REASON_LINE } from "@/lib/no-website-signal";
 import { sanitizeContactFormUrlForExport } from "@/lib/contact-form-url";
 import {
   classifyOpportunityType,
@@ -407,7 +408,7 @@ export function computeWhyThisLead(r: PipelineRow): string {
 
   let core = "";
   if (key === "no_website") {
-    core = "No standalone website on file — foundational digital presence is the starting point.";
+    core = NO_WEBSITE_EXPORT_REASON_LINE;
   } else if (key === "reputation_gap") {
     core = `Public rating of ${ratingStr} is likely filtering them out of high-intent searches — reputation work has clear ROI here.`;
   } else if (key === "established_static") {

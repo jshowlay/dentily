@@ -5,6 +5,7 @@ import {
   type MarketBenchmarks,
 } from "@/lib/market-benchmarks";
 import { MIN_REVIEWS_FOR_RATING_SIGNALS } from "@/lib/lead-quality-filters";
+import { NO_WEBSITE_EXPORT_REASON_LINE } from "@/lib/no-website-signal";
 import { fetchReviewRecencyMap } from "@/lib/google-places";
 import type { WebsiteAudit } from "@/lib/website-evidence";
 import { auditWebsite, mapPool } from "@/lib/website-evidence";
@@ -220,7 +221,7 @@ export function computeWhyThisLeadFromLead(lead: Lead): string {
       : "unknown";
 
   if (key === "no_website") {
-    return `No standalone website on file — foundational digital presence is the starting point.${priLabel ? ` (${priLabel} priority.)` : ""}`;
+    return `${NO_WEBSITE_EXPORT_REASON_LINE}${priLabel ? ` (${priLabel} priority.)` : ""}`;
   }
   if (key === "reputation_gap") {
     return `Public rating of ${ratingStr} is likely filtering them out of high-intent searches.${priLabel ? ` (${priLabel} priority.)` : ""}`;
