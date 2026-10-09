@@ -494,7 +494,7 @@ export function listCorporateChainClusters(
     (l) => resolvePackListingLabel(l, ctx) === PACK_LISTING_LABELS.corporateChain
   );
 
-  for (const [brandKey, members] of buildChainBrandGroups(leads).entries()) {
+  for (const [brandKey, members] of Array.from(buildChainBrandGroups(leads).entries())) {
     const q = qualifyChainBrandGroup(brandKey, members);
     if (!q) continue;
     const corpMembers = members.filter(
@@ -521,7 +521,7 @@ export function listCorporateChainClusters(
       byDsoDomain.set(domain, list);
     }
   }
-  for (const [domain, members] of byDsoDomain.entries()) {
+  for (const [domain, members] of Array.from(byDsoDomain.entries())) {
     for (const m of members) assigned.add(m.placeId);
     clusters.push({
       clusterKey: `dso-domain:${domain}`,
@@ -540,7 +540,7 @@ export function listCorporateChainClusters(
     byDsoFrag.set(frag, list);
     assigned.add(lead.placeId);
   }
-  for (const [frag, members] of byDsoFrag.entries()) {
+  for (const [frag, members] of Array.from(byDsoFrag.entries())) {
     clusters.push({
       clusterKey: `dso-name:${frag}`,
       reason: `Known DSO / group name match (“${frag}”)`,
@@ -557,7 +557,7 @@ export function listCorporateChainClusters(
     list.push(lead);
     domainFivePlus.set(domain, list);
   }
-  for (const [domain, members] of domainFivePlus.entries()) {
+  for (const [domain, members] of Array.from(domainFivePlus.entries())) {
     if (members.length < 5) continue;
     for (const m of members) assigned.add(m.placeId);
     clusters.push({

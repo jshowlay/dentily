@@ -1,8 +1,18 @@
 import type { Lead } from "@/lib/types";
 
+export type ResultsDisplaySignal = { icon: string; label: string };
+
 export type ClientLead = Lead & {
-  displaySignal?: { icon: string; label: string } | null;
+  displaySignal?: ResultsDisplaySignal | null;
 };
+
+function readDisplaySignal(raw: unknown): ResultsDisplaySignal | undefined {
+  if (raw == null || typeof raw !== "object") return undefined;
+  const icon = (raw as { icon?: unknown }).icon;
+  const label = (raw as { label?: unknown }).label;
+  if (typeof icon === "string" && typeof label === "string") return { icon, label };
+  return undefined;
+}
 
 /**
  * Strip server-only / non-JSON-safe values before passing leads to Client Components.
@@ -33,9 +43,6 @@ export function sanitizeLeadsForClient(leads: Lead[]): ClientLead[] {
     status: l.status ?? undefined,
     createdAt: l.createdAt,
     metadata: {},
-    displaySignal:
-      "displaySignal" in l && l.displaySignal !== undefined
-        ? l.displaySignal
-        : undefined,
+    displaySignal: readDisplaySignal("displaySignal" in l ? l.displaySignal : undefined),
   }));
 }

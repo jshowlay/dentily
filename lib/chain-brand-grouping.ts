@@ -61,12 +61,8 @@ export function chainBrandGroupHasSharedDomainOrPhone(members: Lead[]): boolean 
       phoneCounts.set(phone, (phoneCounts.get(phone) ?? 0) + 1);
     }
   }
-  for (const n of domainCounts.values()) {
-    if (n >= 2) return true;
-  }
-  for (const n of phoneCounts.values()) {
-    if (n >= 2) return true;
-  }
+  if (Array.from(domainCounts.values()).some((n) => n >= 2)) return true;
+  if (Array.from(phoneCounts.values()).some((n) => n >= 2)) return true;
   return false;
 }
 
@@ -101,12 +97,8 @@ export function qualifyChainBrandGroup(
     if (domain.length >= 4) {
       domainCounts.set(domain, (domainCounts.get(domain) ?? 0) + 1);
     }
-    const phone = normalizePhoneKey(lead.phone);
-    if (phone) {
-      phoneCounts.set(phone, phone);
-    }
   }
-  for (const [domain, n] of domainCounts.entries()) {
+  for (const [domain, n] of Array.from(domainCounts.entries())) {
     if (n >= 2) return { kind: "generic_brand_plus_domain", brandKey, domain };
   }
   const phoneTally = new Map<string, number>();
@@ -114,7 +106,7 @@ export function qualifyChainBrandGroup(
     const phone = normalizePhoneKey(lead.phone);
     if (phone) phoneTally.set(phone, (phoneTally.get(phone) ?? 0) + 1);
   }
-  for (const [phone, n] of phoneTally.entries()) {
+  for (const [phone, n] of Array.from(phoneTally.entries())) {
     if (n >= 2) return { kind: "generic_brand_plus_phone", brandKey, phone };
   }
   return null;
@@ -123,7 +115,7 @@ export function qualifyChainBrandGroup(
 /** Place IDs that share a qualifying stripped “of …” / location brand prefix cluster. */
 export function buildSharedChainBrandPlaceIds(leads: Lead[]): Set<string> {
   const out = new Set<string>();
-  for (const [brandKey, members] of buildChainBrandGroups(leads).entries()) {
+  for (const [brandKey, members] of Array.from(buildChainBrandGroups(leads).entries())) {
     if (qualifyChainBrandGroup(brandKey, members)) {
       for (const m of members) out.add(m.placeId);
     }

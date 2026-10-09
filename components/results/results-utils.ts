@@ -173,12 +173,12 @@ export function distinctSignalTypes(leads: Lead[]): number {
   return set.size;
 }
 
-export function filterLeads(leads: Lead[], filter: PriorityFilter): Lead[] {
+export function filterLeads<T extends Lead>(leads: T[], filter: PriorityFilter): T[] {
   if (filter === "all") return leads;
   return leads.filter((l) => (l.priority ?? "").toLowerCase() === filter);
 }
 
-export function sortLeads(leads: Lead[], mode: SortMode): Lead[] {
+export function sortLeads<T extends Lead>(leads: T[], mode: SortMode): T[] {
   const copy = [...leads];
   if (mode === "score-desc" || mode === "priority") {
     return sortLeadsForPaidPack(copy);

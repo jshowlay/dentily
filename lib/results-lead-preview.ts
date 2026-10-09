@@ -55,7 +55,8 @@ export function prepareLeadsForResultsClient(
   const leads = fullLeads.map((lead) => {
     const displaySignal = signalDisplayForLead(lead);
     const row = hasBuyerAccess ? lead : redactLeadsForPublicPreview([lead])[0]!;
-    return sanitizeLeadsForClient([{ ...row, displaySignal }])[0]!;
+    const sanitized = sanitizeLeadsForClient([row])[0]!;
+    return { ...sanitized, displaySignal };
   });
   return { leads, signalTypeCount };
 }
