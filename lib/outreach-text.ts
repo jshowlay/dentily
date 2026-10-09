@@ -1,3 +1,11 @@
+export function hashString(s: string): number {
+  let h = 5381;
+  for (let i = 0; i < s.length; i += 1) {
+    h = (h * 33) ^ s.charCodeAt(i);
+  }
+  return Math.abs(h);
+}
+
 /** Remove long dashes that read as templated AI tone. */
 export function stripLongDashes(s: string): string {
   return s

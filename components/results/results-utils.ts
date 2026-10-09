@@ -1,4 +1,5 @@
 import { formatMarketLocation } from "@/lib/format-market-location";
+import { getLeadScoringEvidence } from "@/lib/lead-scoring-evidence";
 import { sortLeadsForPaidPack } from "@/lib/pack-listing-quality";
 import type { Lead } from "@/lib/types";
 
@@ -8,22 +9,15 @@ export type SortMode = "score-desc" | "priority" | "reviews";
 const SIGNAL_ICONS: Record<string, string> = {
   reputation_gap: "⚑",
   no_website: "◎",
+  low_review_volume: "↑",
   newer_unknown: "↑",
   established_static: "◈",
   general_growth: "→",
   high_volume_saturation: "✦",
+  no_online_booking: "◎",
   reputation_improvement: "⚑",
   low_reviews: "↑",
   moderate_reviews_growth: "→",
-};
-
-const SIGNAL_LABELS: Record<string, string> = {
-  reputation_gap: "Reputation gap",
-  no_website: "No website",
-  newer_unknown: "Newer unknown",
-  established_static: "Established static",
-  general_growth: "General growth",
-  high_volume_saturation: "High volume saturation",
 };
 
 export function leadRowKey(lead: Lead, index: number): string {
@@ -41,13 +35,83 @@ export function signalIcon(type: string | null | undefined): string {
 
 export function signalLabel(type: string | null | undefined, reason?: string | null): string {
   const key = normalizeOpportunityKey(type);
-  if (SIGNAL_LABELS[key]) return SIGNAL_LABELS[key];
+  const plain: Record<string, string> = {
+    reputation_gap: "Reputation gap",
+    no_website: "No website",
+    low_review_volume: "Low review volume",
+    newer_unknown: "Low review volume",
+    established_static: "Strong reviews, few gaps",
+    general_growth: "General growth",
+    high_volume_saturation: "Very high review count",
+    no_online_booking: "No online booking",
+  };
+  if (plain[key]) return plain[key];
   if (reason?.trim()) {
     const short = reason.trim();
     return short.length > 72 ? `${short.slice(0, 72)}…` : short;
   }
   if (!type) return "—";
   return type.replace(/_/g, " ");
+}
+
+function hasLowReviewVolumeEvidence(
+  lead: Pick<Lead, "metadata" | "reviewCount">
+): boolean {
+  const ev = getLeadScoringEvidence(lead);
+  return Boolean(ev?.reviewsVsMarket);
+}
+
+/** Human-readable signal for results table; omit when not evidence-backed. */
+export function signalDisplayForLead(
+  lead: Pick<Lead, "opportunityType" | "reason" | "metadata" | "reviewCount" | "website" | "rating">
+): { icon: string; label: string } | null {
+  const key = normalizeOpportunityKey(lead.opportunityType);
+  if (!key) return null;
+
+  const ev = getLeadScoringEvidence(lead);
+  const hasSite = Boolean((lead.website ?? "").trim());
+
+  if (ev?.website?.hasOnlineBooking === false && hasSite) {
+    return { icon: SIGNAL_ICONS.no_online_booking ?? "◎", label: "No online booking" };
+  }
+
+  if (key === "no_website" && !hasSite) {
+    return { icon: SIGNAL_ICONS.no_website!, label: "No website" };
+  }
+
+  if (key === "reputation_gap" && ev?.ratingVsMarket) {
+    return { icon: SIGNAL_ICONS.reputation_gap!, label: "Reputation gap" };
+  }
+
+  if ((key === "newer_unknown" || key === "low_review_volume") && hasLowReviewVolumeEvidence(lead)) {
+    return { icon: SIGNAL_ICONS.low_review_volume!, label: "Low review volume" };
+  }
+
+  if (key === "high_volume_saturation" && (lead.reviewCount ?? 0) >= 900) {
+    return { icon: SIGNAL_ICONS.high_volume_saturation!, label: "Very high review count" };
+  }
+
+  if (key === "established_static" && (ev?.gaps.length ?? 0) > 0) {
+    return { icon: SIGNAL_ICONS.established_static!, label: "Strong reviews, few gaps" };
+  }
+
+  if (key === "general_growth") {
+    return null;
+  }
+
+  if (ev?.gaps.length) {
+    if (ev.ratingVsMarket) {
+      return { icon: SIGNAL_ICONS.reputation_gap!, label: "Reputation gap" };
+    }
+    if (ev.reviewsVsMarket) {
+      return { icon: SIGNAL_ICONS.low_review_volume!, label: "Low review volume" };
+    }
+    if (key === "established_static") {
+      return { icon: SIGNAL_ICONS.established_static!, label: "Strong reviews, few gaps" };
+    }
+  }
+
+  return null;
 }
 
 export function cityFromAddress(address: string | null | undefined): string {
@@ -102,8 +166,8 @@ export function countByPriority(leads: Lead[]) {
 export function distinctSignalTypes(leads: Lead[]): number {
   const set = new Set<string>();
   for (const lead of leads) {
-    const key = normalizeOpportunityKey(lead.opportunityType);
-    if (key) set.add(key);
+    const sig = signalDisplayForLead(lead);
+    if (sig) set.add(sig.label);
   }
   return set.size;
 }

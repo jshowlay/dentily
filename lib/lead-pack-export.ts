@@ -14,7 +14,12 @@ import {
   resolvePackListingLabel,
 } from "@/lib/pack-listing-quality";
 import { enrichWithApollo } from "@/lib/apollo-stub";
-import { buildMarcusWrittenOutreach, buildVoicemailScript } from "@/lib/marcus-outreach";
+import { buildVoicemailScript } from "@/lib/marcus-outreach";
+import {
+  buildOutreachDraft,
+  buildOutreachDraftsForLeads,
+  buildOutreachSubjectLine,
+} from "@/lib/outreach-draft";
 import { computePlaceholdersRemaining } from "@/lib/outreach-placeholders";
 import { parseCityFromAddress } from "@/lib/parse-city-from-address";
 import {
@@ -516,6 +521,7 @@ function buildInstructionPackRow() {
     ownership: "",
     why_now: "",
     reason: "",
+    subject_line: "",
     outreach_draft: LEAD_PACK_INSTRUCTION_OUTREACH,
     maps_url: "",
     top_lead: "No" as const,
@@ -594,6 +600,12 @@ function inferMarketCityFromExportRows(rows: ExportLeadRow[]): string | null {
     }
   }
   return best;
+}
+
+function marketCityForOutreach(rows: ExportLeadRow[]): string | null {
+  const raw = inferMarketCityFromExportRows(rows);
+  if (!raw?.trim()) return null;
+  return raw.charAt(0).toUpperCase() + raw.slice(1);
 }
 
 /** Blank for CSV / Sheets — never the string "null" or "undefined". */
@@ -835,6 +847,7 @@ export type LeadPackCsvRow = {
   why_now: string;
   reason: string;
   outreach_draft: string;
+  subject_line: string;
   maps_url: string;
   top_lead: "Yes" | "No";
   placeholders_remaining: string;
@@ -962,15 +975,23 @@ function prepareLeadPackPipeline(
 export function buildLeadsMatchingExportPack(rows: ExportLeadRow[]): Lead[] {
   if (rows.length === 0) return [];
   const { sorted } = prepareLeadPackPipeline(rows);
-  return sorted.map((r, i) => exportRowToLead(r, i));
+  const marketCity = marketCityForOutreach(sorted);
+  const sortedLeads = sorted.map((r, i) => exportRowToLead(r, i));
+  const draftByKey = buildOutreachDraftsForLeads(sortedLeads, marketCity);
+  return sortedLeads.map((lead) => ({
+    ...lead,
+    outreach: draftByKey.get(lead.placeId ?? lead.name) ?? buildOutreachDraft(lead, { marketCity }),
+  }));
 }
 
 export function buildLeadPackRowsFromExport(rows: ExportLeadRow[]): LeadPackCsvRow[] {
   const { sourceRows, rowsIn, sorted } = prepareLeadPackPipeline(rows);
 
   const sortedLeads = sorted.map((r, i) => exportRowToLead(r, i));
-  const marketCity = inferMarketCityFromExportRows(sorted);
+  const marketCity = marketCityForOutreach(sorted);
   const listingCtx = buildPackListingContext(sortedLeads, marketCity);
+
+  const draftByKey = buildOutreachDraftsForLeads(sortedLeads, marketCity);
 
   const eligibility = sorted.map((r) => ({
     primary_email: r.primary_email,
@@ -1002,7 +1023,8 @@ export function buildLeadPackRowsFromExport(rows: ExportLeadRow[]): LeadPackCsvR
     });
     const persisted = exportRowUsesPersistedScoring(r);
     const outreachBody =
-      persisted && r.outreach?.trim() ? r.outreach.trim() : buildMarcusWrittenOutreach(lead);
+      draftByKey.get(lead.placeId ?? lead.name) ?? buildOutreachDraft(lead, { marketCity });
+    const subjectLine = buildOutreachSubjectLine(lead, { marketCity });
     const placeholders = computePlaceholdersRemaining(outreachBody);
     const voicemail = best.phoneOnly ? buildVoicemailScript(lead) : "";
     const actionTier = computeActionTier({
@@ -1077,6 +1099,7 @@ export function buildLeadPackRowsFromExport(rows: ExportLeadRow[]): LeadPackCsvR
           : computeExportReasonLine(lead, { clusterDemoted: r.cluster_demoted })
       ),
       outreach_draft: csvCell(outreachBody),
+      subject_line: csvCell(subjectLine),
       maps_url: mapsUrl,
       top_lead: topIdx.has(i) ? ("Yes" as const) : ("No" as const),
       placeholders_remaining: placeholders,
@@ -1121,6 +1144,7 @@ const CSV_COLUMN_ORDER: Array<{ key: keyof LeadPackCsvRow; label: string }> = [
   { key: "ownership", label: "Ownership" },
   { key: "why_now", label: "Why Now" },
   { key: "reason", label: "Reason" },
+  { key: "subject_line", label: "Subject Line" },
   { key: "outreach_draft", label: "Outreach Draft (customize before sending)" },
   { key: "maps_url", label: "Maps URL" },
   { key: "top_lead", label: "Top Lead" },

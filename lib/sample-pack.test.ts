@@ -70,7 +70,7 @@ describe("Austin public sample pack", () => {
       rating: 3.2,
       review_count: 50,
     });
-    const text = buildMarcusWrittenOutreach(exportRowToLead(row, 0));
+    const text = buildMarcusWrittenOutreach(exportRowToLead(row, 0), { marketCity: "Miami" });
     expect(ZIP_CITY_REF.test(text)).toBe(false);
     expect(text).toMatch(/Miami/i);
   });

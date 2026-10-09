@@ -15,12 +15,12 @@ import {
   parseOutreachPreview,
   priorityClass,
   scoreBadgeClass,
-  signalIcon,
-  signalLabel,
+  signalDisplayForLead,
   sortLeads,
   type PriorityFilter,
   type SortMode,
 } from "@/components/results/results-utils";
+import { buildOutreachSubjectLine } from "@/lib/outreach-draft";
 import { describeScoreFactors } from "@/lib/lead-score-factors";
 import { resolveResultsContactDisplay } from "@/lib/contact-labels";
 import type { Lead } from "@/lib/types";
@@ -293,9 +293,16 @@ export function ResultsPageView(props: ResultsPageViewProps) {
                                 </span>
                               </td>
                               <td>
-                                <span className="dr-signal">
-                                  {signalIcon(lead.opportunityType)} {signalLabel(lead.opportunityType, lead.reason)}
-                                </span>
+                                {(() => {
+                                  const sig = signalDisplayForLead(lead);
+                                  return sig ? (
+                                    <span className="dr-signal">
+                                      {sig.icon} {sig.label}
+                                    </span>
+                                  ) : (
+                                    <span className="dr-signal dr-signal-muted">—</span>
+                                  );
+                                })()}
                               </td>
                               <td>
                                 <span className="dr-rating">
@@ -362,6 +369,10 @@ export function ResultsPageView(props: ResultsPageViewProps) {
                                       </ul>
                                     </div>
                                     <div className="dr-detail-box" ref={isExpanded ? outreachRef : undefined}>
+                                      <p className="dr-detail-label">Subject line</p>
+                                      <p className="dr-detail-subject">
+                                        {buildOutreachSubjectLine(lead, { marketCity: cityEm })}
+                                      </p>
                                       <p className="dr-detail-label">Outreach draft</p>
                                       <div className="dr-draft-quote" aria-hidden>
                                         &ldquo;

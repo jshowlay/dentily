@@ -34,6 +34,7 @@ function row(partial: Partial<LeadPackCsvRow> & Pick<LeadPackCsvRow, "name">): L
     ownership: "",
     why_now: "",
     reason: "",
+    subject_line: "",
     outreach_draft: "",
     maps_url: "https://maps.google.com/?cid=1",
     top_lead: "No",

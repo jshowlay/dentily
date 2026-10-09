@@ -8,7 +8,8 @@ import {
 import { parseCityFromAddress } from "@/lib/parse-city-from-address";
 import { getLeadScoringEvidence } from "@/lib/lead-scoring-evidence";
 import type { Lead } from "@/lib/types";
-import { dedupeSentencesInOutreach, hasDuplicateFiveWordSpan, stripLongDashes } from "@/lib/outreach-text";
+import { buildOutreachDraft, type OutreachDraftOptions } from "@/lib/outreach-draft";
+import { dedupeSentencesInOutreach, hasDuplicateFiveWordSpan, hashString, stripLongDashes } from "@/lib/outreach-text";
 
 export { MARCUS_OUTREACH_CTA };
 
@@ -19,13 +20,7 @@ export type OutreachArchetype =
   | "newer_unknown"
   | "general";
 
-export function hashString(s: string): number {
-  let h = 5381;
-  for (let i = 0; i < s.length; i += 1) {
-    h = (h * 33) ^ s.charCodeAt(i);
-  }
-  return Math.abs(h);
-}
+export { hashString };
 
 function establishedStaticEvidence(lead: Pick<Lead, "metadata">): boolean {
   const ev = getLeadScoringEvidence(lead);
@@ -175,50 +170,10 @@ function generalBodies(cityPhrase: string, ratingStr: string, rcStr: string): re
 }
 
 /**
- * Written-channel draft: buyer placeholders + archetype body + CTA. Deterministic hashes per slot.
+ * Written-channel draft: buyer placeholders + evidence-led body + soft-question close.
  */
-export function buildMarcusWrittenOutreach(lead: Lead): string {
-  const nameKey = (lead.name ?? "").toLowerCase().trim();
-  const arch = classifyOutreachArchetype(lead);
-  const bodySeed = hashString(`${nameKey}|${arch}|body`);
-
-  const r = lead.rating;
-  const rc = lead.reviewCount;
-  const ratingStr = r !== null && r !== undefined ? String(r) : "";
-  const rcStr = rc !== null && rc !== undefined ? String(rc) : "";
-  const site = (lead.website ?? "").trim();
-  const hasSite = Boolean(site);
-  const city = parseCityFromAddress(lead.address);
-  const cityPhrase = city ? ` in ${city}` : "";
-
-  let observation = "";
-  let cta = MARCUS_OUTREACH_CTA;
-
-  if (arch === "reputation_gap") {
-    const geo = city ? `In ${city}` : "In most markets";
-    const bodies = reputationBodies(geo, ratingStr, rcStr);
-    observation = pick(bodies, bodySeed);
-  } else if (arch === "established_static") {
-    const bodies = establishedBodies(cityPhrase, ratingStr, rcStr, hasSite);
-    observation = pick(bodies, bodySeed);
-  } else if (arch === "high_volume_saturation") {
-    const bodies = highVolumeBodies(ratingStr, rcStr);
-    observation = pick(bodies, bodySeed);
-    cta = MARCUS_OUTREACH_CTA_HIRING;
-  } else if (arch === "newer_unknown") {
-    const bodies = newerUnknownBodies(cityPhrase, rcStr, hasSite);
-    observation = pick(bodies, bodySeed);
-  } else {
-    const bodies = generalBodies(cityPhrase, ratingStr, rcStr);
-    observation = pick(bodies, bodySeed);
-  }
-
-  const intro = scrubBanned(introBlock());
-  const core = `${intro}\n\n${stripLongDashes(observation)}\n\n${stripLongDashes(cta)}`;
-  if (hasDuplicateFiveWordSpan(core)) {
-    return `${intro}\n\n${stripLongDashes(observation)}\n\n${cta}${signOffBlock()}`.slice(0, 2000);
-  }
-  return `${core}${signOffBlock()}`.slice(0, 2000);
+export function buildMarcusWrittenOutreach(lead: Lead, opts?: OutreachDraftOptions): string {
+  return buildOutreachDraft(lead, opts);
 }
 
 /**
