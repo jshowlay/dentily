@@ -43,4 +43,4 @@ export const QUALITY_REPLACEMENT_NOTE =
 
 /** Contact-path satisfaction guarantee — same wording on FAQ, pricing, results, and Quick Start PDF. */
 export const PACK_CONTACT_SATISFACTION_GUARANTEE =
-  "If fewer than half the practices in your pack have a way to contact them (email, contact form, or phone), email us and we'll refund you in full.";
+  "If fewer than half the practices in your pack have a way to contact them (email, contact form, or phone), email hello@dentily.co and we'll refund you in full.";
