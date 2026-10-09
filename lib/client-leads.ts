@@ -1,10 +1,14 @@
 import type { Lead } from "@/lib/types";
 
+export type ClientLead = Lead & {
+  displaySignal?: { icon: string; label: string } | null;
+};
+
 /**
  * Strip server-only / non-JSON-safe values before passing leads to Client Components.
  * (Next.js rejects some nested structures; large Google metadata blobs can also cause issues.)
  */
-export function sanitizeLeadsForClient(leads: Lead[]): Lead[] {
+export function sanitizeLeadsForClient(leads: Lead[]): ClientLead[] {
   return leads.map((l) => ({
     placeId: String(l.placeId ?? ""),
     name: String(l.name ?? ""),
@@ -29,5 +33,9 @@ export function sanitizeLeadsForClient(leads: Lead[]): Lead[] {
     status: l.status ?? undefined,
     createdAt: l.createdAt,
     metadata: {},
+    displaySignal:
+      "displaySignal" in l && l.displaySignal !== undefined
+        ? l.displaySignal
+        : undefined,
   }));
 }

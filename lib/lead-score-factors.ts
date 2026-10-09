@@ -17,7 +17,11 @@ function opportunityLine(type: string | null | undefined): string | null {
 /**
  * Explainability copy from fields we actually store — no invented model internals.
  */
-export function describeScoreFactors(lead: Lead): string[] {
+export function describeScoreFactors(
+  lead: Lead,
+  opts?: { hideContactPaths?: boolean }
+): string[] {
+  const hideContact = opts?.hideContactPaths === true;
   const lines: string[] = [];
   const opp = opportunityLine(lead.opportunityType);
   if (opp) lines.push(opp);
@@ -34,35 +38,39 @@ export function describeScoreFactors(lead: Lead): string[] {
     lines.push("Review count: not available");
   }
 
-  if (lead.website?.trim()) {
-    lines.push("Website on file — listing completeness");
+  if (hideContact) {
+    lines.push("Contact paths (phone, email, website) — included in full pack after purchase");
   } else {
-    lines.push("No website on file — outreach / SEO angle");
-  }
+    if (lead.website?.trim()) {
+      lines.push("Website on file — listing completeness");
+    } else {
+      lines.push("No website on file — outreach / SEO angle");
+    }
 
-  if (lead.phone?.trim()) {
-    lines.push("Phone present — contact-ready");
-  } else {
-    lines.push("Phone missing — lower contact completeness");
-  }
+    if (lead.phone?.trim()) {
+      lines.push("Phone present — contact-ready");
+    } else {
+      lines.push("Phone missing — lower contact completeness");
+    }
 
-  const es = lead.emailStatus;
-  if (lead.primaryEmail?.trim()) {
-    lines.push(
-      `Mailbox on file — best path: email${lead.emailSource ? ` (${lead.emailSource.replace(/_/g, " ")})` : ""}`
-    );
-  } else if (lead.contactFormUrl?.trim() || es === "contact_form_only") {
-    lines.push("Best path: website contact form (when no public email yet)");
-  } else if (lead.phone?.trim()) {
-    lines.push("Best path: phone from Maps — pack is actionable without email");
-  } else if (es === "pending") {
-    lines.push("Optional website email check may still run — use phone or Maps meanwhile");
-  } else if (es === "skipped") {
-    lines.push("No email scrape on this row — use phone, Maps, or manual research");
-  } else if (es === "invalid") {
-    lines.push("Quick site check discarded a bad address — prefer phone or form");
-  } else if (es === "not_found") {
-    lines.push("No email on quick homepage pass — normal; use phone or form if listed");
+    const es = lead.emailStatus;
+    if (lead.primaryEmail?.trim()) {
+      lines.push(
+        `Mailbox on file — best path: email${lead.emailSource ? ` (${lead.emailSource.replace(/_/g, " ")})` : ""}`
+      );
+    } else if (lead.contactFormUrl?.trim() || es === "contact_form_only") {
+      lines.push("Best path: website contact form (when no public email yet)");
+    } else if (lead.phone?.trim()) {
+      lines.push("Best path: phone from Maps — pack is actionable without email");
+    } else if (es === "pending") {
+      lines.push("Optional website email check may still run — use phone or Maps meanwhile");
+    } else if (es === "skipped") {
+      lines.push("No email scrape on this row — use phone, Maps, or manual research");
+    } else if (es === "invalid") {
+      lines.push("Quick site check discarded a bad address — prefer phone or form");
+    } else if (es === "not_found") {
+      lines.push("No email on quick homepage pass — normal; use phone or form if listed");
+    }
   }
 
   if (lead.mapsUrl) {

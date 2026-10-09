@@ -1,3 +1,7 @@
+import {
+  signalDisplayForLead,
+} from "@/components/results/results-utils";
+import { sanitizeLeadsForClient, type ClientLead } from "@/lib/client-leads";
 import type { Lead } from "@/lib/types";
 import type { PackExportAccessResult } from "@/lib/pack-export-access";
 
@@ -28,7 +32,30 @@ export function canViewFullLeadPackOnResults(
   isPaid: boolean,
   access: PackExportAccessResult
 ): boolean {
-  if (access.allowed && access.via === "admin") return true;
   if (!isPaid) return false;
+  if (access.allowed && access.via === "admin") return true;
   return access.allowed;
+}
+
+function countDistinctResultSignals(fullLeads: Lead[]): number {
+  const set = new Set<string>();
+  for (const lead of fullLeads) {
+    const sig = signalDisplayForLead(lead);
+    if (sig) set.add(sig.label);
+  }
+  return set.size;
+}
+
+/** Signals from full rows; contact paths redacted unless buyer access. */
+export function prepareLeadsForResultsClient(
+  fullLeads: Lead[],
+  hasBuyerAccess: boolean
+): { leads: ClientLead[]; signalTypeCount: number } {
+  const signalTypeCount = countDistinctResultSignals(fullLeads);
+  const leads = fullLeads.map((lead) => {
+    const displaySignal = signalDisplayForLead(lead);
+    const row = hasBuyerAccess ? lead : redactLeadsForPublicPreview([lead])[0]!;
+    return sanitizeLeadsForClient([{ ...row, displaySignal }])[0]!;
+  });
+  return { leads, signalTypeCount };
 }

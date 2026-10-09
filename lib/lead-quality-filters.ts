@@ -24,6 +24,19 @@ const EXCLUDED_CLINIC_TYPE =
 const UNIVERSITY_DENTAL =
   /\b(university|college)\b.*\b(dental|dentistry)\b|\b(dental|dentistry)\b.*\b(university|college|school)\b/i;
 
+function isUniversityDentalClinicName(name: string): boolean {
+  if (/\bcollege of dentistry\b/i.test(name)) return true;
+  if (/\b(UCLA|USC)\b/i.test(name) && /\b(dental|dentistry|clinic|odont)/i.test(name)) return true;
+  if (/\buniversity\b/i.test(name) && /\b(dental|dentistry)\b/i.test(name)) return true;
+  if (
+    /\bdental clinics?\b/i.test(name) &&
+    /\b(university|college|school|UCLA|USC)\b/i.test(name)
+  ) {
+    return true;
+  }
+  return false;
+}
+
 /** Nonprofit / community / university dental listings — not B2B growth targets. */
 export function isExcludedCommunityClinic(lead: Pick<Lead, "name" | "primaryType">): boolean {
   const name = (lead.name ?? "").trim();
@@ -31,6 +44,7 @@ export function isExcludedCommunityClinic(lead: Pick<Lead, "name" | "primaryType
   if (/\bterry\s+reilly\b/i.test(name)) return true;
   if (EXCLUDED_CLINIC_NAME.test(name)) return true;
   if (UNIVERSITY_DENTAL.test(name)) return true;
+  if (isUniversityDentalClinicName(name)) return true;
   const pt = (lead.primaryType ?? "").toLowerCase();
   if (pt && EXCLUDED_CLINIC_TYPE.test(pt)) return true;
   return false;

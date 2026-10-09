@@ -3,14 +3,13 @@ import { redirect } from "next/navigation";
 import { DeferredEnrichment } from "@/components/deferred-enrichment";
 import { ResultsPageView } from "@/components/results/results-page-view";
 import { ServerDbError } from "@/components/server-db-error";
-import { sanitizeLeadsForClient } from "@/lib/client-leads";
 import { getSearchForResultsPage, isDatabaseConfigured } from "@/lib/db";
 import { buildLeadsMatchingExportPack } from "@/lib/lead-pack-export";
 import { verifyPackAccessForResultsPage } from "@/lib/pack-export-access";
 import { buildPackExportHref, hasPackExportAuthQuery } from "@/lib/pack-export-url";
 import {
   canViewFullLeadPackOnResults,
-  redactLeadsForPublicPreview,
+  prepareLeadsForResultsClient,
 } from "@/lib/results-lead-preview";
 import { getNicheConfig } from "@/lib/niches";
 import { formatMarketLocation } from "@/lib/format-market-location";
@@ -119,9 +118,10 @@ export default async function ResultsPage({
             token: packDownloadToken,
           })
         : null;
-    const leadsForClient = hasBuyerAccess
-      ? displayLeads
-      : redactLeadsForPublicPreview(displayLeads);
+    const { leads: leadsForClient, signalTypeCount } = prepareLeadsForResultsClient(
+      displayLeads,
+      hasBuyerAccess
+    );
     const highPriorityCount = displayLeads.filter((l) => (l.priority ?? "").toLowerCase() === "high").length;
 
     const pageMs = Date.now() - pageT0;
@@ -155,7 +155,8 @@ export default async function ResultsPage({
           isPaid={parsed.isPaid}
           hasBuyerAccess={hasBuyerAccess}
           exportCsvHref={exportCsvHref}
-          leads={sanitizeLeadsForClient(leadsForClient)}
+          signalTypeCount={signalTypeCount}
+          leads={leadsForClient}
         />
       </>
     );

@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { canViewFullLeadPackOnResults, redactLeadsForPublicPreview } from "@/lib/results-lead-preview";
+import {
+  canViewFullLeadPackOnResults,
+  prepareLeadsForResultsClient,
+  redactLeadsForPublicPreview,
+} from "@/lib/results-lead-preview";
 import type { Lead } from "@/lib/types";
 
 const sampleLead: Lead = {
@@ -33,5 +37,25 @@ describe("results lead preview", () => {
     expect(
       canViewFullLeadPackOnResults(true, { allowed: true, via: "admin" })
     ).toBe(true);
+    expect(
+      canViewFullLeadPackOnResults(false, { allowed: true, via: "admin" })
+    ).toBe(false);
+  });
+
+  it("precomputes signals from full lead before redaction", () => {
+    const full: Lead = {
+      ...sampleLead,
+      opportunityType: "no_online_booking",
+      metadata: {
+        scoringEvidence: {
+          website: { hasOnlineBooking: false },
+          gaps: [],
+        },
+      },
+    };
+    const { leads, signalTypeCount } = prepareLeadsForResultsClient([full], false);
+    expect(leads[0]?.website).toBeNull();
+    expect(leads[0]?.displaySignal?.label).toBe("No online booking");
+    expect(signalTypeCount).toBe(1);
   });
 });

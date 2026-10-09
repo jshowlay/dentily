@@ -35,6 +35,9 @@ describe("lead-quality-filters", () => {
   it("excludes community and university clinic names", () => {
     expect(isExcludedCommunityClinic(lead({ name: "Austin Community Dental Clinic" }))).toBe(true);
     expect(isExcludedCommunityClinic(lead({ name: "UT School of Dentistry" }))).toBe(true);
+    expect(isExcludedCommunityClinic(lead({ name: "UCLA School of Dentistry" }))).toBe(true);
+    expect(isExcludedCommunityClinic(lead({ name: "USC Herman Ostrow School of Dentistry" }))).toBe(true);
+    expect(isExcludedCommunityClinic(lead({ name: "UCLA Dental Clinics" }))).toBe(true);
     expect(isExcludedCommunityClinic(lead({ name: "Smile Family Dental" }))).toBe(false);
   });
 

@@ -9,7 +9,6 @@ import {
   cityFromAddress,
   cityLabelFromLocation,
   countByPriority,
-  distinctSignalTypes,
   filterLeads,
   leadRowKey,
   parseOutreachPreview,
@@ -23,7 +22,7 @@ import {
 import { buildOutreachSubjectLine } from "@/lib/outreach-draft";
 import { describeScoreFactors } from "@/lib/lead-score-factors";
 import { resolveResultsContactDisplay } from "@/lib/contact-labels";
-import type { Lead } from "@/lib/types";
+import type { ClientLead } from "@/lib/client-leads";
 import { SITE } from "@/lib/site-config";
 import "@/app/results-page.css";
 
@@ -42,7 +41,8 @@ export type ResultsPageViewProps = {
   hasBuyerAccess: boolean;
   /** Set when URL includes session_id or token from checkout; null hides unsigned export links. */
   exportCsvHref: string | null;
-  leads: Lead[];
+  signalTypeCount: number;
+  leads: ClientLead[];
 };
 
 function CopyDraftButton({ value }: { value: string }) {
@@ -75,6 +75,7 @@ export function ResultsPageView(props: ResultsPageViewProps) {
     isPaid,
     hasBuyerAccess,
     exportCsvHref,
+    signalTypeCount,
     leads,
   } = props;
 
@@ -84,7 +85,6 @@ export function ResultsPageView(props: ResultsPageViewProps) {
   const outreachRef = useRef<HTMLDivElement | null>(null);
 
   const counts = useMemo(() => countByPriority(leads), [leads]);
-  const signalTypeCount = useMemo(() => distinctSignalTypes(leads), [leads]);
 
   const displayedLeads = useMemo(() => {
     const filtered = filterLeads(leads, priorityFilter);
@@ -262,7 +262,9 @@ export function ResultsPageView(props: ResultsPageViewProps) {
                           },
                           { contactsLocked: !hasBuyerAccess }
                         );
-                        const factors = describeScoreFactors(lead);
+                        const factors = describeScoreFactors(lead, {
+                          hideContactPaths: !hasBuyerAccess,
+                        });
                         const outreachParts = parseOutreachPreview(lead.outreach);
                         const priRaw = (lead.priority ?? "").trim();
                         const priLabel = priRaw
@@ -294,7 +296,7 @@ export function ResultsPageView(props: ResultsPageViewProps) {
                               </td>
                               <td>
                                 {(() => {
-                                  const sig = signalDisplayForLead(lead);
+                                  const sig = lead.displaySignal ?? signalDisplayForLead(lead);
                                   return sig ? (
                                     <span className="dr-signal">
                                       {sig.icon} {sig.label}
