@@ -7,6 +7,12 @@ describe("cleanPracticeDisplayName", () => {
     expect(cleanPracticeDisplayName("Foo Dental GroupLLC")).toBe("Foo Dental Group");
   });
 
+  it("strips spaced trailing entity suffixes", () => {
+    expect(cleanPracticeDisplayName("Forest Family Dental PLLC")).toBe("Forest Family Dental");
+    expect(cleanPracticeDisplayName("Acme Smile Inc")).toBe("Acme Smile");
+    expect(cleanPracticeDisplayName("Smith & Jones DDS PC")).toBe("Smith & Jones");
+  });
+
   it("leaves normal names unchanged", () => {
     expect(cleanPracticeDisplayName("Forest Family Dental")).toBe("Forest Family Dental");
   });

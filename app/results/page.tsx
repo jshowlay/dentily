@@ -12,7 +12,7 @@ import {
   prepareLeadsForResultsClient,
 } from "@/lib/results-lead-preview";
 import { getNicheConfig } from "@/lib/niches";
-import { formatMarketLocation } from "@/lib/format-market-location";
+import { formatMarketLocationForDisplay } from "@/lib/format-market-location";
 import { canExportLeadPack } from "@/lib/search-status";
 
 export const dynamic = "force-dynamic";
@@ -145,7 +145,12 @@ export default async function ResultsPage({
         <ResultsPageView
           searchId={parsed.id}
           nicheLabel={nicheLabel}
-          location={formatMarketLocation(parsed.location) || parsed.location}
+          location={
+            formatMarketLocationForDisplay(
+              parsed.location,
+              displayLeads.map((l) => l.address)
+            ) || parsed.location
+          }
           status={parsed.status}
           errorMessage={parsed.errorMessage}
           recordCount={recordCount}

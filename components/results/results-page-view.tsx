@@ -22,6 +22,7 @@ import {
 import { buildOutreachSubjectLine } from "@/lib/outreach-draft";
 import { describeScoreFactors } from "@/lib/lead-score-factors";
 import { resolveResultsContactDisplay } from "@/lib/contact-labels";
+import { formatRatingDisplay } from "@/lib/format-rating";
 import type { ClientLead } from "@/lib/client-leads";
 import { SITE } from "@/lib/site-config";
 import "@/app/results-page.css";
@@ -308,7 +309,7 @@ export function ResultsPageView(props: ResultsPageViewProps) {
                               </td>
                               <td>
                                 <span className="dr-rating">
-                                  {lead.rating ?? "—"}
+                                  {formatRatingDisplay(lead.rating)}
                                   {lead.reviewCount != null ? (
                                     <span className="dr-rating-meta"> · {lead.reviewCount} reviews</span>
                                   ) : null}

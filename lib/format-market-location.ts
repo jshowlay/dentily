@@ -1,3 +1,5 @@
+import { inferUsStateFromAddresses } from "@/lib/parse-city-from-address";
+
 /** Title-case a single word (handles hyphenated fragments). */
 function titleCaseWord(word: string): string {
   const w = word.trim();
@@ -38,6 +40,33 @@ export function formatMarketLocation(location: string | null | undefined): strin
     if (city) return city;
   }
   return titleCasePhrase(trimmed);
+}
+
+function locationHasUsState(location: string): boolean {
+  const comma = location.indexOf(",");
+  if (comma < 0) return false;
+  const statePart = location.slice(comma + 1).trim();
+  return /^[a-zA-Z]{2}(\b|\s)/.test(statePart) || /^[a-zA-Z]{2}$/.test(statePart);
+}
+
+/**
+ * Search market label for UI — adds state from lead addresses when the saved search is city-only.
+ */
+export function formatMarketLocationForDisplay(
+  location: string | null | undefined,
+  leadAddresses?: Array<string | null | undefined>
+): string {
+  const trimmed = (location ?? "").trim();
+  if (!trimmed) return "";
+  if (locationHasUsState(trimmed)) {
+    return formatMarketLocation(trimmed);
+  }
+  const inferred = inferUsStateFromAddresses(leadAddresses ?? []);
+  if (inferred) {
+    const city = formatMarketLocation(trimmed);
+    return `${city}, ${inferred}`;
+  }
+  return formatMarketLocation(trimmed);
 }
 
 /** Filename segment: `Miami-FL` from "miami, fl". */
